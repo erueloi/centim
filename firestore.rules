@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- FUNCTIONS ---
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isGroupMember(groupId) {
+      // Requires a read, but ensures security
+      let groupData = get(/databases/$(database)/documents/groups/$(groupId)).data;
+      return isAuthenticated() && (request.auth.uid in groupData.memberIds);
+    }
+
+    // --- RULES ---
+
+    // USERS: Users can only read/write their own profile
+    match /users/{userId} {
+      allow read, write: if isUser(userId);
+    }
+
+    // GROUPS:
+    match /groups/{groupId} {
+      // Allow create if authenticated (and presumably setting themselves as owner/member)
+      allow create: if isAuthenticated();
+      
+      // Allow read/update if user is a member or owner
+      allow read, update: if isAuthenticated() && (request.auth.uid in resource.data.memberIds || request.auth.uid == resource.data.ownerId);
+      
+      // Allow list queries only if filtering by memberIds (cannot enforce easily in rules without query constraints, rely on app logic + read rules)
+    }
+
+    // TRANSACTIONS
+    match /transactions/{transactionId} {
+      // Create: User must be member of the target groupId
+      allow create: if isAuthenticated() && isGroupMember(request.resource.data.groupId);
+      
+      // Read/Update/Delete: User must be member of the existing doc's groupId
+      allow read, update, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+    }
+    
+    // BUDGETS
+    match /budgets/{budgetId} {
+      allow create: if isAuthenticated() && isGroupMember(request.resource.data.groupId);
+      allow read, update, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+    }
+    
+    // CATEGORIES (subcollection under groups)
+    match /groups/{groupId}/categories/{categoryId} {
+      allow read, write: if isAuthenticated() && isGroupMember(groupId);
+    }
+
+    // DEBT ACCOUNTS (subcollection under groups)
+    match /groups/{groupId}/debt_accounts/{debtId} {
+      allow read, write: if isAuthenticated() && isGroupMember(groupId);
+    }
+
+    // ASSETS (subcollection under groups)
+    match /groups/{groupId}/assets/{assetId} {
+      allow read, write: if isAuthenticated() && isGroupMember(groupId);
+    }
+
+    // TRANSFERS (subcollection under groups)
+    match /groups/{groupId}/transfers/{transferId} {
+      allow read, write: if isAuthenticated() && isGroupMember(groupId);
+    }
+
+    // BUDGET ENTRIES (subcollection under groups)
+    match /groups/{groupId}/budget_entries/{entryId} {
+      allow read, write: if isAuthenticated() && isGroupMember(groupId);
+    }
+
+
+    // BILLING CYCLES
+    match /billing_cycles/{cycleId} {
+      allow create: if isAuthenticated() && isGroupMember(request.resource.data.groupId);
+      allow read, update, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+    }
+    
+    // SAVINGS GOALS (root collection)
+    match /savings_goals/{goalId} {
+      // Create: user must be member of the group
+      allow create: if isAuthenticated() && isGroupMember(request.resource.data.groupId);
+      // Read/Update/Delete: user must be member of the group on the existing document
+      allow read, update, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+    }
+  }
+}

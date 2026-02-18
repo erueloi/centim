@@ -1,0 +1,234 @@
+import 'package:flutter/foundation.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import '../../domain/models/transaction.dart';
+import '../../domain/models/asset.dart';
+import '../../domain/models/transfer.dart';
+import '../../data/providers/repository_providers.dart';
+
+import '../../domain/models/savings_goal.dart';
+import 'auth_providers.dart';
+import 'savings_goal_provider.dart';
+import 'category_notifier.dart';
+import 'transfer_provider.dart';
+import 'asset_provider.dart';
+import 'debt_provider.dart';
+
+part 'transaction_notifier.g.dart';
+
+@riverpod
+class TransactionNotifier extends _$TransactionNotifier {
+  @override
+  Stream<List<Transaction>> build() {
+    final userProfile = ref.watch(userProfileProvider).valueOrNull;
+    final groupId = userProfile?.currentGroupId;
+
+    if (groupId == null) return Stream.value([]);
+
+    final repository = ref.watch(transactionRepositoryProvider);
+    return repository.getAllTransactions(groupId).handleError((e) {
+      if (e is FirebaseException && e.code == 'failed-precondition') {
+        // Index missing.
+      }
+      // Return empty list to stop crash/loop
+      return [];
+    });
+  }
+
+  Future<void> addTransaction(Transaction transaction) async {
+    final repository = ref.read(transactionRepositoryProvider);
+    final savingsRepo = ref.read(savingsGoalRepositoryProvider);
+
+    // 1. Spending from Savings
+    if (transaction.savingsGoalId != null) {
+      final goals = await ref.read(savingsGoalNotifierProvider.future);
+      final goal = goals.firstWhere((g) => g.id == transaction.savingsGoalId);
+
+      // Reduce goal amount
+      final updatedGoal = goal.copyWith(
+        currentAmount: goal.currentAmount - transaction.amount,
+        history: [
+          ...goal.history,
+          SavingsEntry(
+            date: transaction.date,
+            amount: -transaction.amount, // Negative for expense
+            note: 'Despesa: ${transaction.concept}',
+          ),
+        ],
+      );
+      await savingsRepo.updateSavingsGoal(updatedGoal);
+    }
+
+    // 2. Linked Fixed Expenses (Automatic Contribution)
+    // We need to fetch the subcategory to check for links
+    final categories = await ref.read(categoryNotifierProvider.future);
+    String? linkedGoalId;
+    String? linkedDebtId;
+
+    for (var cat in categories) {
+      for (var sub in cat.subcategories) {
+        if (sub.id == transaction.subCategoryId) {
+          linkedGoalId = sub.linkedSavingsGoalId;
+          linkedDebtId = sub.linkedDebtId;
+          break;
+        }
+      }
+      if (linkedGoalId != null || linkedDebtId != null) break;
+    }
+
+    if (linkedGoalId != null) {
+      // It's a linked expense! Trigger contribution.
+      // We don't use addContribution from provider to avoid creating another transaction (loop)
+      // We just update the goal directly.
+      final goals = await ref.read(savingsGoalNotifierProvider.future);
+      try {
+        final goal = goals.firstWhere((g) => g.id == linkedGoalId);
+        final updatedGoal = goal.copyWith(
+          currentAmount: goal.currentAmount + transaction.amount,
+          history: [
+            ...goal.history,
+            SavingsEntry(
+              date: transaction.date,
+              amount: transaction.amount,
+              note: 'Aportació automàtica: ${transaction.concept}',
+            ),
+          ],
+        );
+        await savingsRepo.updateSavingsGoal(updatedGoal);
+      } catch (e) {
+        // Goal not found or error, ignore to not block transaction creation
+        debugPrint('Error updating linked goal: $e');
+      }
+    }
+
+    // 3. Linked Debt (Auto-Transfer to reduce debt)
+    if (linkedDebtId != null) {
+      try {
+        // Find the first liquid asset to use as source
+        final assets = await ref.read(assetNotifierProvider.future);
+        final liquidAssets = assets
+            .where(
+              (a) =>
+                  a.type == AssetType.bankAccount || a.type == AssetType.cash,
+            )
+            .toList();
+
+        if (liquidAssets.isNotEmpty) {
+          final source = liquidAssets.first;
+          final debts = await ref.read(debtNotifierProvider.future);
+          final debt = debts.firstWhere((d) => d.id == linkedDebtId);
+
+          await ref
+              .read(transferNotifierProvider.notifier)
+              .addTransfer(
+                amount: transaction.amount,
+                sourceAssetId: source.id,
+                sourceAssetName: source.name,
+                destinationType: TransferDestinationType.debt,
+                destinationId: linkedDebtId,
+                destinationName: debt.name,
+                date: transaction.date,
+                note: 'Auto: ${transaction.concept}',
+              );
+        }
+      } catch (e) {
+        debugPrint('Error creating auto-transfer for linked debt: $e');
+      }
+    }
+
+    await repository.addTransaction(transaction);
+  }
+
+  Future<void> updateTransaction(Transaction transaction) async {
+    final repository = ref.read(transactionRepositoryProvider);
+    await repository.updateTransaction(transaction);
+  }
+
+  Future<void> deleteTransaction(Transaction transaction) async {
+    final repository = ref.read(transactionRepositoryProvider);
+    final savingsRepo = ref.read(savingsGoalRepositoryProvider);
+
+    // 1. Reverse "Spending from Savings" — re-add the amount
+    if (transaction.savingsGoalId != null) {
+      try {
+        final goals = await ref.read(savingsGoalNotifierProvider.future);
+        final goal = goals.firstWhere((g) => g.id == transaction.savingsGoalId);
+        final updatedGoal = goal.copyWith(
+          currentAmount: goal.currentAmount + transaction.amount,
+          history: [
+            ...goal.history,
+            SavingsEntry(
+              date: DateTime.now(),
+              amount: transaction.amount,
+              note: 'Revertit: ${transaction.concept}',
+            ),
+          ],
+        );
+        await savingsRepo.updateSavingsGoal(updatedGoal);
+      } catch (e) {
+        debugPrint('Error reversing savings spending on delete: $e');
+      }
+    }
+
+    // 2. Reverse linked subcategory effects
+    final categories = await ref.read(categoryNotifierProvider.future);
+    String? linkedGoalId;
+    String? linkedDebtId;
+
+    for (var cat in categories) {
+      for (var sub in cat.subcategories) {
+        if (sub.id == transaction.subCategoryId) {
+          linkedGoalId = sub.linkedSavingsGoalId;
+          linkedDebtId = sub.linkedDebtId;
+          break;
+        }
+      }
+      if (linkedGoalId != null || linkedDebtId != null) break;
+    }
+
+    // 2a. Reverse linked savings goal contribution
+    if (linkedGoalId != null) {
+      try {
+        final goals = await ref.read(savingsGoalNotifierProvider.future);
+        final goal = goals.firstWhere((g) => g.id == linkedGoalId);
+        final updatedGoal = goal.copyWith(
+          currentAmount: goal.currentAmount - transaction.amount,
+          history: [
+            ...goal.history,
+            SavingsEntry(
+              date: DateTime.now(),
+              amount: -transaction.amount,
+              note: 'Revertit: ${transaction.concept}',
+            ),
+          ],
+        );
+        await savingsRepo.updateSavingsGoal(updatedGoal);
+      } catch (e) {
+        debugPrint('Error reversing linked goal contribution: $e');
+      }
+    }
+
+    // 2b. Reverse linked debt transfer
+    if (linkedDebtId != null) {
+      try {
+        final transfers = await ref.read(transferNotifierProvider.future);
+        // Find the auto-generated transfer by matching note pattern and amount
+        final autoTransfer = transfers.where(
+          (t) =>
+              t.note == 'Auto: ${transaction.concept}' &&
+              t.amount == transaction.amount &&
+              t.destinationId == linkedDebtId,
+        );
+        if (autoTransfer.isNotEmpty) {
+          await ref
+              .read(transferNotifierProvider.notifier)
+              .deleteTransfer(autoTransfer.first.id);
+        }
+      } catch (e) {
+        debugPrint('Error reversing linked debt transfer: $e');
+      }
+    }
+
+    await repository.deleteTransaction(transaction);
+  }
+}

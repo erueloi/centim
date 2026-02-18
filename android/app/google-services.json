@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "823646138001",
+    "project_id": "centim-162bd",
+    "storage_bucket": "centim-162bd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:823646138001:android:68d9a062028f32ee485930",
+        "android_client_info": {
+          "package_name": "com.example.centim"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "823646138001-joqm2jh29cftfunlucps4812jqcj29eo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.centim",
+            "certificate_hash": "cd092cbb283da39224a687723bf18b6e49cee541"
+          }
+        },
+        {
+          "client_id": "823646138001-kots1gia5mfth32r4vur70brcqd0ks6l.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCUem6LYMJYdqmsxBwgXiXvJZOj73qrUpQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "823646138001-kots1gia5mfth32r4vur70brcqd0ks6l.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "823646138001-gtgr593lhvdudvjad1ses4fpt3h7hkb0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.centim"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
