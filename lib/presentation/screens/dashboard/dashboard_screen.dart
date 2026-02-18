@@ -15,6 +15,8 @@ import '../../widgets/financial_health_indicator.dart';
 import '../../providers/billing_cycle_provider.dart';
 import '../settings/billing_cycles_settings_screen.dart';
 
+import '../../../domain/services/version_check_service.dart';
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
@@ -24,6 +26,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   late ConfettiController _confettiController;
+  late final VersionCheckService _versionCheckService; // Service instance
   bool _showBanner = false;
 
   @override
@@ -35,6 +38,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Check for smart banner after frame build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkSmartBanner();
+    });
+
+    // Initialize & Check for updates
+    _versionCheckService = VersionCheckService();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _versionCheckService.checkForUpdates(context);
     });
   }
 
