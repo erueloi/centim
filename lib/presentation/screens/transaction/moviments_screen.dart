@@ -95,10 +95,10 @@ class MovimentsScreen extends ConsumerWidget {
             unselectedLabelColor: Colors.grey,
           ),
         ),
-        body: Column(
+        body: const Column(
           children: [
-            const CycleSelector(),
-            const Expanded(
+            CycleSelector(),
+            Expanded(
               child: TabBarView(
                 children: [_AllMovementsView(), _RecurringExpensesView()],
               ),
@@ -135,8 +135,7 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
     final currencyFormat = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
     final dateFormat = DateFormat('dd MMM yyyy', 'ca_ES');
 
-    final hasFilters =
-        filter.categoryId != null ||
+    final hasFilters = filter.categoryId != null ||
         filter.subCategoryId != null ||
         filter.isIncome != null ||
         filter.payer != null ||
@@ -373,8 +372,7 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
 
               // Get transfers for the active cycle (only if no category filter)
               final transfers = transfersAsync.valueOrNull ?? [];
-              final showTransfers =
-                  filter.categoryId == null &&
+              final showTransfers = filter.categoryId == null &&
                   filter.subCategoryId == null &&
                   filter.isIncome == null;
 
@@ -817,9 +815,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
               child: Text(
                 'Filtres Avançats',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.anthracite,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.anthracite,
+                    ),
               ),
             ),
             const SizedBox(height: 24),
@@ -917,7 +915,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 );
               },
               loading: () => const LinearProgressIndicator(),
-              error: (_, _) => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 16),
 
@@ -979,7 +977,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   );
                 },
                 loading: () => const SizedBox.shrink(),
-                error: (_, _) => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
               ),
 
             // Payer filter
@@ -1035,7 +1033,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                 );
               },
               loading: () => const SizedBox.shrink(),
-              error: (_, _) => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
             ),
 
             // Amount range

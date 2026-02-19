@@ -18,7 +18,7 @@ class DebtNotifier extends _$DebtNotifier {
         return repository.getDebtsStream(groupId);
       },
       loading: () => const Stream.empty(),
-      error: (_, _) => const Stream.empty(),
+      error: (_, __) => const Stream.empty(),
     );
   }
 

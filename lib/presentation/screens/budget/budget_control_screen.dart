@@ -408,7 +408,7 @@ class _SubcategoryRow extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Editar Pressupost', style: const TextStyle(fontSize: 18)),
+        title: const Text('Editar Pressupost', style: TextStyle(fontSize: 18)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,

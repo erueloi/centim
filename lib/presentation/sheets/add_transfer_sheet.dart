@@ -58,9 +58,7 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
         destName = dest.name;
       }
 
-      await ref
-          .read(transferNotifierProvider.notifier)
-          .addTransfer(
+      await ref.read(transferNotifierProvider.notifier).addTransfer(
             amount: amount,
             sourceAssetId: _sourceAssetId!,
             sourceAssetName: source.name,
@@ -111,9 +109,9 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                 child: Text(
                   'Nova Transferència',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.anthracite,
-                  ),
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.anthracite,
+                      ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -131,9 +129,9 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                 child: Text(
                   'Import',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
               ),
               const SizedBox(height: 8),
@@ -145,9 +143,9 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                   Text(
                     '€',
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: Colors.blueGrey,
-                      fontWeight: FontWeight.bold,
-                    ),
+                          color: Colors.blueGrey,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(width: 8),
                   IntrinsicWidth(
@@ -157,11 +155,11 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                         decimal: true,
                       ),
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.displayMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.anthracite,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.displayMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.anthracite,
+                              ),
                       decoration: const InputDecoration(
                         border: InputBorder.none,
                         hintText: '0',
@@ -177,9 +175,9 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
               Text(
                 'Origen',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               assetsAsync.when(
@@ -224,7 +222,7 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                   );
                 },
                 loading: () => const LinearProgressIndicator(),
-                error: (_, _) => const Text('Error carregant actius'),
+                error: (_, __) => const Text('Error carregant actius'),
               ),
               const SizedBox(height: 24),
 
@@ -232,9 +230,9 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
               Text(
                 'Destí',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               // Destination type selector
@@ -254,12 +252,12 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                 selected: {_destinationType},
                 onSelectionChanged:
                     (Set<TransferDestinationType> newSelection) {
-                      setState(() {
-                        _destinationType = newSelection.first;
-                        _destinationId = null;
-                      });
-                    },
-                style: ButtonStyle(visualDensity: VisualDensity.compact),
+                  setState(() {
+                    _destinationType = newSelection.first;
+                    _destinationId = null;
+                  });
+                },
+                style: const ButtonStyle(visualDensity: VisualDensity.compact),
               ),
               const SizedBox(height: 12),
 
@@ -307,7 +305,7 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                     );
                   },
                   loading: () => const LinearProgressIndicator(),
-                  error: (_, _) => const Text('Error carregant actius'),
+                  error: (_, __) => const Text('Error carregant actius'),
                 )
               else
                 debtsAsync.when(
@@ -345,7 +343,7 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                     );
                   },
                   loading: () => const LinearProgressIndicator(),
-                  error: (_, _) => const Text('Error carregant deutes'),
+                  error: (_, __) => const Text('Error carregant deutes'),
                 ),
               const SizedBox(height: 24),
 

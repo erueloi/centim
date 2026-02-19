@@ -184,7 +184,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (_showBanner)
                 MaterialBanner(
                   padding: const EdgeInsets.all(16),
-                  content: Text(
+                  content: const Text(
                     'S\'acosta final de mes. Has cobrat ja la nòmina?',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,

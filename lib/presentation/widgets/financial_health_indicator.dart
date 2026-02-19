@@ -145,7 +145,7 @@ class FinancialHealthIndicator extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(

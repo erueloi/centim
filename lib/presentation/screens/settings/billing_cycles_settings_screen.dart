@@ -157,15 +157,15 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
+                const Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.calendar_month,
                       color: AppTheme.anthracite,
                       size: 28,
                     ),
-                    const SizedBox(width: 12),
-                    const Text(
+                    SizedBox(width: 12),
+                    Text(
                       'Planificar Cicles',
                       style: TextStyle(
                         fontSize: 20,

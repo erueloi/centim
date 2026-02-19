@@ -266,7 +266,7 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
                     _selectedType = newSelection.first;
                   });
                 },
-                style: ButtonStyle(
+                style: const ButtonStyle(
                   visualDensity: VisualDensity.compact,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),

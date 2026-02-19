@@ -74,7 +74,7 @@ class _ImportTransactionsScreenState
         if (catId.isNotEmpty) {
           final cat = categories.firstWhere(
             (c) => c.id == catId,
-            orElse: () => Category(
+            orElse: () => const Category(
               id: '',
               name: '',
               icon: '',
@@ -87,7 +87,7 @@ class _ImportTransactionsScreenState
             if (subId.isNotEmpty) {
               final sub = cat.subcategories.firstWhere(
                 (s) => s.id == subId,
-                orElse: () => SubCategory(id: '', name: '', monthlyBudget: 0),
+                orElse: () => const SubCategory(id: '', name: '', monthlyBudget: 0),
               );
               if (sub.id.isNotEmpty) subName = sub.name;
             }

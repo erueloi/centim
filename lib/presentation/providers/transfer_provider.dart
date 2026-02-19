@@ -22,7 +22,7 @@ class TransferNotifier extends _$TransferNotifier {
         return repository.getTransfersStream(groupId);
       },
       loading: () => const Stream.empty(),
-      error: (_, _) => const Stream.empty(),
+      error: (_, __) => const Stream.empty(),
     );
   }
 
@@ -79,9 +79,7 @@ class TransferNotifier extends _$TransferNotifier {
         // Debt: reduce currentBalance
         final debts = await ref.read(debtNotifierProvider.future);
         final dest = debts.firstWhere((d) => d.id == destinationId);
-        await ref
-            .read(debtNotifierProvider.notifier)
-            .updateDebt(
+        await ref.read(debtNotifierProvider.notifier).updateDebt(
               dest.copyWith(currentBalance: dest.currentBalance - amount),
             );
       }
@@ -104,9 +102,7 @@ class TransferNotifier extends _$TransferNotifier {
     try {
       final assets = await ref.read(assetNotifierProvider.future);
       final source = assets.firstWhere((a) => a.id == transfer.sourceAssetId);
-      await ref
-          .read(assetNotifierProvider.notifier)
-          .updateAsset(
+      await ref.read(assetNotifierProvider.notifier).updateAsset(
             source.copyWith(amount: source.amount + transfer.amount),
           );
     } catch (e) {
@@ -125,9 +121,7 @@ class TransferNotifier extends _$TransferNotifier {
         // Debt: re-add to currentBalance
         final debts = await ref.read(debtNotifierProvider.future);
         final dest = debts.firstWhere((d) => d.id == transfer.destinationId);
-        await ref
-            .read(debtNotifierProvider.notifier)
-            .updateDebt(
+        await ref.read(debtNotifierProvider.notifier).updateDebt(
               dest.copyWith(
                 currentBalance: dest.currentBalance + transfer.amount,
               ),

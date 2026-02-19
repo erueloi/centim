@@ -260,7 +260,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                             decimal: true,
                           ),
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.displayMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .displayMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
                                 color: AppTheme.anthracite,
@@ -278,7 +280,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
                             hintText: '0.00',
-                            hintStyle: Theme.of(context).textTheme.displayMedium
+                            hintStyle: Theme.of(context)
+                                .textTheme
+                                .displayMedium
                                 ?.copyWith(
                                   color: Colors.grey.withValues(alpha: 0.3),
                                 ),
@@ -312,18 +316,18 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         style: ButtonStyle(
                           backgroundColor:
                               WidgetStateProperty.resolveWith<Color>((states) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return AppTheme.copper.withValues(alpha: 0.2);
-                                }
-                                return Colors.transparent;
-                              }),
+                            if (states.contains(WidgetState.selected)) {
+                              return AppTheme.copper.withValues(alpha: 0.2);
+                            }
+                            return Colors.transparent;
+                          }),
                           foregroundColor:
                               WidgetStateProperty.resolveWith<Color>((states) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return AppTheme.anthracite;
-                                }
-                                return Colors.grey;
-                              }),
+                            if (states.contains(WidgetState.selected)) {
+                              return AppTheme.anthracite;
+                            }
+                            return Colors.grey;
+                          }),
                         ),
                       ),
                     ),
@@ -363,8 +367,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                     Text(
                       'Categoria',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 12),
                     categoriesAsync.when(
@@ -390,16 +394,14 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                             // Let's just do a quick look up.
                             _selectedCategory = cat;
                             if (widget
-                                .transactionToEdit!
-                                .subCategoryId
-                                .isNotEmpty) {
-                              _selectedSubCategory = cat.subcategories
-                                  .firstWhere(
-                                    (s) =>
-                                        s.id ==
-                                        widget.transactionToEdit!.subCategoryId,
-                                    orElse: () => cat.subcategories.first,
-                                  );
+                                .transactionToEdit!.subCategoryId.isNotEmpty) {
+                              _selectedSubCategory =
+                                  cat.subcategories.firstWhere(
+                                (s) =>
+                                    s.id ==
+                                    widget.transactionToEdit!.subCategoryId,
+                                orElse: () => cat.subcategories.first,
+                              );
                             }
                           } catch (e) {
                             // Category might have been deleted
@@ -485,8 +487,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       Text(
                         'Subcategoria',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                       const SizedBox(height: 8),
                       // ... (Subcategories Wrap code omitted for brevity matching)
@@ -605,7 +607,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                               );
                             },
                             loading: () => const LinearProgressIndicator(),
-                            error: (_, _) =>
+                            error: (_, __) =>
                                 const Text('Error carregant guardioles'),
                           );
                         },
@@ -680,25 +682,22 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                                     },
                                     onSelectionChanged:
                                         (Set<String> newSelection) {
-                                          setState(() {
-                                            _selectedPayerId =
-                                                newSelection.first;
-                                          });
-                                        },
+                                      setState(() {
+                                        _selectedPayerId = newSelection.first;
+                                      });
+                                    },
                                     style: ButtonStyle(
                                       visualDensity: VisualDensity.compact,
-                                      backgroundColor:
-                                          WidgetStateProperty.resolveWith<
-                                            Color
-                                          >((states) {
-                                            if (states.contains(
-                                              WidgetState.selected,
-                                            )) {
-                                              return AppTheme.anthracite
-                                                  .withValues(alpha: 0.1);
-                                            }
-                                            return Colors.transparent;
-                                          }),
+                                      backgroundColor: WidgetStateProperty
+                                          .resolveWith<Color>((states) {
+                                        if (states.contains(
+                                          WidgetState.selected,
+                                        )) {
+                                          return AppTheme.anthracite
+                                              .withValues(alpha: 0.1);
+                                        }
+                                        return Colors.transparent;
+                                      }),
                                     ),
                                   ),
                                 ),
@@ -707,7 +706,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                             loading: () => const Expanded(
                               child: LinearProgressIndicator(),
                             ),
-                            error: (_, _) => const SizedBox.shrink(),
+                            error: (_, __) => const SizedBox.shrink(),
                           ),
                         ],
                       ],
@@ -727,7 +726,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       backgroundColor: _isIncome
                           ? Colors.green
                           : AppTheme
-                                .copper, // Green for income context? Or stick to theme?
+                              .copper, // Green for income context? Or stick to theme?
                       // User requested AppTheme colors. Sticking to Copper for consistency, maybe Green only for income toggle.
                       // Let's use Theme implementation for now.
                       shape: RoundedRectangleBorder(

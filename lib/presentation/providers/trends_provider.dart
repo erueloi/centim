@@ -118,7 +118,7 @@ class TrendsNotifier extends _$TrendsNotifier {
       if (i < 5) {
         final category = categories.firstWhere(
           (c) => c.id == entry.key,
-          orElse: () => Category(
+          orElse: () => const Category(
             id: 'unknown',
             name: 'Desconegut',
             icon: '❓',

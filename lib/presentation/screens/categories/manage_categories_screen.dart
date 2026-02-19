@@ -138,9 +138,8 @@ class _ManageCategoriesScreenState
                         selectedColor: Theme.of(context).colorScheme.primary,
                         labelStyle: TextStyle(
                           color: isSelected ? Colors.white : null,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                         showCheckmark: false,
                         shape: RoundedRectangleBorder(
@@ -167,8 +166,7 @@ class _ManageCategoriesScreenState
                             .read(budgetContextNotifierProvider.notifier)
                             .select(cycle);
                         // Auto-scroll to center selected chip
-                        final targetOffset =
-                            (index * 80.0) -
+                        final targetOffset = (index * 80.0) -
                             (MediaQuery.of(context).size.width / 2) +
                             40;
                         _chipScrollController.animateTo(
@@ -183,9 +181,8 @@ class _ManageCategoriesScreenState
                       selectedColor: Colors.green.shade100,
                       labelStyle: TextStyle(
                         color: isSelected ? Colors.green.shade900 : null,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                       showCheckmark: false,
                       shape: RoundedRectangleBorder(
@@ -246,14 +243,18 @@ class _ManageCategoriesScreenState
                               const SizedBox(height: 16),
                               Text(
                                 'No hi ha categories de ${_selectedType == TransactionType.expense ? "despesa" : "ingrés"}',
-                                style: Theme.of(context).textTheme.headlineSmall
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
                                     ?.copyWith(color: Colors.grey[600]),
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 'Afegeix-ne una per començar',
-                                style: Theme.of(context).textTheme.bodyMedium
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodyMedium
                                     ?.copyWith(color: Colors.grey[500]),
                               ),
                             ],
@@ -334,7 +335,7 @@ class _BalanceFooter extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return balanceAsync.when(
       loading: () => const SizedBox.shrink(),
-      error: (_, _) => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
       data: (summary) {
         final remainder = summary.remainder;
         final isDeficit = remainder < -0.01;
@@ -445,9 +446,8 @@ class _BalanceFooter extends ConsumerWidget {
     double surplus,
   ) {
     final categories = ref.read(categoryNotifierProvider).valueOrNull ?? [];
-    final expenseCategories = categories
-        .where((c) => c.type == TransactionType.expense)
-        .toList();
+    final expenseCategories =
+        categories.where((c) => c.type == TransactionType.expense).toList();
 
     showModalBottomSheet(
       context: context,
@@ -465,7 +465,7 @@ class _BalanceFooter extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  Icon(Icons.savings, color: AppTheme.copper),
+                  const Icon(Icons.savings, color: AppTheme.copper),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -580,13 +580,12 @@ class _BalanceFooter extends ConsumerWidget {
       final month = cycle.startDate.month;
 
       // Check if an entry already exists
-      final existing = await repo
-          .watchEntriesForMonth(groupId, year, month)
-          .first;
+      final existing =
+          await repo.watchEntriesForMonth(groupId, year, month).first;
       final match = existing.cast<BudgetEntry?>().firstWhere(
-        (e) => e!.subCategoryId == subcategory.id,
-        orElse: () => null,
-      );
+            (e) => e!.subCategoryId == subcategory.id,
+            orElse: () => null,
+          );
 
       final currentAmount = match?.amount ?? subcategory.monthlyBudget;
       final entryId = match?.id ?? 'be_${subcategory.id}_${year}_$month';
@@ -620,13 +619,11 @@ class _CategoryTile extends ConsumerWidget {
 
     // If a cycle is selected, watch entries for that month
     final entriesStream = (selectedCycle != null && groupId != null)
-        ? ref
-              .watch(budgetEntryRepositoryProvider)
-              .watchEntriesForMonth(
-                groupId,
-                selectedCycle.endDate.year,
-                selectedCycle.endDate.month,
-              )
+        ? ref.watch(budgetEntryRepositoryProvider).watchEntriesForMonth(
+              groupId,
+              selectedCycle.endDate.year,
+              selectedCycle.endDate.month,
+            )
         : null;
 
     return StreamBuilder<List<BudgetEntry>>(
@@ -638,9 +635,9 @@ class _CategoryTile extends ConsumerWidget {
         double effectiveBudget(SubCategory sub) {
           if (selectedCycle == null) return sub.monthlyBudget;
           final entry = entries.cast<BudgetEntry?>().firstWhere(
-            (e) => e!.subCategoryId == sub.id,
-            orElse: () => null,
-          );
+                (e) => e!.subCategoryId == sub.id,
+                orElse: () => null,
+              );
           return entry?.amount ?? sub.monthlyBudget;
         }
 
@@ -762,9 +759,8 @@ class _CategoryTile extends ConsumerWidget {
                             : Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: isOverride
-                              ? AppTheme.copper
-                              : Colors.grey[200]!,
+                          color:
+                              isOverride ? AppTheme.copper : Colors.grey[200]!,
                         ),
                       ),
                       padding: const EdgeInsets.symmetric(
@@ -839,11 +835,11 @@ class _CategoryTile extends ConsumerWidget {
                       color: AppTheme.copper.withAlpha(10),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Row(
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.add, color: AppTheme.copper, size: 20),
-                        const SizedBox(width: 8),
+                        SizedBox(width: 8),
                         Text(
                           'Afegir subcategoria',
                           style: TextStyle(

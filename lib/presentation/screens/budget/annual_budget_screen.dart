@@ -129,7 +129,7 @@ class _AnnualBudgetScreenState extends ConsumerState<AnnualBudgetScreen> {
                       final month = index + 1;
                       final entry = entries.firstWhere(
                         (e) => e.month == month,
-                        orElse: () => BudgetEntry(
+                        orElse: () => const BudgetEntry(
                           id: '',
                           subCategoryId: '',
                           year: 0,
