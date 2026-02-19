@@ -15,10 +15,21 @@ class AssetNotifier extends _$AssetNotifier {
       data: (groupId) {
         if (groupId == null) return Stream.value([]);
         final repository = ref.read(assetRepositoryProvider);
-        return repository.getAssetsStream(groupId);
+        return repository
+            .getAssetsStream(groupId)
+            .map((assets) {
+              return assets;
+            })
+            .handleError((e) {
+              throw e;
+            });
       },
-      loading: () => const Stream.empty(),
-      error: (_, _) => const Stream.empty(),
+      loading: () {
+        return const Stream.empty();
+      },
+      error: (e, s) {
+        return Stream.error(e, s);
+      },
     );
   }
 

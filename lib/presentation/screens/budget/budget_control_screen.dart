@@ -14,6 +14,8 @@ import '../../../data/providers/repository_providers.dart';
 import '../../../domain/models/budget_entry.dart';
 import '../../widgets/cycle_selector.dart';
 import '../../widgets/trends_tab.dart'; // Import TrendsTab
+import '../../providers/transaction_filter_provider.dart';
+import '../../widgets/main_scaffold.dart';
 
 class BudgetControlScreen extends ConsumerStatefulWidget {
   final bool isReadOnly;
@@ -200,12 +202,23 @@ class _BudgetCard extends ConsumerWidget {
             ),
           ),
         ),
-        title: Text(
-          status.category.name.toUpperCase(),
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-            color: AppTheme.anthracite,
+        title: InkWell(
+          onTap: () {
+            ref
+                .read(transactionFilterNotifierProvider.notifier)
+                .setCategory(status.category.id, status.category.name);
+            ref.read(selectedIndexProvider.notifier).state = 2;
+          },
+          child: Text(
+            status.category.name.toUpperCase(),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: AppTheme.anthracite,
+              decoration: TextDecoration.underline,
+              decorationColor: AppTheme.copper,
+              decorationStyle: TextDecorationStyle.dotted,
+            ),
           ),
         ),
         subtitle: Column(
@@ -305,59 +318,80 @@ class _SubcategoryRow extends ConsumerWidget {
     final isBudgetZero = subStatus.budget == 0;
     final isSpentZero = subStatus.spent == 0;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          // Subcategory name
-          Expanded(
-            flex: 3,
-            child: Text(
+    return InkWell(
+      onTap: () {
+        ref
+            .read(transactionFilterNotifierProvider.notifier)
+            .setSubCategory(
+              category.id,
+              category.name,
+              subStatus.subcategory.id,
               subStatus.subcategory.name,
-              style: const TextStyle(fontSize: 13, color: AppTheme.anthracite),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          // Progress bar
-          Expanded(
-            flex: 4,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: isBudgetZero
-                    ? (isSpentZero ? 0 : 1)
-                    : (subStatus.spent / subStatus.budget).clamp(0.0, 1.0),
-                backgroundColor: AppTheme.anthracite.withValues(alpha: 0.1),
-                valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                minHeight: 6,
+            );
+        ref.read(selectedIndexProvider.notifier).state = 2;
+        // Pop back if we're in a nested navigator
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            // Subcategory name
+            Expanded(
+              flex: 3,
+              child: Text(
+                subStatus.subcategory.name,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.anthracite,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          // Amount display
-          SizedBox(
-            width: 85,
-            child: Text(
-              '${subStatus.spent.toStringAsFixed(0)}€/${subStatus.budget.toStringAsFixed(0)}€',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              textAlign: TextAlign.right,
+            // Progress bar
+            Expanded(
+              flex: 4,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  value: isBudgetZero
+                      ? (isSpentZero ? 0 : 1)
+                      : (subStatus.spent / subStatus.budget).clamp(0.0, 1.0),
+                  backgroundColor: AppTheme.anthracite.withValues(alpha: 0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                  minHeight: 6,
+                ),
+              ),
             ),
-          ),
-          // Edit button
-          if (!isReadOnly)
+            const SizedBox(width: 8),
+            // Amount display
             SizedBox(
-              width: 32,
-              child: IconButton(
-                icon: Icon(Icons.edit, size: 16, color: Colors.grey[500]),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () => _showQuickBudgetDialog(context, ref),
+              width: 85,
+              child: Text(
+                '${subStatus.spent.toStringAsFixed(0)}€/${subStatus.budget.toStringAsFixed(0)}€',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                textAlign: TextAlign.right,
               ),
-            )
-          else
-            const SizedBox(width: 32), // Placeholder to keep alignment
-        ],
+            ),
+            // Edit button
+            if (!isReadOnly)
+              SizedBox(
+                width: 32,
+                child: IconButton(
+                  icon: Icon(Icons.edit, size: 16, color: Colors.grey[500]),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onPressed: () => _showQuickBudgetDialog(context, ref),
+                ),
+              )
+            else
+              const SizedBox(width: 32), // Placeholder to keep alignment
+          ],
+        ),
       ),
     );
   }

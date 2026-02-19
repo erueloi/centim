@@ -49,6 +49,17 @@ class FirestoreTransactionRepository implements TransactionRepository {
     await _firestore.collection(_collectionName).doc(transaction.id).delete();
   }
 
+  @override
+  Future<int> countBySubCategory(String groupId, String subCategoryId) async {
+    final snapshot = await _firestore
+        .collection(_collectionName)
+        .where('groupId', isEqualTo: groupId)
+        .where('subCategoryId', isEqualTo: subCategoryId)
+        .count()
+        .get();
+    return snapshot.count ?? 0;
+  }
+
   Map<String, dynamic> _toMap(dom.Transaction transaction) {
     return {
       'groupId': transaction.groupId,

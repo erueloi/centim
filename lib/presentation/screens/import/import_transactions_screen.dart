@@ -28,7 +28,13 @@ class _ImportTransactionsScreenState
   @override
   void initState() {
     super.initState();
-    _items = widget.transactions;
+    // Sort: duplicates first, then by date descending
+    _items = List.from(widget.transactions)
+      ..sort((a, b) {
+        if (a.isDuplicate && !b.isDuplicate) return -1;
+        if (!a.isDuplicate && b.isDuplicate) return 1;
+        return b.date.compareTo(a.date);
+      });
   }
 
   Future<void> _saveSelected() async {
@@ -167,14 +173,49 @@ class _ImportTransactionsScreenState
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, s) => Center(child: Text('Error: $e')),
         data: (categories) {
+          final duplicateCount = _items.where((i) => i.isDuplicate).length;
+          final newCount = _items.length - duplicateCount;
+          final selectedCount = _items.where((i) => i.selected).length;
+
           return Column(
             children: [
+              // Summary banner
+              Container(
+                margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    _buildCountChip('$newCount nous', Colors.green),
+                    const SizedBox(width: 8),
+                    if (duplicateCount > 0)
+                      _buildCountChip(
+                        '$duplicateCount duplicats',
+                        Colors.orange,
+                      ),
+                    const Spacer(),
+                    Text(
+                      '$selectedCount seleccionats',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              // Select all
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Row(
                   children: [
                     Checkbox(
-                      value: _items.every((i) => i.selected),
+                      value: _items
+                          .where((i) => !i.isDuplicate)
+                          .every((i) => i.selected),
                       onChanged: (v) {
                         setState(() {
                           for (var i in _items) {
@@ -183,11 +224,7 @@ class _ImportTransactionsScreenState
                         });
                       },
                     ),
-                    const Text('Seleccionar tots'),
-                    const Spacer(),
-                    Text(
-                      '${_items.where((i) => i.selected).length} seleccionats',
-                    ),
+                    const Text('Seleccionar tots (nous)'),
                   ],
                 ),
               ),
@@ -196,7 +233,33 @@ class _ImportTransactionsScreenState
                   itemCount: _items.length,
                   itemBuilder: (context, index) {
                     final item = _items[index];
-                    return _buildTransactionRow(item, categories);
+                    // Section header when transitioning from duplicates to new
+                    final showNewHeader =
+                        index > 0 &&
+                        _items[index - 1].isDuplicate &&
+                        !item.isDuplicate;
+                    final showDupHeader = index == 0 && item.isDuplicate;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (showDupHeader)
+                          _buildSectionHeader(
+                            '⚠️ Possibles Duplicats',
+                            Colors.orange,
+                          ),
+                        if (showNewHeader)
+                          _buildSectionHeader('✅ Nous Moviments', Colors.green),
+                        if (showNewHeader)
+                          _buildSectionHeader('✅ Nous Moviments', Colors.green),
+                        _TransactionImportRow(
+                          key: Key(item.id),
+                          item: item,
+                          categories: categories,
+                          onChanged: () => setState(() {}),
+                        ),
+                      ],
+                    );
                   },
                 ),
               ),
@@ -207,35 +270,110 @@ class _ImportTransactionsScreenState
     );
   }
 
-  Widget _buildTransactionRow(
-    ImportedTransaction item,
-    List<Category> categories,
-  ) {
-    // Category? selectedCat;
-    // SubCategory? selectedSub;
+  Widget _buildCountChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color == Colors.green ? Colors.green[700] : Colors.orange[700],
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: color.withValues(alpha: 0.1),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: color == Colors.green ? Colors.green[800] : Colors.orange[800],
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+        ),
+      ),
+    );
+  }
+}
+
+class _TransactionImportRow extends StatefulWidget {
+  final ImportedTransaction item;
+  final List<Category> categories;
+  final VoidCallback onChanged;
+
+  const _TransactionImportRow({
+    required Key key,
+    required this.item,
+    required this.categories,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  State<_TransactionImportRow> createState() => _TransactionImportRowState();
+}
+
+class _TransactionImportRowState extends State<_TransactionImportRow> {
+  late TextEditingController _conceptController;
+  late ImportedTransaction item;
+
+  @override
+  void initState() {
+    super.initState();
+    item = widget.item;
+    _conceptController = TextEditingController(text: item.concept);
+  }
+
+  @override
+  void dispose() {
+    _conceptController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Normalize empty strings to null for DropdownButton compatibility
+    final categoryId = (item.categoryId != null && item.categoryId!.isNotEmpty)
+        ? item.categoryId
+        : null;
+    final subCategoryId =
+        (item.subCategoryId != null && item.subCategoryId!.isNotEmpty)
+        ? item.subCategoryId
+        : null;
 
     Category? selectedCat;
 
-    if (item.categoryId != null) {
+    if (categoryId != null) {
       try {
-        selectedCat = categories.firstWhere((c) => c.id == item.categoryId);
-      } catch (_) {}
+        selectedCat = widget.categories.firstWhere((c) => c.id == categoryId);
+      } catch (_) {
+        // categoryId doesn't match any category, reset it
+        item.categoryId = null;
+      }
     }
 
-    final color = item.isDuplicate ? Colors.red.withValues(alpha: 0.1) : null;
+    final color = item.isDuplicate
+        ? Colors.orange.withValues(alpha: 0.08)
+        : Colors.green.withValues(alpha: 0.05);
 
     return Container(
       color: color,
       child: ExpansionTile(
         leading: Checkbox(
           value: item.selected,
-          onChanged: item.isDuplicate
-              ? null
-              : (v) {
-                  // Prevent selecting potential duplicates easily? Or warn?
-                  // Allow user to override if they really want
-                  setState(() => item.selected = v ?? false);
-                },
+          onChanged: (v) {
+            item.selected = v ?? false;
+            widget.onChanged();
+          },
         ),
         title: Text(
           item.concept,
@@ -255,51 +393,77 @@ class _ImportTransactionsScreenState
               horizontal: 16.0,
               vertical: 8.0,
             ),
-            child: Row(
+            child: Column(
               children: [
-                const Icon(Icons.category, size: 16, color: Colors.grey),
-                const SizedBox(width: 8),
-                // Category Dropdown
-                Expanded(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    hint: const Text('Sense Categoria'),
-                    value: item.categoryId,
-                    items: categories.map((c) {
-                      return DropdownMenuItem(
-                        value: c.id,
-                        child: Text('${c.icon} ${c.name}'),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      setState(() {
-                        item.categoryId = val;
-                        item.subCategoryId = null; // Reset sub
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Subcategory Dropdown (if category selected)
-                if (selectedCat != null && selectedCat.subcategories.isNotEmpty)
-                  Expanded(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      hint: const Text('Subcategoria'),
-                      value: item.subCategoryId,
-                      items: selectedCat.subcategories.map((s) {
-                        return DropdownMenuItem(
-                          value: s.id,
-                          child: Text(s.name),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          item.subCategoryId = val;
-                        });
-                      },
+                // Concept Editor
+                TextFormField(
+                  controller: _conceptController,
+                  decoration: const InputDecoration(
+                    labelText: 'Concepte',
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
                     ),
                   ),
+                  onChanged: (val) {
+                    item.concept = val;
+                    // Trigger rebuild to update title
+                    setState(() {});
+                  },
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const Icon(Icons.category, size: 16, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    // Category Dropdown
+                    Expanded(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        hint: const Text('Sense Categoria'),
+                        value: categoryId,
+                        items: widget.categories.map((c) {
+                          return DropdownMenuItem(
+                            value: c.id,
+                            child: Text('${c.icon} ${c.name}'),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          setState(() {
+                            item.categoryId = val;
+                            item.subCategoryId = null; // Reset sub
+                          });
+                          widget.onChanged();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    // Subcategory Dropdown (if category selected)
+                    if (selectedCat != null &&
+                        selectedCat.subcategories.isNotEmpty)
+                      Expanded(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          hint: const Text('Subcategoria'),
+                          value: subCategoryId,
+                          items: selectedCat.subcategories.map((s) {
+                            return DropdownMenuItem(
+                              value: s.id,
+                              child: Text(s.name),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              item.subCategoryId = val;
+                            });
+                            widget.onChanged();
+                          },
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),

@@ -234,10 +234,6 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
     } else {
       await ref.read(assetNotifierProvider.notifier).updateAsset(newAsset);
     }
-
-    if (mounted) {
-      Navigator.pop(context);
-    }
   }
 
   Future<void> _saveGoal() async {

@@ -45,6 +45,14 @@ class BudgetEntryRepository {
     await _getCollection(groupId).doc(entry.id).set(entry.toJson());
   }
 
+  Future<BudgetEntry?> getEntry(String groupId, String entryId) async {
+    final doc = await _getCollection(groupId).doc(entryId).get();
+    if (doc.exists && doc.data() != null) {
+      return BudgetEntry.fromJson(doc.data()!);
+    }
+    return null;
+  }
+
   Future<void> deleteEntry(String groupId, String entryId) async {
     await _getCollection(groupId).doc(entryId).delete();
   }

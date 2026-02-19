@@ -83,4 +83,29 @@ class SavingsGoalNotifier extends _$SavingsGoalNotifier {
 
     await transactionRepo.addTransaction(transaction);
   }
+
+  /// Withdraw money from a savings goal.
+  /// This only updates the goal balance and history.
+  /// The transaction (income) is created separately by AddTransactionSheet._save.
+  Future<void> withdrawFromGoal(
+    String goalId,
+    double amount, {
+    String? concept,
+  }) async {
+    final repo = ref.read(savingsGoalRepositoryProvider);
+    final goals = await future;
+    final goal = goals.firstWhere((g) => g.id == goalId);
+
+    final newEntry = SavingsEntry(
+      date: DateTime.now(),
+      amount: -amount, // Negative = withdrawal
+      note: concept ?? 'Retirada',
+    );
+    final history = [...goal.history, newEntry];
+    final updatedGoal = goal.copyWith(
+      currentAmount: goal.currentAmount - amount,
+      history: history,
+    );
+    await repo.updateSavingsGoal(updatedGoal);
+  }
 }

@@ -72,8 +72,8 @@ class BudgetNotifier extends _$BudgetNotifier {
     final budgetEntries = await budgetEntryRepo
         .watchEntriesForMonth(
           groupId,
-          activeCycle.startDate.year,
-          activeCycle.startDate.month,
+          activeCycle.endDate.year,
+          activeCycle.endDate.month,
         )
         .first;
 
@@ -104,8 +104,8 @@ class DashboardBudgetNotifier extends _$DashboardBudgetNotifier {
     final budgetEntries = await budgetEntryRepo
         .watchEntriesForMonth(
           groupId,
-          activeCycle.startDate.year,
-          activeCycle.startDate.month,
+          activeCycle.endDate.year,
+          activeCycle.endDate.month,
         )
         .first;
 
@@ -263,8 +263,8 @@ Future<ZeroBudgetSummary> zeroBudgetBalance(Ref ref) async {
       entries = await repo
           .watchEntriesForMonth(
             groupId,
-            cycle.startDate.year,
-            cycle.startDate.month,
+            cycle.endDate.year,
+            cycle.endDate.month,
           )
           .first;
     }

@@ -20,7 +20,7 @@ class ImportedTransaction {
   final String id; // Temporary ID
   final DateTime date;
   final String dateString; // Original date string for matching
-  final String concept;
+  String concept;
   final double amount;
   String? categoryId; // Auto-matched or manually selected
   String? subCategoryId;
@@ -290,16 +290,24 @@ class ImportService {
       // But better:
       // We will just fetch last 300 transactions for duplicate checking.
       final snapshot = await FirebaseFirestore.instance
-          .collection('groups')
-          .doc(groupId)
           .collection('transactions')
+          .where('groupId', isEqualTo: groupId)
           .orderBy('date', descending: true)
           .limit(300)
           .get();
 
-      return snapshot.docs
+      final result = snapshot.docs
           .map((d) => t_model.Transaction.fromFirestore(d))
           .toList();
+      debugPrint(
+        'DEBUG: Fetched ${result.length} existing transactions for duplicate check',
+      );
+      if (result.isNotEmpty) {
+        debugPrint(
+          'DEBUG: First existing: "${result.first.concept}" amount=${result.first.amount} date=${result.first.date}',
+        );
+      }
+      return result;
     } catch (e) {
       debugPrint('Error fetching existing: $e');
       return [];
@@ -310,20 +318,50 @@ class ImportService {
     ImportedTransaction newTx,
     List<t_model.Transaction> existing,
   ) {
-    const dayWindow = 2; // Allow +/- days difference
+    const dayWindow = 3; // Allow +/- days difference
+
+    // Normalize: lowercase, collapse whitespace
+    String normalize(String s) =>
+        s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+    final newConcept = normalize(newTx.concept);
+    final newAmount = newTx.amount.abs();
 
     for (final old in existing) {
-      if (old.amount == newTx.amount) {
-        // Date check with window
-        final diff = old.date.difference(newTx.date).inDays.abs();
-        if (diff <= dayWindow) {
-          // Same amount and close date.
-          // Check concept similarity
-          if (old.concept.trim() == newTx.concept.trim()) return true;
-          if (newTx.concept.contains(old.concept) ||
-              old.concept.contains(newTx.concept)) {
-            return true;
-          }
+      final oldAmount = old.amount.abs();
+
+      // Amount must match (within 1 cent tolerance)
+      if ((oldAmount - newAmount).abs() > 0.02) continue;
+
+      // Date check with window
+      final diff = old.date.difference(newTx.date).inDays.abs();
+      if (diff > dayWindow) continue;
+
+      final oldConcept = normalize(old.concept);
+
+      // Exact match
+      if (oldConcept == newConcept) {
+        debugPrint('DUPLICATE: exact match "$oldConcept"');
+        return true;
+      }
+
+      // Contains match (CSV concept often includes extra info)
+      if (newConcept.contains(oldConcept) || oldConcept.contains(newConcept)) {
+        debugPrint('DUPLICATE: contains match "$oldConcept" <-> "$newConcept"');
+        return true;
+      }
+
+      // Token overlap: if >60% of words match
+      final newWords = newConcept.split(' ').where((w) => w.length > 2).toSet();
+      final oldWords = oldConcept.split(' ').where((w) => w.length > 2).toSet();
+      if (newWords.isNotEmpty && oldWords.isNotEmpty) {
+        final intersection = newWords.intersection(oldWords);
+        final smaller = newWords.length < oldWords.length ? newWords : oldWords;
+        if (smaller.isNotEmpty && intersection.length / smaller.length >= 0.6) {
+          debugPrint(
+            'DUPLICATE: token overlap "${intersection.join(", ")}" in "$oldConcept" <-> "$newConcept"',
+          );
+          return true;
         }
       }
     }
@@ -352,9 +390,8 @@ class ImportService {
     try {
       final groupId = await ref.read(currentGroupIdProvider.future);
       final snapshot = await FirebaseFirestore.instance
-          .collection('groups')
-          .doc(groupId)
           .collection('transactions')
+          .where('groupId', isEqualTo: groupId)
           .where('concept', isEqualTo: tx.concept)
           .limit(1)
           .get();

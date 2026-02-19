@@ -8,16 +8,22 @@ import '../providers/category_notifier.dart';
 import '../providers/group_providers.dart';
 import '../providers/savings_goal_provider.dart';
 import '../providers/debt_provider.dart';
+import '../providers/auth_providers.dart';
 import '../screens/budget/annual_budget_screen.dart'; // Keep for navigation
+import '../../../domain/models/billing_cycle.dart';
+import '../../../domain/models/budget_entry.dart';
+import '../../../data/providers/repository_providers.dart';
 
 class SubCategoryEditorSheet extends ConsumerStatefulWidget {
   final Category category;
   final SubCategory? subCategory;
+  final BillingCycle? selectedCycle; // null = base budget
 
   const SubCategoryEditorSheet({
     super.key,
     required this.category,
     this.subCategory,
+    this.selectedCycle,
   });
 
   @override
@@ -54,6 +60,30 @@ class _SubCategoryEditorSheetState
     _linkedSavingsGoalId = widget.subCategory?.linkedSavingsGoalId;
     _linkedDebtId = widget.subCategory?.linkedDebtId;
     _isLinkedToSavings = _linkedSavingsGoalId != null || _linkedDebtId != null;
+
+    // Load existing month-specific override if editing a specific cycle
+    if (widget.selectedCycle != null && widget.subCategory != null) {
+      _loadMonthOverride();
+    }
+  }
+
+  Future<void> _loadMonthOverride() async {
+    final groupId = ref.read(currentGroupIdProvider).valueOrNull;
+    if (groupId == null) return;
+    final cycle = widget.selectedCycle!;
+    final repo = ref.read(budgetEntryRepositoryProvider);
+    final entryId =
+        '${widget.subCategory!.id}_${cycle.endDate.year}_${cycle.endDate.month}';
+    try {
+      final entry = await repo.getEntry(groupId, entryId);
+      if (entry != null && mounted) {
+        setState(() {
+          _amountController.text = entry.amount.toStringAsFixed(0);
+        });
+      }
+    } catch (_) {
+      // No override exists, keep base amount
+    }
   }
 
   @override
@@ -78,10 +108,16 @@ class _SubCategoryEditorSheetState
 
     final amount = double.tryParse(_amountController.text) ?? 0.0;
 
+    // When editing a specific month, save as BudgetEntry override
+    // and keep the base monthlyBudget unchanged
+    final baseAmount = widget.selectedCycle != null
+        ? (widget.subCategory?.monthlyBudget ?? 0.0)
+        : amount;
+
     final newSub =
         widget.subCategory?.copyWith(
           name: _nameController.text.trim(),
-          monthlyBudget: amount,
+          monthlyBudget: baseAmount,
           isFixed: _isFixed,
           paymentTiming: _paymentTiming,
           paymentDay: (_isFixed && _paymentTiming == PaymentTiming.specificDay)
@@ -94,7 +130,7 @@ class _SubCategoryEditorSheetState
         SubCategory(
           id: const Uuid().v4(),
           name: _nameController.text.trim(),
-          monthlyBudget: amount,
+          monthlyBudget: baseAmount,
           isFixed: _isFixed,
           paymentTiming: _paymentTiming,
           paymentDay: (_isFixed && _paymentTiming == PaymentTiming.specificDay)
@@ -128,7 +164,106 @@ class _SubCategoryEditorSheetState
         .read(categoryNotifierProvider.notifier)
         .updateCategory(updatedCategory);
 
+    // Save month-specific budget override if a cycle is selected
+    if (widget.selectedCycle != null) {
+      final groupId = ref.read(currentGroupIdProvider).valueOrNull;
+      if (groupId != null) {
+        final cycle = widget.selectedCycle!;
+        final repo = ref.read(budgetEntryRepositoryProvider);
+        final entryId =
+            '${newSub.id}_${cycle.endDate.year}_${cycle.endDate.month}';
+
+        if (amount == newSub.monthlyBudget) {
+          // Same as base → remove override
+          await repo.deleteEntry(groupId, entryId);
+        } else {
+          final entry = BudgetEntry(
+            id: entryId,
+            subCategoryId: newSub.id,
+            year: cycle.endDate.year,
+            month: cycle.endDate.month,
+            amount: amount,
+          );
+          await repo.setEntry(groupId, entry);
+        }
+      }
+    }
+
     if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _delete() async {
+    final sub = widget.subCategory;
+    if (sub == null) return;
+
+    final groupId = ref.read(currentGroupIdProvider).valueOrNull;
+    if (groupId == null) return;
+
+    // Check if used in transactions
+    final repo = ref.read(transactionRepositoryProvider);
+    final count = await repo.countBySubCategory(groupId, sub.id);
+
+    if (!mounted) return;
+
+    if (count > 0) {
+      // Show error dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('No es pot eliminar'),
+          content: Text(
+            'Aquesta subcategoria té $count moviments associats. Elimina els moviments primer.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('D\'acord'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Confirm deletion
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar subcategoria?'),
+        content: Text(
+          'Estàs segur que vols eliminar "${sub.name}"? Aquesta acció no es pot desfer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel·lar'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      // Remove from category
+      final updatedSubcategories = List<SubCategory>.from(
+        widget.category.subcategories,
+      );
+      updatedSubcategories.removeWhere((s) => s.id == sub.id);
+
+      final updatedCategory = widget.category.copyWith(
+        subcategories: updatedSubcategories,
+      );
+
+      await ref
+          .read(categoryNotifierProvider.notifier)
+          .updateCategory(updatedCategory);
+
+      if (mounted) Navigator.pop(context);
+    }
   }
 
   @override
@@ -257,9 +392,44 @@ class _SubCategoryEditorSheetState
             const SizedBox(height: 32),
 
             // --- Block 2: Money ---
+            if (widget.selectedCycle != null)
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.green.shade700,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Editant pressupost per ${widget.selectedCycle!.name}',
+                        style: TextStyle(
+                          color: Colors.green.shade900,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Center(
               child: Text(
-                'Pressupost Mensual Base',
+                widget.selectedCycle != null
+                    ? 'Pressupost per ${widget.selectedCycle!.name}'
+                    : 'Pressupost Mensual Base',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                   color: Colors.grey[600],
                   fontWeight: FontWeight.bold,
@@ -313,13 +483,17 @@ class _SubCategoryEditorSheetState
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text(
-                      'És una despesa fixa?',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    title: Text(
+                      widget.category.type == TransactionType.income
+                          ? 'És un ingrés fix?'
+                          : 'És una despesa fixa?',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    subtitle: const Text(
-                      'Lloguer, Gimnàs, Subscripcions...',
-                      style: TextStyle(fontSize: 12),
+                    subtitle: Text(
+                      widget.category.type == TransactionType.income
+                          ? 'Nòmina, Lloguer cobrat, Subscripcions...'
+                          : 'Lloguer, Gimnàs, Subscripcions...',
+                      style: const TextStyle(fontSize: 12),
                     ),
                     value: _isFixed,
                     onChanged: (val) => setState(() => _isFixed = val),
@@ -407,75 +581,82 @@ class _SubCategoryEditorSheetState
                         ],
                       ),
                     ],
-                    const SizedBox(height: 24),
-                    const Divider(),
-                    SwitchListTile(
-                      title: const Text(
-                        'Vincular pagament a...',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: const Text(
-                        'En pagar, aporta a guardiola o paga deute',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      value: _isLinkedToSavings,
-                      onChanged: (val) {
-                        setState(() {
-                          _isLinkedToSavings = val;
-                          if (!val) {
-                            _linkedSavingsGoalId = null;
-                            _linkedDebtId = null;
-                          }
-                        });
-                      },
-                      activeTrackColor: AppTheme.copper,
+                  ],
+                  const SizedBox(height: 24),
+                  const Divider(),
+                  SwitchListTile(
+                    title: Text(
+                      widget.category.type == TransactionType.income
+                          ? 'Vincular a una guardiola'
+                          : 'Vincular pagament a...',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    if (_isLinkedToSavings) ...[
-                      const SizedBox(height: 12),
-                      Consumer(
-                        builder: (context, ref, _) {
-                          final goalsAsync = ref.watch(
-                            savingsGoalNotifierProvider,
+                    subtitle: Text(
+                      widget.category.type == TransactionType.income
+                          ? 'L\'ingrés es restarà automàticament de la guardiola'
+                          : 'En pagar, aporta a guardiola o paga deute',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    value: _isLinkedToSavings,
+                    onChanged: (val) {
+                      setState(() {
+                        _isLinkedToSavings = val;
+                        if (!val) {
+                          _linkedSavingsGoalId = null;
+                          _linkedDebtId = null;
+                        }
+                      });
+                    },
+                    activeTrackColor: AppTheme.copper,
+                  ),
+                  if (_isLinkedToSavings) ...[
+                    const SizedBox(height: 12),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final goalsAsync = ref.watch(
+                          savingsGoalNotifierProvider,
+                        );
+                        final debtsAsync = ref.watch(debtNotifierProvider);
+
+                        final goals = goalsAsync.valueOrNull ?? [];
+                        final debts = debtsAsync.valueOrNull ?? [];
+
+                        if (goals.isEmpty && debts.isEmpty) {
+                          return const Text(
+                            'No hi ha guardioles ni deutes disponibles.',
+                            style: TextStyle(color: Colors.red),
                           );
-                          final debtsAsync = ref.watch(debtNotifierProvider);
+                        }
 
-                          final goals = goalsAsync.valueOrNull ?? [];
-                          final debts = debtsAsync.valueOrNull ?? [];
+                        // Build unified items with composite keys
+                        final items = <DropdownMenuItem<String>>[];
 
-                          if (goals.isEmpty && debts.isEmpty) {
-                            return const Text(
-                              'No hi ha guardioles ni deutes disponibles.',
-                              style: TextStyle(color: Colors.red),
-                            );
-                          }
-
-                          // Build unified items with composite keys
-                          final items = <DropdownMenuItem<String>>[];
-
-                          for (final g in goals) {
-                            items.add(
-                              DropdownMenuItem(
-                                value: 'goal:${g.id}',
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      g.icon,
-                                      style: const TextStyle(fontSize: 16),
+                        for (final g in goals) {
+                          items.add(
+                            DropdownMenuItem(
+                              value: 'goal:${g.id}',
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    g.icon,
+                                    style: const TextStyle(fontSize: 16),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      g.name,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Flexible(
-                                      child: Text(
-                                        g.name,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            );
-                          }
+                            ),
+                          );
+                        }
 
+                        // Only show debts for expense categories
+                        if (widget.category.type != TransactionType.income) {
                           for (final d in debts) {
                             items.add(
                               DropdownMenuItem(
@@ -499,44 +680,53 @@ class _SubCategoryEditorSheetState
                               ),
                             );
                           }
+                        }
 
-                          // Compute current value from state
-                          String? currentValue;
-                          if (_linkedSavingsGoalId != null) {
-                            currentValue = 'goal:$_linkedSavingsGoalId';
-                          } else if (_linkedDebtId != null) {
-                            currentValue = 'debt:$_linkedDebtId';
-                          }
+                        // Compute current value from state
+                        String? currentValue;
+                        if (_linkedSavingsGoalId != null) {
+                          currentValue = 'goal:$_linkedSavingsGoalId';
+                        } else if (_linkedDebtId != null) {
+                          currentValue = 'debt:$_linkedDebtId';
+                        }
 
-                          return DropdownButtonFormField<String>(
-                            initialValue: currentValue,
-                            decoration: InputDecoration(
-                              labelText: 'Destí del pagament',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
+                        // Validate the value exists in items
+                        if (currentValue != null &&
+                            !items.any((i) => i.value == currentValue)) {
+                          currentValue = null;
+                        }
+
+                        return DropdownButtonFormField<String>(
+                          initialValue: currentValue,
+                          decoration: InputDecoration(
+                            labelText:
+                                widget.category.type == TransactionType.income
+                                ? 'Selecciona Guardiola'
+                                : 'Destí del pagament',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            items: items,
-                            onChanged: (val) {
-                              setState(() {
-                                if (val != null && val.startsWith('goal:')) {
-                                  _linkedSavingsGoalId = val.substring(5);
-                                  _linkedDebtId = null;
-                                } else if (val != null &&
-                                    val.startsWith('debt:')) {
-                                  _linkedDebtId = val.substring(5);
-                                  _linkedSavingsGoalId = null;
-                                }
-                              });
-                            },
-                          );
-                        },
-                      ),
-                    ],
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                          ),
+                          items: items,
+                          onChanged: (val) {
+                            setState(() {
+                              if (val != null && val.startsWith('goal:')) {
+                                _linkedSavingsGoalId = val.substring(5);
+                                _linkedDebtId = null;
+                              } else if (val != null &&
+                                  val.startsWith('debt:')) {
+                                _linkedDebtId = val.substring(5);
+                                _linkedSavingsGoalId = null;
+                              }
+                            });
+                          },
+                        );
+                      },
+                    ),
                   ],
                 ],
               ),
@@ -616,6 +806,23 @@ class _SubCategoryEditorSheetState
                 ),
               ),
             ),
+            if (widget.subCategory != null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 56,
+                child: TextButton.icon(
+                  onPressed: _delete,
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  label: const Text(
+                    'Eliminar Subcategoria',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -5,4 +5,5 @@ abstract class TransactionRepository {
   Future<void> updateTransaction(Transaction transaction);
   Stream<List<Transaction>> getAllTransactions(String groupId);
   Future<void> deleteTransaction(Transaction transaction);
+  Future<int> countBySubCategory(String groupId, String subCategoryId);
 }

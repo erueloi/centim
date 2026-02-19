@@ -77,20 +77,25 @@ class TransactionNotifier extends _$TransactionNotifier {
     }
 
     if (linkedGoalId != null) {
-      // It's a linked expense! Trigger contribution.
-      // We don't use addContribution from provider to avoid creating another transaction (loop)
-      // We just update the goal directly.
+      // Linked expense = contribution TO goal (add)
+      // Linked income = withdrawal FROM goal (subtract)
       final goals = await ref.read(savingsGoalNotifierProvider.future);
       try {
         final goal = goals.firstWhere((g) => g.id == linkedGoalId);
+        final isWithdrawal = transaction.isIncome;
+        final effectiveAmount = isWithdrawal
+            ? -transaction.amount
+            : transaction.amount;
         final updatedGoal = goal.copyWith(
-          currentAmount: goal.currentAmount + transaction.amount,
+          currentAmount: goal.currentAmount + effectiveAmount,
           history: [
             ...goal.history,
             SavingsEntry(
               date: transaction.date,
-              amount: transaction.amount,
-              note: 'Aportació automàtica: ${transaction.concept}',
+              amount: effectiveAmount,
+              note: isWithdrawal
+                  ? 'Retirada automàtica: ${transaction.concept}'
+                  : 'Aportació automàtica: ${transaction.concept}',
             ),
           ],
         );
@@ -186,18 +191,24 @@ class TransactionNotifier extends _$TransactionNotifier {
       if (linkedGoalId != null || linkedDebtId != null) break;
     }
 
-    // 2a. Reverse linked savings goal contribution
+    // 2a. Reverse linked savings goal effect
     if (linkedGoalId != null) {
       try {
         final goals = await ref.read(savingsGoalNotifierProvider.future);
         final goal = goals.firstWhere((g) => g.id == linkedGoalId);
+        // Reverse: if original was income (withdrawal, -amount), reverse = add back
+        //          if original was expense (contribution, +amount), reverse = subtract
+        final wasWithdrawal = transaction.isIncome;
+        final reverseAmount = wasWithdrawal
+            ? transaction.amount
+            : -transaction.amount;
         final updatedGoal = goal.copyWith(
-          currentAmount: goal.currentAmount - transaction.amount,
+          currentAmount: goal.currentAmount + reverseAmount,
           history: [
             ...goal.history,
             SavingsEntry(
               date: DateTime.now(),
-              amount: -transaction.amount,
+              amount: reverseAmount,
               note: 'Revertit: ${transaction.concept}',
             ),
           ],

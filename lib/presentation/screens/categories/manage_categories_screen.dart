@@ -615,192 +615,252 @@ class _CategoryTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey[300]!),
-      ),
-      child: ExpansionTile(
-        shape: const Border(), // Remove expanded border
-        collapsedShape: const Border(), // Remove collapsed border
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppTheme.copper.withValues(alpha: 0.15),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(category.icon, style: const TextStyle(fontSize: 20)),
-          ),
-        ),
-        title: Text(
-          category.name,
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        subtitle: Text(
-          'Total: ${category.subcategories.fold<double>(0, (sum, s) => sum + s.monthlyBudget).toStringAsFixed(2)} €',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: Icon(Icons.edit, size: 20, color: Colors.grey[600]),
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  showDragHandle: true,
-                  backgroundColor: Colors.white,
-                  builder: (_) => CategoryEditorSheet(category: category),
-                );
-              },
-            ),
-            IconButton(
-              icon: Icon(Icons.delete, size: 20, color: Colors.grey[600]),
-              onPressed: () => _deleteCategory(context, ref, category),
-            ),
-            const SizedBox(width: 8),
-            // Custom Drag Handle
-            ReorderableDragStartListener(
-              index: index,
-              child: const Icon(Icons.drag_handle, color: Colors.grey),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.expand_more),
-          ],
-        ),
-        children: [
-          ...category.subcategories.map((sub) {
-            String fixText = "Variable";
-            if (sub.isFixed) {
-              switch (sub.paymentTiming) {
-                case PaymentTiming.specificDay:
-                  fixText = sub.paymentDay != null
-                      ? "Dia ${sub.paymentDay}"
-                      : "Dia Específic";
-                  break;
-                case PaymentTiming.firstBusinessDay:
-                  fixText = "Primer dia hàbil";
-                  break;
-                case PaymentTiming.lastBusinessDay:
-                  fixText = "Últim dia hàbil";
-                  break;
-              }
-            }
+    final selectedCycle = ref.watch(budgetContextNotifierProvider);
+    final groupId = ref.watch(currentGroupIdProvider).valueOrNull;
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: InkWell(
-                onTap: () {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    showDragHandle: true,
-                    backgroundColor: Colors.white,
-                    builder: (_) => SubCategoryEditorSheet(
-                      category: category,
-                      subCategory: sub,
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
+    // If a cycle is selected, watch entries for that month
+    final entriesStream = (selectedCycle != null && groupId != null)
+        ? ref
+              .watch(budgetEntryRepositoryProvider)
+              .watchEntriesForMonth(
+                groupId,
+                selectedCycle.endDate.year,
+                selectedCycle.endDate.month,
+              )
+        : null;
+
+    return StreamBuilder<List<BudgetEntry>>(
+      stream: entriesStream,
+      builder: (context, snapshot) {
+        final entries = snapshot.data ?? [];
+
+        // Helper to get effective budget for a subcategory
+        double effectiveBudget(SubCategory sub) {
+          if (selectedCycle == null) return sub.monthlyBudget;
+          final entry = entries.cast<BudgetEntry?>().firstWhere(
+            (e) => e!.subCategoryId == sub.id,
+            orElse: () => null,
+          );
+          return entry?.amount ?? sub.monthlyBudget;
+        }
+
+        final totalBudget = category.subcategories.fold<double>(
+          0,
+          (sum, s) => sum + effectiveBudget(s),
+        );
+
+        return Card(
+          elevation: 0,
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: Colors.grey[300]!),
+          ),
+          child: ExpansionTile(
+            shape: const Border(), // Remove expanded border
+            collapsedShape: const Border(), // Remove collapsed border
+            leading: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.copper.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  category.icon,
+                  style: const TextStyle(fontSize: 20),
+                ),
+              ),
+            ),
+            title: Text(
+              category.name,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(
+              'Total: ${totalBudget.toStringAsFixed(2)} €',
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.edit, size: 20, color: Colors.grey[600]),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      showDragHandle: true,
+                      backgroundColor: Colors.white,
+                      builder: (_) => CategoryEditorSheet(category: category),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, size: 20, color: Colors.grey[600]),
+                  onPressed: () => _deleteCategory(context, ref, category),
+                ),
+                const SizedBox(width: 8),
+                // Custom Drag Handle
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(Icons.drag_handle, color: Colors.grey),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.expand_more),
+              ],
+            ),
+            children: [
+              ...category.subcategories.map((sub) {
+                String fixText = "Variable";
+                if (sub.isFixed) {
+                  switch (sub.paymentTiming) {
+                    case PaymentTiming.specificDay:
+                      fixText = sub.paymentDay != null
+                          ? "Dia ${sub.paymentDay}"
+                          : "Dia Específic";
+                      break;
+                    case PaymentTiming.firstBusinessDay:
+                      fixText = "Primer dia hàbil";
+                      break;
+                    case PaymentTiming.lastBusinessDay:
+                      fixText = "Últim dia hàbil";
+                      break;
+                  }
+                }
+
+                final subBudget = effectiveBudget(sub);
+                final isOverride =
+                    selectedCycle != null && subBudget != sub.monthlyBudget;
+
+                return Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 12,
+                    vertical: 4,
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              sub.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Pressupost: ${sub.monthlyBudget.toStringAsFixed(2)} € | $fixText',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                  child: InkWell(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        showDragHandle: true,
+                        backgroundColor: Colors.white,
+                        builder: (_) => SubCategoryEditorSheet(
+                          category: category,
+                          subCategory: sub,
+                          selectedCycle: ref.read(
+                            budgetContextNotifierProvider,
+                          ),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isOverride
+                            ? Colors.orange.shade50
+                            : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isOverride
+                              ? AppTheme.copper
+                              : Colors.grey[200]!,
                         ),
                       ),
-                      const Icon(
-                        Icons.chevron_right,
-                        color: Colors.grey,
-                        size: 20,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-          Padding(
-            padding: const EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 4,
-              bottom: 16,
-            ),
-            child: InkWell(
-              onTap: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  showDragHandle: true,
-                  backgroundColor: Colors.white,
-                  builder: (_) => SubCategoryEditorSheet(category: category),
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.copper.withAlpha(50),
-                    style: BorderStyle.solid,
-                  ),
-                  color: AppTheme.copper.withAlpha(10),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.add, color: AppTheme.copper, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Afegir subcategoria',
-                      style: TextStyle(
-                        color: AppTheme.copper,
-                        fontWeight: FontWeight.bold,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  sub.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Pressupost: ${subBudget.toStringAsFixed(2)} €${isOverride ? ' (base: ${sub.monthlyBudget.toStringAsFixed(0)}€)' : ''} | $fixText',
+                                  style: TextStyle(
+                                    color: isOverride
+                                        ? AppTheme.copper
+                                        : Colors.grey[600],
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
+                );
+              }),
+              Padding(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 4,
+                  bottom: 16,
+                ),
+                child: InkWell(
+                  onTap: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      showDragHandle: true,
+                      backgroundColor: Colors.white,
+                      builder: (_) => SubCategoryEditorSheet(
+                        category: category,
+                        selectedCycle: ref.read(budgetContextNotifierProvider),
+                      ),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppTheme.copper.withAlpha(50),
+                        style: BorderStyle.solid,
+                      ),
+                      color: AppTheme.copper.withAlpha(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add, color: AppTheme.copper, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Afegir subcategoria',
+                          style: TextStyle(
+                            color: AppTheme.copper,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
+        ); // Card
+      }, // StreamBuilder builder
+    ); // StreamBuilder
   }
 }
 

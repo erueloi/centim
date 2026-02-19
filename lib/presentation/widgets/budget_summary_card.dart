@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/budget_provider.dart';
 import '../widgets/main_scaffold.dart';
+import '../providers/transaction_filter_provider.dart';
 
 class BudgetSummaryCard extends ConsumerWidget {
   const BudgetSummaryCard({super.key});
@@ -62,48 +63,74 @@ class BudgetSummaryCard extends ConsumerWidget {
 
                 return Column(
                   children: topExpenses.map((status) {
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          // Filter by category
+                          final filterNotifier = ref.read(
+                            transactionFilterNotifierProvider.notifier,
+                          );
+                          filterNotifier.setCategory(
+                            status.category.id,
+                            status.category.name,
+                          );
+
+                          // Reset subcategory (just in case)
+                          // The setCategory method usually handles this, but good to be sure if needed.
+
+                          // Navigate to Moviments (Index 2)
+                          ref.read(selectedIndexProvider.notifier).state = 2;
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 8.0,
+                            horizontal: 4.0,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                status.category.name,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    status.category.name,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${status.spent.toStringAsFixed(0)}€ / ${status.total.toStringAsFixed(0)}€',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                '${status.spent.toStringAsFixed(0)}€ / ${status.total.toStringAsFixed(0)}€',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey[600],
+                              const SizedBox(height: 6),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: status.total > 0
+                                      ? (status.spent / status.total).clamp(
+                                          0.0,
+                                          1.0,
+                                        )
+                                      : 1.0,
+                                  backgroundColor: Colors.grey[200],
+                                  color: status.isOverBudget
+                                      ? Colors.red
+                                      : AppTheme.copper,
+                                  minHeight: 8,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: status.total > 0
-                                  ? (status.spent / status.total).clamp(
-                                      0.0,
-                                      1.0,
-                                    )
-                                  : 1.0,
-                              backgroundColor: Colors.grey[200],
-                              color: status.isOverBudget
-                                  ? Colors.red
-                                  : AppTheme.copper,
-                              minHeight: 8,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     );
                   }).toList(),

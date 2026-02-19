@@ -158,6 +158,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         await notifier.updateTransaction(transaction);
       } else {
         await notifier.addTransaction(transaction);
+        // Note: savings goal deduction is handled automatically by
+        // TransactionNotifier.addTransaction based on savingsGoalId
+        // and linkedSavingsGoalId from the subcategory.
       }
 
       if (mounted) Navigator.pop(context);
@@ -525,88 +528,90 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
                     const SizedBox(height: 24),
 
-                    // --- PAY WITH SAVINGS (Toggle) ---
-                    if (!_isIncome) ...[
-                      SwitchListTile(
-                        title: const Text(
-                          'Pagar amb estalvis?',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: const Text(
-                          'Es descomptarà d\'una guardiola',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                        value: _isSavingsExpenditure,
-                        activeTrackColor: AppTheme.copper,
-                        onChanged: (val) {
-                          setState(() {
-                            _isSavingsExpenditure = val;
-                            if (!val) _selectedSavingsGoalId = null;
-                          });
+                    // --- PAY WITH / WITHDRAW FROM SAVINGS (Toggle) ---
+                    SwitchListTile(
+                      title: Text(
+                        _isIncome
+                            ? 'Retirada d\'estalvis?'
+                            : 'Pagar amb estalvis?',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        _isIncome
+                            ? 'Es restarà d\'una guardiola i comptarà com a ingrés'
+                            : 'Es descomptarà d\'una guardiola',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      value: _isSavingsExpenditure,
+                      activeTrackColor: AppTheme.copper,
+                      onChanged: (val) {
+                        setState(() {
+                          _isSavingsExpenditure = val;
+                          if (!val) _selectedSavingsGoalId = null;
+                        });
+                      },
+                    ),
+                    if (_isSavingsExpenditure) ...[
+                      const SizedBox(height: 12),
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final goalsAsync = ref.watch(
+                            savingsGoalNotifierProvider,
+                          );
+                          return goalsAsync.when(
+                            data: (goals) {
+                              if (goals.isEmpty) {
+                                return const Text(
+                                  'No tens guardioles amb fons.',
+                                  style: TextStyle(color: Colors.red),
+                                );
+                              }
+                              return DropdownButtonFormField<String>(
+                                initialValue: _selectedSavingsGoalId,
+                                decoration: InputDecoration(
+                                  labelText: 'Selecciona Guardiola',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  filled: true,
+                                  fillColor: Colors.white,
+                                ),
+                                items: goals
+                                    .map(
+                                      (g) => DropdownMenuItem(
+                                        value: g.id,
+                                        child: Row(
+                                          children: [
+                                            Text(g.icon),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              g.name,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              '(${g.currentAmount.toStringAsFixed(0)}€)',
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (val) => setState(
+                                  () => _selectedSavingsGoalId = val,
+                                ),
+                              );
+                            },
+                            loading: () => const LinearProgressIndicator(),
+                            error: (_, _) =>
+                                const Text('Error carregant guardioles'),
+                          );
                         },
                       ),
-                      if (_isSavingsExpenditure) ...[
-                        const SizedBox(height: 12),
-                        Consumer(
-                          builder: (context, ref, _) {
-                            final goalsAsync = ref.watch(
-                              savingsGoalNotifierProvider,
-                            );
-                            return goalsAsync.when(
-                              data: (goals) {
-                                if (goals.isEmpty) {
-                                  return const Text(
-                                    'No tens guardioles amb fons.',
-                                    style: TextStyle(color: Colors.red),
-                                  );
-                                }
-                                return DropdownButtonFormField<String>(
-                                  initialValue: _selectedSavingsGoalId,
-                                  decoration: InputDecoration(
-                                    labelText: 'Selecciona Guardiola',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white,
-                                  ),
-                                  items: goals
-                                      .map(
-                                        (g) => DropdownMenuItem(
-                                          value: g.id,
-                                          child: Row(
-                                            children: [
-                                              Text(g.icon),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                g.name,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                '(${g.currentAmount.toStringAsFixed(0)}€)',
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: (val) => setState(
-                                    () => _selectedSavingsGoalId = val,
-                                  ),
-                                );
-                              },
-                              loading: () => const LinearProgressIndicator(),
-                              error: (_, _) =>
-                                  const Text('Error carregant guardioles'),
-                            );
-                          },
-                        ),
-                      ],
-                      const SizedBox(height: 24),
                     ],
+                    const SizedBox(height: 24),
 
                     // --- METADATA (Date & Payer) ---
                     Row(
