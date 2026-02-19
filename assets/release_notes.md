@@ -1,5 +1,7 @@
 ﻿# Release Notes
 
+## v1.1.1
+GitHub Actions: Modificació per a que funcioni bé.
 ## v1.1.0
 Moviments: Filtratge i acces des del Detall.
 Importació: Marquem quins moviments es poden importar i que ja existeixen.
@@ -9,6 +11,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
