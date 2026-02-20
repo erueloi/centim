@@ -12,14 +12,13 @@ String _$currentGroupHash() => r'5a4d587cad071bb1afe8648ee0bbd6ff72e8e83d';
 @ProviderFor(currentGroup)
 final currentGroupProvider =
     AutoDisposeFutureProvider<HouseholdGroup?>.internal(
-      currentGroup,
-      name: r'currentGroupProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$currentGroupHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  currentGroup,
+  name: r'currentGroupProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$currentGroupHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
@@ -30,14 +29,13 @@ String _$groupMembersHash() => r'bcecd75dacfff26410c157c8e50b24e4c3673252';
 @ProviderFor(groupMembers)
 final groupMembersProvider =
     AutoDisposeFutureProvider<List<UserProfile>>.internal(
-      groupMembers,
-      name: r'groupMembersProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$groupMembersHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  groupMembers,
+  name: r'groupMembersProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$groupMembersHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element

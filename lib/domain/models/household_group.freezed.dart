@@ -12,8 +12,7 @@ part of 'household_group.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 HouseholdGroup _$HouseholdGroupFromJson(Map<String, dynamic> json) {
   return _HouseholdGroup.fromJson(json);
@@ -41,18 +40,16 @@ mixin _$HouseholdGroup {
 /// @nodoc
 abstract class $HouseholdGroupCopyWith<$Res> {
   factory $HouseholdGroupCopyWith(
-    HouseholdGroup value,
-    $Res Function(HouseholdGroup) then,
-  ) = _$HouseholdGroupCopyWithImpl<$Res, HouseholdGroup>;
+          HouseholdGroup value, $Res Function(HouseholdGroup) then) =
+      _$HouseholdGroupCopyWithImpl<$Res, HouseholdGroup>;
   @useResult
-  $Res call({
-    String id,
-    String name,
-    List<String> memberIds,
-    String ownerId,
-    String inviteCode,
-    double totalAssets,
-  });
+  $Res call(
+      {String id,
+      String name,
+      List<String> memberIds,
+      String ownerId,
+      String inviteCode,
+      double totalAssets});
 }
 
 /// @nodoc
@@ -77,55 +74,50 @@ class _$HouseholdGroupCopyWithImpl<$Res, $Val extends HouseholdGroup>
     Object? inviteCode = null,
     Object? totalAssets = null,
   }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            name: null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                      as String,
-            memberIds: null == memberIds
-                ? _value.memberIds
-                : memberIds // ignore: cast_nullable_to_non_nullable
-                      as List<String>,
-            ownerId: null == ownerId
-                ? _value.ownerId
-                : ownerId // ignore: cast_nullable_to_non_nullable
-                      as String,
-            inviteCode: null == inviteCode
-                ? _value.inviteCode
-                : inviteCode // ignore: cast_nullable_to_non_nullable
-                      as String,
-            totalAssets: null == totalAssets
-                ? _value.totalAssets
-                : totalAssets // ignore: cast_nullable_to_non_nullable
-                      as double,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      memberIds: null == memberIds
+          ? _value.memberIds
+          : memberIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      ownerId: null == ownerId
+          ? _value.ownerId
+          : ownerId // ignore: cast_nullable_to_non_nullable
+              as String,
+      inviteCode: null == inviteCode
+          ? _value.inviteCode
+          : inviteCode // ignore: cast_nullable_to_non_nullable
+              as String,
+      totalAssets: null == totalAssets
+          ? _value.totalAssets
+          : totalAssets // ignore: cast_nullable_to_non_nullable
+              as double,
+    ) as $Val);
   }
 }
 
 /// @nodoc
 abstract class _$$HouseholdGroupImplCopyWith<$Res>
     implements $HouseholdGroupCopyWith<$Res> {
-  factory _$$HouseholdGroupImplCopyWith(
-    _$HouseholdGroupImpl value,
-    $Res Function(_$HouseholdGroupImpl) then,
-  ) = __$$HouseholdGroupImplCopyWithImpl<$Res>;
+  factory _$$HouseholdGroupImplCopyWith(_$HouseholdGroupImpl value,
+          $Res Function(_$HouseholdGroupImpl) then) =
+      __$$HouseholdGroupImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String id,
-    String name,
-    List<String> memberIds,
-    String ownerId,
-    String inviteCode,
-    double totalAssets,
-  });
+  $Res call(
+      {String id,
+      String name,
+      List<String> memberIds,
+      String ownerId,
+      String inviteCode,
+      double totalAssets});
 }
 
 /// @nodoc
@@ -133,9 +125,8 @@ class __$$HouseholdGroupImplCopyWithImpl<$Res>
     extends _$HouseholdGroupCopyWithImpl<$Res, _$HouseholdGroupImpl>
     implements _$$HouseholdGroupImplCopyWith<$Res> {
   __$$HouseholdGroupImplCopyWithImpl(
-    _$HouseholdGroupImpl _value,
-    $Res Function(_$HouseholdGroupImpl) _then,
-  ) : super(_value, _then);
+      _$HouseholdGroupImpl _value, $Res Function(_$HouseholdGroupImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of HouseholdGroup
   /// with the given fields replaced by the non-null parameter values.
@@ -149,48 +140,46 @@ class __$$HouseholdGroupImplCopyWithImpl<$Res>
     Object? inviteCode = null,
     Object? totalAssets = null,
   }) {
-    return _then(
-      _$HouseholdGroupImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        memberIds: null == memberIds
-            ? _value._memberIds
-            : memberIds // ignore: cast_nullable_to_non_nullable
-                  as List<String>,
-        ownerId: null == ownerId
-            ? _value.ownerId
-            : ownerId // ignore: cast_nullable_to_non_nullable
-                  as String,
-        inviteCode: null == inviteCode
-            ? _value.inviteCode
-            : inviteCode // ignore: cast_nullable_to_non_nullable
-                  as String,
-        totalAssets: null == totalAssets
-            ? _value.totalAssets
-            : totalAssets // ignore: cast_nullable_to_non_nullable
-                  as double,
-      ),
-    );
+    return _then(_$HouseholdGroupImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      memberIds: null == memberIds
+          ? _value._memberIds
+          : memberIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      ownerId: null == ownerId
+          ? _value.ownerId
+          : ownerId // ignore: cast_nullable_to_non_nullable
+              as String,
+      inviteCode: null == inviteCode
+          ? _value.inviteCode
+          : inviteCode // ignore: cast_nullable_to_non_nullable
+              as String,
+      totalAssets: null == totalAssets
+          ? _value.totalAssets
+          : totalAssets // ignore: cast_nullable_to_non_nullable
+              as double,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$HouseholdGroupImpl implements _HouseholdGroup {
-  const _$HouseholdGroupImpl({
-    required this.id,
-    required this.name,
-    required final List<String> memberIds,
-    required this.ownerId,
-    required this.inviteCode,
-    this.totalAssets = 0.0,
-  }) : _memberIds = memberIds;
+  const _$HouseholdGroupImpl(
+      {required this.id,
+      required this.name,
+      required final List<String> memberIds,
+      required this.ownerId,
+      required this.inviteCode,
+      this.totalAssets = 0.0})
+      : _memberIds = memberIds;
 
   factory _$HouseholdGroupImpl.fromJson(Map<String, dynamic> json) =>
       _$$HouseholdGroupImplFromJson(json);
@@ -227,10 +216,8 @@ class _$HouseholdGroupImpl implements _HouseholdGroup {
             other is _$HouseholdGroupImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
-            const DeepCollectionEquality().equals(
-              other._memberIds,
-              _memberIds,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._memberIds, _memberIds) &&
             (identical(other.ownerId, ownerId) || other.ownerId == ownerId) &&
             (identical(other.inviteCode, inviteCode) ||
                 other.inviteCode == inviteCode) &&
@@ -241,14 +228,13 @@ class _$HouseholdGroupImpl implements _HouseholdGroup {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    name,
-    const DeepCollectionEquality().hash(_memberIds),
-    ownerId,
-    inviteCode,
-    totalAssets,
-  );
+      runtimeType,
+      id,
+      name,
+      const DeepCollectionEquality().hash(_memberIds),
+      ownerId,
+      inviteCode,
+      totalAssets);
 
   /// Create a copy of HouseholdGroup
   /// with the given fields replaced by the non-null parameter values.
@@ -257,25 +243,24 @@ class _$HouseholdGroupImpl implements _HouseholdGroup {
   @pragma('vm:prefer-inline')
   _$$HouseholdGroupImplCopyWith<_$HouseholdGroupImpl> get copyWith =>
       __$$HouseholdGroupImplCopyWithImpl<_$HouseholdGroupImpl>(
-        this,
-        _$identity,
-      );
+          this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$HouseholdGroupImplToJson(this);
+    return _$$HouseholdGroupImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _HouseholdGroup implements HouseholdGroup {
-  const factory _HouseholdGroup({
-    required final String id,
-    required final String name,
-    required final List<String> memberIds,
-    required final String ownerId,
-    required final String inviteCode,
-    final double totalAssets,
-  }) = _$HouseholdGroupImpl;
+  const factory _HouseholdGroup(
+      {required final String id,
+      required final String name,
+      required final List<String> memberIds,
+      required final String ownerId,
+      required final String inviteCode,
+      final double totalAssets}) = _$HouseholdGroupImpl;
 
   factory _HouseholdGroup.fromJson(Map<String, dynamic> json) =
       _$HouseholdGroupImpl.fromJson;

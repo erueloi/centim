@@ -12,14 +12,14 @@ String _$fixedExpensesHash() => r'9a86974ea23d681eaa54cfafb421a223afe80a36';
 @ProviderFor(fixedExpenses)
 final fixedExpensesProvider =
     AutoDisposeProvider<List<FixedExpenseItem>>.internal(
-      fixedExpenses,
-      name: r'fixedExpensesProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$fixedExpensesHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  fixedExpenses,
+  name: r'fixedExpensesProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$fixedExpensesHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element

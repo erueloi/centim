@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
+import '../../domain/models/asset.dart';
 import '../../domain/models/category.dart';
 import '../../domain/models/transaction.dart';
+import '../providers/asset_provider.dart';
 import '../providers/auth_providers.dart';
 import '../providers/category_notifier.dart';
 import '../providers/group_providers.dart';
@@ -44,6 +46,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
   bool _isLoading = false;
   bool _isSavingsExpenditure = false;
   String? _selectedSavingsGoalId;
+  String? _selectedAccountId;
 
   @override
   void initState() {
@@ -56,6 +59,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       _isIncome = t.isIncome;
       _selectedDate = t.date;
       _selectedPayerId = t.payer;
+      _selectedAccountId = t.accountId;
 
       // If editing a savings expenditure
       if (t.savingsGoalId != null) {
@@ -151,6 +155,7 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
         payer: payer,
         isIncome: _isIncome,
         savingsGoalId: _isSavingsExpenditure ? _selectedSavingsGoalId : null,
+        accountId: _selectedAccountId,
       );
 
       final notifier = ref.read(transactionNotifierProvider.notifier);
@@ -613,6 +618,80 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         },
                       ),
                     ],
+                    const SizedBox(height: 24),
+
+                    // --- ACCOUNT SELECTOR ---
+                    Text(
+                      'Compte',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final assetsAsync = ref.watch(assetNotifierProvider);
+                        return assetsAsync.when(
+                          data: (assets) {
+                            final liquidAssets = assets
+                                .where((a) =>
+                                    a.type == AssetType.bankAccount ||
+                                    a.type == AssetType.cash)
+                                .toList();
+                            if (liquidAssets.isEmpty) {
+                              return const Text(
+                                'No hi ha comptes líquids disponibles',
+                                style: TextStyle(color: Colors.grey),
+                              );
+                            }
+                            return DropdownButtonFormField<String>(
+                              initialValue: _selectedAccountId,
+                              decoration: InputDecoration(
+                                hintText: 'Selecciona un compte',
+                                filled: true,
+                                fillColor: Colors.white,
+                                prefixIcon: const Icon(
+                                  Icons.account_balance,
+                                  color: Colors.grey,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: const BorderSide(
+                                    color: AppTheme.copper,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                              items: [
+                                const DropdownMenuItem<String>(
+                                  value: null,
+                                  child: Text('Sense compte',
+                                      style: TextStyle(color: Colors.grey)),
+                                ),
+                                ...liquidAssets.map((a) => DropdownMenuItem(
+                                      value: a.id,
+                                      child: Text(
+                                          '${a.name} (${a.amount.toStringAsFixed(2)} €)'),
+                                    )),
+                              ],
+                              onChanged: (v) =>
+                                  setState(() => _selectedAccountId = v),
+                            );
+                          },
+                          loading: () => const LinearProgressIndicator(),
+                          error: (_, __) =>
+                              const Text('Error carregant comptes'),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 24),
 
                     // --- METADATA (Date & Payer) ---

@@ -6,23 +6,20 @@ part of 'transfer_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$transferNotifierHash() => r'89916fae064677e2144cf9796dc4f004396b2e26';
+String _$transferNotifierHash() => r'8f8ed146fdbc4ded34d374aa454e77235deaa8f7';
 
 /// See also [TransferNotifier].
 @ProviderFor(TransferNotifier)
-final transferNotifierProvider =
-    AutoDisposeStreamNotifierProvider<
-      TransferNotifier,
-      List<Transfer>
-    >.internal(
-      TransferNotifier.new,
-      name: r'transferNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$transferNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final transferNotifierProvider = AutoDisposeStreamNotifierProvider<
+    TransferNotifier, List<Transfer>>.internal(
+  TransferNotifier.new,
+  name: r'transferNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$transferNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$TransferNotifier = AutoDisposeStreamNotifier<List<Transfer>>;
 // ignore_for_file: type=lint

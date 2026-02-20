@@ -11,19 +11,16 @@ String _$savingsGoalNotifierHash() =>
 
 /// See also [SavingsGoalNotifier].
 @ProviderFor(SavingsGoalNotifier)
-final savingsGoalNotifierProvider =
-    AutoDisposeStreamNotifierProvider<
-      SavingsGoalNotifier,
-      List<SavingsGoal>
-    >.internal(
-      SavingsGoalNotifier.new,
-      name: r'savingsGoalNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$savingsGoalNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final savingsGoalNotifierProvider = AutoDisposeStreamNotifierProvider<
+    SavingsGoalNotifier, List<SavingsGoal>>.internal(
+  SavingsGoalNotifier.new,
+  name: r'savingsGoalNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$savingsGoalNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$SavingsGoalNotifier = AutoDisposeStreamNotifier<List<SavingsGoal>>;
 // ignore_for_file: type=lint

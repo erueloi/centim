@@ -12,8 +12,7 @@ part of 'transaction_filter.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$TransactionFilter {
@@ -38,21 +37,19 @@ mixin _$TransactionFilter {
 /// @nodoc
 abstract class $TransactionFilterCopyWith<$Res> {
   factory $TransactionFilterCopyWith(
-    TransactionFilter value,
-    $Res Function(TransactionFilter) then,
-  ) = _$TransactionFilterCopyWithImpl<$Res, TransactionFilter>;
+          TransactionFilter value, $Res Function(TransactionFilter) then) =
+      _$TransactionFilterCopyWithImpl<$Res, TransactionFilter>;
   @useResult
-  $Res call({
-    String? categoryId,
-    String? categoryName,
-    String? subCategoryId,
-    String? subCategoryName,
-    String? searchQuery,
-    bool? isIncome,
-    String? payer,
-    double? minAmount,
-    double? maxAmount,
-  });
+  $Res call(
+      {String? categoryId,
+      String? categoryName,
+      String? subCategoryId,
+      String? subCategoryName,
+      String? searchQuery,
+      bool? isIncome,
+      String? payer,
+      double? minAmount,
+      double? maxAmount});
 }
 
 /// @nodoc
@@ -80,80 +77,74 @@ class _$TransactionFilterCopyWithImpl<$Res, $Val extends TransactionFilter>
     Object? minAmount = freezed,
     Object? maxAmount = freezed,
   }) {
-    return _then(
-      _value.copyWith(
-            categoryId: freezed == categoryId
-                ? _value.categoryId
-                : categoryId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            categoryName: freezed == categoryName
-                ? _value.categoryName
-                : categoryName // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            subCategoryId: freezed == subCategoryId
-                ? _value.subCategoryId
-                : subCategoryId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            subCategoryName: freezed == subCategoryName
-                ? _value.subCategoryName
-                : subCategoryName // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            searchQuery: freezed == searchQuery
-                ? _value.searchQuery
-                : searchQuery // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            isIncome: freezed == isIncome
-                ? _value.isIncome
-                : isIncome // ignore: cast_nullable_to_non_nullable
-                      as bool?,
-            payer: freezed == payer
-                ? _value.payer
-                : payer // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            minAmount: freezed == minAmount
-                ? _value.minAmount
-                : minAmount // ignore: cast_nullable_to_non_nullable
-                      as double?,
-            maxAmount: freezed == maxAmount
-                ? _value.maxAmount
-                : maxAmount // ignore: cast_nullable_to_non_nullable
-                      as double?,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      categoryId: freezed == categoryId
+          ? _value.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      categoryName: freezed == categoryName
+          ? _value.categoryName
+          : categoryName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      subCategoryId: freezed == subCategoryId
+          ? _value.subCategoryId
+          : subCategoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      subCategoryName: freezed == subCategoryName
+          ? _value.subCategoryName
+          : subCategoryName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      searchQuery: freezed == searchQuery
+          ? _value.searchQuery
+          : searchQuery // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isIncome: freezed == isIncome
+          ? _value.isIncome
+          : isIncome // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      payer: freezed == payer
+          ? _value.payer
+          : payer // ignore: cast_nullable_to_non_nullable
+              as String?,
+      minAmount: freezed == minAmount
+          ? _value.minAmount
+          : minAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      maxAmount: freezed == maxAmount
+          ? _value.maxAmount
+          : maxAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+    ) as $Val);
   }
 }
 
 /// @nodoc
 abstract class _$$TransactionFilterImplCopyWith<$Res>
     implements $TransactionFilterCopyWith<$Res> {
-  factory _$$TransactionFilterImplCopyWith(
-    _$TransactionFilterImpl value,
-    $Res Function(_$TransactionFilterImpl) then,
-  ) = __$$TransactionFilterImplCopyWithImpl<$Res>;
+  factory _$$TransactionFilterImplCopyWith(_$TransactionFilterImpl value,
+          $Res Function(_$TransactionFilterImpl) then) =
+      __$$TransactionFilterImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String? categoryId,
-    String? categoryName,
-    String? subCategoryId,
-    String? subCategoryName,
-    String? searchQuery,
-    bool? isIncome,
-    String? payer,
-    double? minAmount,
-    double? maxAmount,
-  });
+  $Res call(
+      {String? categoryId,
+      String? categoryName,
+      String? subCategoryId,
+      String? subCategoryName,
+      String? searchQuery,
+      bool? isIncome,
+      String? payer,
+      double? minAmount,
+      double? maxAmount});
 }
 
 /// @nodoc
 class __$$TransactionFilterImplCopyWithImpl<$Res>
     extends _$TransactionFilterCopyWithImpl<$Res, _$TransactionFilterImpl>
     implements _$$TransactionFilterImplCopyWith<$Res> {
-  __$$TransactionFilterImplCopyWithImpl(
-    _$TransactionFilterImpl _value,
-    $Res Function(_$TransactionFilterImpl) _then,
-  ) : super(_value, _then);
+  __$$TransactionFilterImplCopyWithImpl(_$TransactionFilterImpl _value,
+      $Res Function(_$TransactionFilterImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of TransactionFilter
   /// with the given fields replaced by the non-null parameter values.
@@ -170,63 +161,60 @@ class __$$TransactionFilterImplCopyWithImpl<$Res>
     Object? minAmount = freezed,
     Object? maxAmount = freezed,
   }) {
-    return _then(
-      _$TransactionFilterImpl(
-        categoryId: freezed == categoryId
-            ? _value.categoryId
-            : categoryId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        categoryName: freezed == categoryName
-            ? _value.categoryName
-            : categoryName // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        subCategoryId: freezed == subCategoryId
-            ? _value.subCategoryId
-            : subCategoryId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        subCategoryName: freezed == subCategoryName
-            ? _value.subCategoryName
-            : subCategoryName // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        searchQuery: freezed == searchQuery
-            ? _value.searchQuery
-            : searchQuery // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        isIncome: freezed == isIncome
-            ? _value.isIncome
-            : isIncome // ignore: cast_nullable_to_non_nullable
-                  as bool?,
-        payer: freezed == payer
-            ? _value.payer
-            : payer // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        minAmount: freezed == minAmount
-            ? _value.minAmount
-            : minAmount // ignore: cast_nullable_to_non_nullable
-                  as double?,
-        maxAmount: freezed == maxAmount
-            ? _value.maxAmount
-            : maxAmount // ignore: cast_nullable_to_non_nullable
-                  as double?,
-      ),
-    );
+    return _then(_$TransactionFilterImpl(
+      categoryId: freezed == categoryId
+          ? _value.categoryId
+          : categoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      categoryName: freezed == categoryName
+          ? _value.categoryName
+          : categoryName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      subCategoryId: freezed == subCategoryId
+          ? _value.subCategoryId
+          : subCategoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      subCategoryName: freezed == subCategoryName
+          ? _value.subCategoryName
+          : subCategoryName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      searchQuery: freezed == searchQuery
+          ? _value.searchQuery
+          : searchQuery // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isIncome: freezed == isIncome
+          ? _value.isIncome
+          : isIncome // ignore: cast_nullable_to_non_nullable
+              as bool?,
+      payer: freezed == payer
+          ? _value.payer
+          : payer // ignore: cast_nullable_to_non_nullable
+              as String?,
+      minAmount: freezed == minAmount
+          ? _value.minAmount
+          : minAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+      maxAmount: freezed == maxAmount
+          ? _value.maxAmount
+          : maxAmount // ignore: cast_nullable_to_non_nullable
+              as double?,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$TransactionFilterImpl implements _TransactionFilter {
-  const _$TransactionFilterImpl({
-    this.categoryId,
-    this.categoryName,
-    this.subCategoryId,
-    this.subCategoryName,
-    this.searchQuery,
-    this.isIncome,
-    this.payer,
-    this.minAmount,
-    this.maxAmount,
-  });
+  const _$TransactionFilterImpl(
+      {this.categoryId,
+      this.categoryName,
+      this.subCategoryId,
+      this.subCategoryName,
+      this.searchQuery,
+      this.isIncome,
+      this.payer,
+      this.minAmount,
+      this.maxAmount});
 
   @override
   final String? categoryId;
@@ -240,7 +228,7 @@ class _$TransactionFilterImpl implements _TransactionFilter {
   final String? searchQuery;
   @override
   final bool? isIncome;
-  // null = all, true = income, false = expense
+// null = all, true = income, false = expense
   @override
   final String? payer;
   @override
@@ -279,17 +267,16 @@ class _$TransactionFilterImpl implements _TransactionFilter {
 
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    categoryId,
-    categoryName,
-    subCategoryId,
-    subCategoryName,
-    searchQuery,
-    isIncome,
-    payer,
-    minAmount,
-    maxAmount,
-  );
+      runtimeType,
+      categoryId,
+      categoryName,
+      subCategoryId,
+      subCategoryName,
+      searchQuery,
+      isIncome,
+      payer,
+      minAmount,
+      maxAmount);
 
   /// Create a copy of TransactionFilter
   /// with the given fields replaced by the non-null parameter values.
@@ -298,23 +285,20 @@ class _$TransactionFilterImpl implements _TransactionFilter {
   @pragma('vm:prefer-inline')
   _$$TransactionFilterImplCopyWith<_$TransactionFilterImpl> get copyWith =>
       __$$TransactionFilterImplCopyWithImpl<_$TransactionFilterImpl>(
-        this,
-        _$identity,
-      );
+          this, _$identity);
 }
 
 abstract class _TransactionFilter implements TransactionFilter {
-  const factory _TransactionFilter({
-    final String? categoryId,
-    final String? categoryName,
-    final String? subCategoryId,
-    final String? subCategoryName,
-    final String? searchQuery,
-    final bool? isIncome,
-    final String? payer,
-    final double? minAmount,
-    final double? maxAmount,
-  }) = _$TransactionFilterImpl;
+  const factory _TransactionFilter(
+      {final String? categoryId,
+      final String? categoryName,
+      final String? subCategoryId,
+      final String? subCategoryName,
+      final String? searchQuery,
+      final bool? isIncome,
+      final String? payer,
+      final double? minAmount,
+      final double? maxAmount}) = _$TransactionFilterImpl;
 
   @override
   String? get categoryId;

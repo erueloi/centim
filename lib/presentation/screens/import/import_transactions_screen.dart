@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../domain/models/asset.dart';
 import '../../../domain/models/transaction.dart';
 import '../../../domain/services/import_service.dart';
-import '../../../data/providers/repository_providers.dart';
+import '../../providers/asset_provider.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/category_notifier.dart';
+import '../../providers/transaction_notifier.dart';
 import '../../../domain/models/category.dart';
 
 class ImportTransactionsScreen extends ConsumerStatefulWidget {
@@ -24,6 +26,7 @@ class _ImportTransactionsScreenState
     extends ConsumerState<ImportTransactionsScreen> {
   late List<ImportedTransaction> _items;
   bool _isSaving = false;
+  String? _selectedAccountId;
 
   @override
   void initState() {
@@ -55,8 +58,8 @@ class _ImportTransactionsScreenState
       final groupId = await ref.read(currentGroupIdProvider.future);
       if (groupId == null) throw Exception("No group ID");
 
-      final repo = ref.read(transactionRepositoryProvider);
       final categories = await ref.read(categoryNotifierProvider.future);
+      final notifier = ref.read(transactionNotifierProvider.notifier);
 
       int count = 0;
       for (final item in selected) {
@@ -87,7 +90,8 @@ class _ImportTransactionsScreenState
             if (subId.isNotEmpty) {
               final sub = cat.subcategories.firstWhere(
                 (s) => s.id == subId,
-                orElse: () => const SubCategory(id: '', name: '', monthlyBudget: 0),
+                orElse: () =>
+                    const SubCategory(id: '', name: '', monthlyBudget: 0),
               );
               if (sub.id.isNotEmpty) subName = sub.name;
             }
@@ -125,7 +129,8 @@ class _ImportTransactionsScreenState
         // Checked Transaction model: `required double amount`
         // `required bool isIncome`
         // Usually amount is absolute value.
-        await repo.addTransaction(tx.copyWith(amount: item.amount.abs()));
+        await notifier.addTransaction(tx.copyWith(
+            amount: item.amount.abs(), accountId: _selectedAccountId));
         count++;
       }
 
@@ -228,14 +233,68 @@ class _ImportTransactionsScreenState
                   ],
                 ),
               ),
+              // --- GLOBAL ACCOUNT SELECTOR ---
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                child: Consumer(
+                  builder: (context, ref, _) {
+                    final assetsAsync = ref.watch(assetNotifierProvider);
+                    return assetsAsync.when(
+                      data: (assets) {
+                        final liquidAssets = assets
+                            .where((a) =>
+                                a.type == AssetType.bankAccount ||
+                                a.type == AssetType.cash)
+                            .toList();
+                        if (liquidAssets.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return DropdownButtonFormField<String>(
+                          initialValue: _selectedAccountId,
+                          decoration: InputDecoration(
+                            labelText: 'Compte destí / origen',
+                            hintText: 'Selecciona un compte',
+                            filled: true,
+                            fillColor: Colors.white,
+                            prefixIcon: const Icon(
+                              Icons.account_balance,
+                              color: Colors.grey,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          items: [
+                            const DropdownMenuItem<String>(
+                              value: null,
+                              child: Text('Sense compte',
+                                  style: TextStyle(color: Colors.grey)),
+                            ),
+                            ...liquidAssets.map((a) => DropdownMenuItem(
+                                  value: a.id,
+                                  child: Text(
+                                      '${a.name} (${a.amount.toStringAsFixed(2)} €)'),
+                                )),
+                          ],
+                          onChanged: (v) =>
+                              setState(() => _selectedAccountId = v),
+                        );
+                      },
+                      loading: () => const LinearProgressIndicator(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    );
+                  },
+                ),
+              ),
               Expanded(
                 child: ListView.builder(
                   itemCount: _items.length,
                   itemBuilder: (context, index) {
                     final item = _items[index];
                     // Section header when transitioning from duplicates to new
-                    final showNewHeader =
-                        index > 0 &&
+                    final showNewHeader = index > 0 &&
                         _items[index - 1].isDuplicate &&
                         !item.isDuplicate;
                     final showDupHeader = index == 0 && item.isDuplicate;
@@ -347,8 +406,8 @@ class _TransactionImportRowState extends State<_TransactionImportRow> {
         : null;
     final subCategoryId =
         (item.subCategoryId != null && item.subCategoryId!.isNotEmpty)
-        ? item.subCategoryId
-        : null;
+            ? item.subCategoryId
+            : null;
 
     Category? selectedCat;
 

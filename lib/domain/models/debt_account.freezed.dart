@@ -12,8 +12,7 @@ part of 'debt_account.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 DebtAccount _$DebtAccountFromJson(Map<String, dynamic> json) {
   return _DebtAccount.fromJson(json);
@@ -47,21 +46,19 @@ mixin _$DebtAccount {
 /// @nodoc
 abstract class $DebtAccountCopyWith<$Res> {
   factory $DebtAccountCopyWith(
-    DebtAccount value,
-    $Res Function(DebtAccount) then,
-  ) = _$DebtAccountCopyWithImpl<$Res, DebtAccount>;
+          DebtAccount value, $Res Function(DebtAccount) then) =
+      _$DebtAccountCopyWithImpl<$Res, DebtAccount>;
   @useResult
-  $Res call({
-    String id,
-    String name,
-    String? bankName,
-    double currentBalance,
-    double originalAmount,
-    double interestRate,
-    double monthlyInstallment,
-    DateTime? endDate,
-    String? linkedExpenseCategoryId,
-  });
+  $Res call(
+      {String id,
+      String name,
+      String? bankName,
+      double currentBalance,
+      double originalAmount,
+      double interestRate,
+      double monthlyInstallment,
+      DateTime? endDate,
+      String? linkedExpenseCategoryId});
 }
 
 /// @nodoc
@@ -89,47 +86,44 @@ class _$DebtAccountCopyWithImpl<$Res, $Val extends DebtAccount>
     Object? endDate = freezed,
     Object? linkedExpenseCategoryId = freezed,
   }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            name: null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                      as String,
-            bankName: freezed == bankName
-                ? _value.bankName
-                : bankName // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            currentBalance: null == currentBalance
-                ? _value.currentBalance
-                : currentBalance // ignore: cast_nullable_to_non_nullable
-                      as double,
-            originalAmount: null == originalAmount
-                ? _value.originalAmount
-                : originalAmount // ignore: cast_nullable_to_non_nullable
-                      as double,
-            interestRate: null == interestRate
-                ? _value.interestRate
-                : interestRate // ignore: cast_nullable_to_non_nullable
-                      as double,
-            monthlyInstallment: null == monthlyInstallment
-                ? _value.monthlyInstallment
-                : monthlyInstallment // ignore: cast_nullable_to_non_nullable
-                      as double,
-            endDate: freezed == endDate
-                ? _value.endDate
-                : endDate // ignore: cast_nullable_to_non_nullable
-                      as DateTime?,
-            linkedExpenseCategoryId: freezed == linkedExpenseCategoryId
-                ? _value.linkedExpenseCategoryId
-                : linkedExpenseCategoryId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      bankName: freezed == bankName
+          ? _value.bankName
+          : bankName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      currentBalance: null == currentBalance
+          ? _value.currentBalance
+          : currentBalance // ignore: cast_nullable_to_non_nullable
+              as double,
+      originalAmount: null == originalAmount
+          ? _value.originalAmount
+          : originalAmount // ignore: cast_nullable_to_non_nullable
+              as double,
+      interestRate: null == interestRate
+          ? _value.interestRate
+          : interestRate // ignore: cast_nullable_to_non_nullable
+              as double,
+      monthlyInstallment: null == monthlyInstallment
+          ? _value.monthlyInstallment
+          : monthlyInstallment // ignore: cast_nullable_to_non_nullable
+              as double,
+      endDate: freezed == endDate
+          ? _value.endDate
+          : endDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      linkedExpenseCategoryId: freezed == linkedExpenseCategoryId
+          ? _value.linkedExpenseCategoryId
+          : linkedExpenseCategoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
   }
 }
 
@@ -137,22 +131,20 @@ class _$DebtAccountCopyWithImpl<$Res, $Val extends DebtAccount>
 abstract class _$$DebtAccountImplCopyWith<$Res>
     implements $DebtAccountCopyWith<$Res> {
   factory _$$DebtAccountImplCopyWith(
-    _$DebtAccountImpl value,
-    $Res Function(_$DebtAccountImpl) then,
-  ) = __$$DebtAccountImplCopyWithImpl<$Res>;
+          _$DebtAccountImpl value, $Res Function(_$DebtAccountImpl) then) =
+      __$$DebtAccountImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String id,
-    String name,
-    String? bankName,
-    double currentBalance,
-    double originalAmount,
-    double interestRate,
-    double monthlyInstallment,
-    DateTime? endDate,
-    String? linkedExpenseCategoryId,
-  });
+  $Res call(
+      {String id,
+      String name,
+      String? bankName,
+      double currentBalance,
+      double originalAmount,
+      double interestRate,
+      double monthlyInstallment,
+      DateTime? endDate,
+      String? linkedExpenseCategoryId});
 }
 
 /// @nodoc
@@ -160,9 +152,8 @@ class __$$DebtAccountImplCopyWithImpl<$Res>
     extends _$DebtAccountCopyWithImpl<$Res, _$DebtAccountImpl>
     implements _$$DebtAccountImplCopyWith<$Res> {
   __$$DebtAccountImplCopyWithImpl(
-    _$DebtAccountImpl _value,
-    $Res Function(_$DebtAccountImpl) _then,
-  ) : super(_value, _then);
+      _$DebtAccountImpl _value, $Res Function(_$DebtAccountImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of DebtAccount
   /// with the given fields replaced by the non-null parameter values.
@@ -179,63 +170,60 @@ class __$$DebtAccountImplCopyWithImpl<$Res>
     Object? endDate = freezed,
     Object? linkedExpenseCategoryId = freezed,
   }) {
-    return _then(
-      _$DebtAccountImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        bankName: freezed == bankName
-            ? _value.bankName
-            : bankName // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        currentBalance: null == currentBalance
-            ? _value.currentBalance
-            : currentBalance // ignore: cast_nullable_to_non_nullable
-                  as double,
-        originalAmount: null == originalAmount
-            ? _value.originalAmount
-            : originalAmount // ignore: cast_nullable_to_non_nullable
-                  as double,
-        interestRate: null == interestRate
-            ? _value.interestRate
-            : interestRate // ignore: cast_nullable_to_non_nullable
-                  as double,
-        monthlyInstallment: null == monthlyInstallment
-            ? _value.monthlyInstallment
-            : monthlyInstallment // ignore: cast_nullable_to_non_nullable
-                  as double,
-        endDate: freezed == endDate
-            ? _value.endDate
-            : endDate // ignore: cast_nullable_to_non_nullable
-                  as DateTime?,
-        linkedExpenseCategoryId: freezed == linkedExpenseCategoryId
-            ? _value.linkedExpenseCategoryId
-            : linkedExpenseCategoryId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-      ),
-    );
+    return _then(_$DebtAccountImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      bankName: freezed == bankName
+          ? _value.bankName
+          : bankName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      currentBalance: null == currentBalance
+          ? _value.currentBalance
+          : currentBalance // ignore: cast_nullable_to_non_nullable
+              as double,
+      originalAmount: null == originalAmount
+          ? _value.originalAmount
+          : originalAmount // ignore: cast_nullable_to_non_nullable
+              as double,
+      interestRate: null == interestRate
+          ? _value.interestRate
+          : interestRate // ignore: cast_nullable_to_non_nullable
+              as double,
+      monthlyInstallment: null == monthlyInstallment
+          ? _value.monthlyInstallment
+          : monthlyInstallment // ignore: cast_nullable_to_non_nullable
+              as double,
+      endDate: freezed == endDate
+          ? _value.endDate
+          : endDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      linkedExpenseCategoryId: freezed == linkedExpenseCategoryId
+          ? _value.linkedExpenseCategoryId
+          : linkedExpenseCategoryId // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$DebtAccountImpl implements _DebtAccount {
-  const _$DebtAccountImpl({
-    required this.id,
-    required this.name,
-    this.bankName,
-    required this.currentBalance,
-    required this.originalAmount,
-    required this.interestRate,
-    required this.monthlyInstallment,
-    this.endDate,
-    this.linkedExpenseCategoryId,
-  });
+  const _$DebtAccountImpl(
+      {required this.id,
+      required this.name,
+      this.bankName,
+      required this.currentBalance,
+      required this.originalAmount,
+      required this.interestRate,
+      required this.monthlyInstallment,
+      this.endDate,
+      this.linkedExpenseCategoryId});
 
   factory _$DebtAccountImpl.fromJson(Map<String, dynamic> json) =>
       _$$DebtAccountImplFromJson(json);
@@ -244,25 +232,25 @@ class _$DebtAccountImpl implements _DebtAccount {
   final String id;
   @override
   final String name;
-  // ex: 'Préstec Cotxe'
+// ex: 'Préstec Cotxe'
   @override
   final String? bankName;
-  // ex: 'CaixaBank'
+// ex: 'CaixaBank'
   @override
   final double currentBalance;
-  // Capital Pendent
+// Capital Pendent
   @override
   final double originalAmount;
-  // Capital Inicial
+// Capital Inicial
   @override
   final double interestRate;
-  // TAE/TIN
+// TAE/TIN
   @override
   final double monthlyInstallment;
-  // Quota mensual
+// Quota mensual
   @override
   final DateTime? endDate;
-  // Data venciment
+// Data venciment
   @override
   final String? linkedExpenseCategoryId;
 
@@ -290,26 +278,23 @@ class _$DebtAccountImpl implements _DebtAccount {
                 other.monthlyInstallment == monthlyInstallment) &&
             (identical(other.endDate, endDate) || other.endDate == endDate) &&
             (identical(
-                  other.linkedExpenseCategoryId,
-                  linkedExpenseCategoryId,
-                ) ||
+                    other.linkedExpenseCategoryId, linkedExpenseCategoryId) ||
                 other.linkedExpenseCategoryId == linkedExpenseCategoryId));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    name,
-    bankName,
-    currentBalance,
-    originalAmount,
-    interestRate,
-    monthlyInstallment,
-    endDate,
-    linkedExpenseCategoryId,
-  );
+      runtimeType,
+      id,
+      name,
+      bankName,
+      currentBalance,
+      originalAmount,
+      interestRate,
+      monthlyInstallment,
+      endDate,
+      linkedExpenseCategoryId);
 
   /// Create a copy of DebtAccount
   /// with the given fields replaced by the non-null parameter values.
@@ -321,22 +306,23 @@ class _$DebtAccountImpl implements _DebtAccount {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$DebtAccountImplToJson(this);
+    return _$$DebtAccountImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _DebtAccount implements DebtAccount {
-  const factory _DebtAccount({
-    required final String id,
-    required final String name,
-    final String? bankName,
-    required final double currentBalance,
-    required final double originalAmount,
-    required final double interestRate,
-    required final double monthlyInstallment,
-    final DateTime? endDate,
-    final String? linkedExpenseCategoryId,
-  }) = _$DebtAccountImpl;
+  const factory _DebtAccount(
+      {required final String id,
+      required final String name,
+      final String? bankName,
+      required final double currentBalance,
+      required final double originalAmount,
+      required final double interestRate,
+      required final double monthlyInstallment,
+      final DateTime? endDate,
+      final String? linkedExpenseCategoryId}) = _$DebtAccountImpl;
 
   factory _DebtAccount.fromJson(Map<String, dynamic> json) =
       _$DebtAccountImpl.fromJson;

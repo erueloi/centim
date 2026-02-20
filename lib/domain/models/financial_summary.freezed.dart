@@ -12,8 +12,7 @@ part of 'financial_summary.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$FinancialSummary {
@@ -39,22 +38,20 @@ mixin _$FinancialSummary {
 /// @nodoc
 abstract class $FinancialSummaryCopyWith<$Res> {
   factory $FinancialSummaryCopyWith(
-    FinancialSummary value,
-    $Res Function(FinancialSummary) then,
-  ) = _$FinancialSummaryCopyWithImpl<$Res, FinancialSummary>;
+          FinancialSummary value, $Res Function(FinancialSummary) then) =
+      _$FinancialSummaryCopyWithImpl<$Res, FinancialSummary>;
   @useResult
-  $Res call({
-    double totalNetWorth,
-    double totalAssets,
-    double totalLiabilities,
-    double equityRatio,
-    double monthlyIncome,
-    double monthlyExpenses,
-    double availableToSpend,
-    double savingsPercentage,
-    double debtPercentage,
-    double livingExpensesPercentage,
-  });
+  $Res call(
+      {double totalNetWorth,
+      double totalAssets,
+      double totalLiabilities,
+      double equityRatio,
+      double monthlyIncome,
+      double monthlyExpenses,
+      double availableToSpend,
+      double savingsPercentage,
+      double debtPercentage,
+      double livingExpensesPercentage});
 }
 
 /// @nodoc
@@ -83,85 +80,79 @@ class _$FinancialSummaryCopyWithImpl<$Res, $Val extends FinancialSummary>
     Object? debtPercentage = null,
     Object? livingExpensesPercentage = null,
   }) {
-    return _then(
-      _value.copyWith(
-            totalNetWorth: null == totalNetWorth
-                ? _value.totalNetWorth
-                : totalNetWorth // ignore: cast_nullable_to_non_nullable
-                      as double,
-            totalAssets: null == totalAssets
-                ? _value.totalAssets
-                : totalAssets // ignore: cast_nullable_to_non_nullable
-                      as double,
-            totalLiabilities: null == totalLiabilities
-                ? _value.totalLiabilities
-                : totalLiabilities // ignore: cast_nullable_to_non_nullable
-                      as double,
-            equityRatio: null == equityRatio
-                ? _value.equityRatio
-                : equityRatio // ignore: cast_nullable_to_non_nullable
-                      as double,
-            monthlyIncome: null == monthlyIncome
-                ? _value.monthlyIncome
-                : monthlyIncome // ignore: cast_nullable_to_non_nullable
-                      as double,
-            monthlyExpenses: null == monthlyExpenses
-                ? _value.monthlyExpenses
-                : monthlyExpenses // ignore: cast_nullable_to_non_nullable
-                      as double,
-            availableToSpend: null == availableToSpend
-                ? _value.availableToSpend
-                : availableToSpend // ignore: cast_nullable_to_non_nullable
-                      as double,
-            savingsPercentage: null == savingsPercentage
-                ? _value.savingsPercentage
-                : savingsPercentage // ignore: cast_nullable_to_non_nullable
-                      as double,
-            debtPercentage: null == debtPercentage
-                ? _value.debtPercentage
-                : debtPercentage // ignore: cast_nullable_to_non_nullable
-                      as double,
-            livingExpensesPercentage: null == livingExpensesPercentage
-                ? _value.livingExpensesPercentage
-                : livingExpensesPercentage // ignore: cast_nullable_to_non_nullable
-                      as double,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      totalNetWorth: null == totalNetWorth
+          ? _value.totalNetWorth
+          : totalNetWorth // ignore: cast_nullable_to_non_nullable
+              as double,
+      totalAssets: null == totalAssets
+          ? _value.totalAssets
+          : totalAssets // ignore: cast_nullable_to_non_nullable
+              as double,
+      totalLiabilities: null == totalLiabilities
+          ? _value.totalLiabilities
+          : totalLiabilities // ignore: cast_nullable_to_non_nullable
+              as double,
+      equityRatio: null == equityRatio
+          ? _value.equityRatio
+          : equityRatio // ignore: cast_nullable_to_non_nullable
+              as double,
+      monthlyIncome: null == monthlyIncome
+          ? _value.monthlyIncome
+          : monthlyIncome // ignore: cast_nullable_to_non_nullable
+              as double,
+      monthlyExpenses: null == monthlyExpenses
+          ? _value.monthlyExpenses
+          : monthlyExpenses // ignore: cast_nullable_to_non_nullable
+              as double,
+      availableToSpend: null == availableToSpend
+          ? _value.availableToSpend
+          : availableToSpend // ignore: cast_nullable_to_non_nullable
+              as double,
+      savingsPercentage: null == savingsPercentage
+          ? _value.savingsPercentage
+          : savingsPercentage // ignore: cast_nullable_to_non_nullable
+              as double,
+      debtPercentage: null == debtPercentage
+          ? _value.debtPercentage
+          : debtPercentage // ignore: cast_nullable_to_non_nullable
+              as double,
+      livingExpensesPercentage: null == livingExpensesPercentage
+          ? _value.livingExpensesPercentage
+          : livingExpensesPercentage // ignore: cast_nullable_to_non_nullable
+              as double,
+    ) as $Val);
   }
 }
 
 /// @nodoc
 abstract class _$$FinancialSummaryImplCopyWith<$Res>
     implements $FinancialSummaryCopyWith<$Res> {
-  factory _$$FinancialSummaryImplCopyWith(
-    _$FinancialSummaryImpl value,
-    $Res Function(_$FinancialSummaryImpl) then,
-  ) = __$$FinancialSummaryImplCopyWithImpl<$Res>;
+  factory _$$FinancialSummaryImplCopyWith(_$FinancialSummaryImpl value,
+          $Res Function(_$FinancialSummaryImpl) then) =
+      __$$FinancialSummaryImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    double totalNetWorth,
-    double totalAssets,
-    double totalLiabilities,
-    double equityRatio,
-    double monthlyIncome,
-    double monthlyExpenses,
-    double availableToSpend,
-    double savingsPercentage,
-    double debtPercentage,
-    double livingExpensesPercentage,
-  });
+  $Res call(
+      {double totalNetWorth,
+      double totalAssets,
+      double totalLiabilities,
+      double equityRatio,
+      double monthlyIncome,
+      double monthlyExpenses,
+      double availableToSpend,
+      double savingsPercentage,
+      double debtPercentage,
+      double livingExpensesPercentage});
 }
 
 /// @nodoc
 class __$$FinancialSummaryImplCopyWithImpl<$Res>
     extends _$FinancialSummaryCopyWithImpl<$Res, _$FinancialSummaryImpl>
     implements _$$FinancialSummaryImplCopyWith<$Res> {
-  __$$FinancialSummaryImplCopyWithImpl(
-    _$FinancialSummaryImpl _value,
-    $Res Function(_$FinancialSummaryImpl) _then,
-  ) : super(_value, _then);
+  __$$FinancialSummaryImplCopyWithImpl(_$FinancialSummaryImpl _value,
+      $Res Function(_$FinancialSummaryImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of FinancialSummary
   /// with the given fields replaced by the non-null parameter values.
@@ -179,68 +170,65 @@ class __$$FinancialSummaryImplCopyWithImpl<$Res>
     Object? debtPercentage = null,
     Object? livingExpensesPercentage = null,
   }) {
-    return _then(
-      _$FinancialSummaryImpl(
-        totalNetWorth: null == totalNetWorth
-            ? _value.totalNetWorth
-            : totalNetWorth // ignore: cast_nullable_to_non_nullable
-                  as double,
-        totalAssets: null == totalAssets
-            ? _value.totalAssets
-            : totalAssets // ignore: cast_nullable_to_non_nullable
-                  as double,
-        totalLiabilities: null == totalLiabilities
-            ? _value.totalLiabilities
-            : totalLiabilities // ignore: cast_nullable_to_non_nullable
-                  as double,
-        equityRatio: null == equityRatio
-            ? _value.equityRatio
-            : equityRatio // ignore: cast_nullable_to_non_nullable
-                  as double,
-        monthlyIncome: null == monthlyIncome
-            ? _value.monthlyIncome
-            : monthlyIncome // ignore: cast_nullable_to_non_nullable
-                  as double,
-        monthlyExpenses: null == monthlyExpenses
-            ? _value.monthlyExpenses
-            : monthlyExpenses // ignore: cast_nullable_to_non_nullable
-                  as double,
-        availableToSpend: null == availableToSpend
-            ? _value.availableToSpend
-            : availableToSpend // ignore: cast_nullable_to_non_nullable
-                  as double,
-        savingsPercentage: null == savingsPercentage
-            ? _value.savingsPercentage
-            : savingsPercentage // ignore: cast_nullable_to_non_nullable
-                  as double,
-        debtPercentage: null == debtPercentage
-            ? _value.debtPercentage
-            : debtPercentage // ignore: cast_nullable_to_non_nullable
-                  as double,
-        livingExpensesPercentage: null == livingExpensesPercentage
-            ? _value.livingExpensesPercentage
-            : livingExpensesPercentage // ignore: cast_nullable_to_non_nullable
-                  as double,
-      ),
-    );
+    return _then(_$FinancialSummaryImpl(
+      totalNetWorth: null == totalNetWorth
+          ? _value.totalNetWorth
+          : totalNetWorth // ignore: cast_nullable_to_non_nullable
+              as double,
+      totalAssets: null == totalAssets
+          ? _value.totalAssets
+          : totalAssets // ignore: cast_nullable_to_non_nullable
+              as double,
+      totalLiabilities: null == totalLiabilities
+          ? _value.totalLiabilities
+          : totalLiabilities // ignore: cast_nullable_to_non_nullable
+              as double,
+      equityRatio: null == equityRatio
+          ? _value.equityRatio
+          : equityRatio // ignore: cast_nullable_to_non_nullable
+              as double,
+      monthlyIncome: null == monthlyIncome
+          ? _value.monthlyIncome
+          : monthlyIncome // ignore: cast_nullable_to_non_nullable
+              as double,
+      monthlyExpenses: null == monthlyExpenses
+          ? _value.monthlyExpenses
+          : monthlyExpenses // ignore: cast_nullable_to_non_nullable
+              as double,
+      availableToSpend: null == availableToSpend
+          ? _value.availableToSpend
+          : availableToSpend // ignore: cast_nullable_to_non_nullable
+              as double,
+      savingsPercentage: null == savingsPercentage
+          ? _value.savingsPercentage
+          : savingsPercentage // ignore: cast_nullable_to_non_nullable
+              as double,
+      debtPercentage: null == debtPercentage
+          ? _value.debtPercentage
+          : debtPercentage // ignore: cast_nullable_to_non_nullable
+              as double,
+      livingExpensesPercentage: null == livingExpensesPercentage
+          ? _value.livingExpensesPercentage
+          : livingExpensesPercentage // ignore: cast_nullable_to_non_nullable
+              as double,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$FinancialSummaryImpl implements _FinancialSummary {
-  const _$FinancialSummaryImpl({
-    required this.totalNetWorth,
-    required this.totalAssets,
-    required this.totalLiabilities,
-    required this.equityRatio,
-    required this.monthlyIncome,
-    required this.monthlyExpenses,
-    required this.availableToSpend,
-    required this.savingsPercentage,
-    required this.debtPercentage,
-    required this.livingExpensesPercentage,
-  });
+  const _$FinancialSummaryImpl(
+      {required this.totalNetWorth,
+      required this.totalAssets,
+      required this.totalLiabilities,
+      required this.equityRatio,
+      required this.monthlyIncome,
+      required this.monthlyExpenses,
+      required this.availableToSpend,
+      required this.savingsPercentage,
+      required this.debtPercentage,
+      required this.livingExpensesPercentage});
 
   @override
   final double totalNetWorth;
@@ -250,7 +238,7 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
   final double totalLiabilities;
   @override
   final double equityRatio;
-  // (Assets - Liabilities) / Assets
+// (Assets - Liabilities) / Assets
   @override
   final double monthlyIncome;
   @override
@@ -293,26 +281,23 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
             (identical(other.debtPercentage, debtPercentage) ||
                 other.debtPercentage == debtPercentage) &&
             (identical(
-                  other.livingExpensesPercentage,
-                  livingExpensesPercentage,
-                ) ||
+                    other.livingExpensesPercentage, livingExpensesPercentage) ||
                 other.livingExpensesPercentage == livingExpensesPercentage));
   }
 
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    totalNetWorth,
-    totalAssets,
-    totalLiabilities,
-    equityRatio,
-    monthlyIncome,
-    monthlyExpenses,
-    availableToSpend,
-    savingsPercentage,
-    debtPercentage,
-    livingExpensesPercentage,
-  );
+      runtimeType,
+      totalNetWorth,
+      totalAssets,
+      totalLiabilities,
+      equityRatio,
+      monthlyIncome,
+      monthlyExpenses,
+      availableToSpend,
+      savingsPercentage,
+      debtPercentage,
+      livingExpensesPercentage);
 
   /// Create a copy of FinancialSummary
   /// with the given fields replaced by the non-null parameter values.
@@ -321,24 +306,21 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
   @pragma('vm:prefer-inline')
   _$$FinancialSummaryImplCopyWith<_$FinancialSummaryImpl> get copyWith =>
       __$$FinancialSummaryImplCopyWithImpl<_$FinancialSummaryImpl>(
-        this,
-        _$identity,
-      );
+          this, _$identity);
 }
 
 abstract class _FinancialSummary implements FinancialSummary {
-  const factory _FinancialSummary({
-    required final double totalNetWorth,
-    required final double totalAssets,
-    required final double totalLiabilities,
-    required final double equityRatio,
-    required final double monthlyIncome,
-    required final double monthlyExpenses,
-    required final double availableToSpend,
-    required final double savingsPercentage,
-    required final double debtPercentage,
-    required final double livingExpensesPercentage,
-  }) = _$FinancialSummaryImpl;
+  const factory _FinancialSummary(
+      {required final double totalNetWorth,
+      required final double totalAssets,
+      required final double totalLiabilities,
+      required final double equityRatio,
+      required final double monthlyIncome,
+      required final double monthlyExpenses,
+      required final double availableToSpend,
+      required final double savingsPercentage,
+      required final double debtPercentage,
+      required final double livingExpensesPercentage}) = _$FinancialSummaryImpl;
 
   @override
   double get totalNetWorth;

@@ -6,20 +6,19 @@ part of 'debt_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$debtNotifierHash() => r'b123fdf4cd00a4a3a593311dad9151a006d04b29';
+String _$debtNotifierHash() => r'455b1afeb961d0e9206d68eb926fbe804ce6e973';
 
 /// See also [DebtNotifier].
 @ProviderFor(DebtNotifier)
 final debtNotifierProvider =
     AutoDisposeStreamNotifierProvider<DebtNotifier, List<DebtAccount>>.internal(
-      DebtNotifier.new,
-      name: r'debtNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$debtNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  DebtNotifier.new,
+  name: r'debtNotifierProvider',
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$debtNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$DebtNotifier = AutoDisposeStreamNotifier<List<DebtAccount>>;
 // ignore_for_file: type=lint

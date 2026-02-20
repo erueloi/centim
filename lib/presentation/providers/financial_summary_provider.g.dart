@@ -11,19 +11,16 @@ String _$financialSummaryNotifierHash() =>
 
 /// See also [FinancialSummaryNotifier].
 @ProviderFor(FinancialSummaryNotifier)
-final financialSummaryNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<
-      FinancialSummaryNotifier,
-      FinancialSummary
-    >.internal(
-      FinancialSummaryNotifier.new,
-      name: r'financialSummaryNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$financialSummaryNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final financialSummaryNotifierProvider = AutoDisposeAsyncNotifierProvider<
+    FinancialSummaryNotifier, FinancialSummary>.internal(
+  FinancialSummaryNotifier.new,
+  name: r'financialSummaryNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$financialSummaryNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$FinancialSummaryNotifier = AutoDisposeAsyncNotifier<FinancialSummary>;
 // ignore_for_file: type=lint

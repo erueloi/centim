@@ -11,19 +11,16 @@ String _$transactionNotifierHash() =>
 
 /// See also [TransactionNotifier].
 @ProviderFor(TransactionNotifier)
-final transactionNotifierProvider =
-    AutoDisposeStreamNotifierProvider<
-      TransactionNotifier,
-      List<Transaction>
-    >.internal(
-      TransactionNotifier.new,
-      name: r'transactionNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$transactionNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final transactionNotifierProvider = AutoDisposeStreamNotifierProvider<
+    TransactionNotifier, List<Transaction>>.internal(
+  TransactionNotifier.new,
+  name: r'transactionNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$transactionNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$TransactionNotifier = AutoDisposeStreamNotifier<List<Transaction>>;
 // ignore_for_file: type=lint

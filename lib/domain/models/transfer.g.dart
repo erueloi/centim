@@ -15,9 +15,7 @@ _$TransferImpl _$$TransferImplFromJson(Map<String, dynamic> json) =>
       sourceAssetId: json['sourceAssetId'] as String,
       sourceAssetName: json['sourceAssetName'] as String,
       destinationType: $enumDecode(
-        _$TransferDestinationTypeEnumMap,
-        json['destinationType'],
-      ),
+          _$TransferDestinationTypeEnumMap, json['destinationType']),
       destinationId: json['destinationId'] as String,
       destinationName: json['destinationName'] as String,
       note: json['note'] as String?,

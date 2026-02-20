@@ -12,8 +12,7 @@ part of 'category.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 Category _$CategoryFromJson(Map<String, dynamic> json) {
   return _Category.fromJson(json);
@@ -45,15 +44,14 @@ abstract class $CategoryCopyWith<$Res> {
   factory $CategoryCopyWith(Category value, $Res Function(Category) then) =
       _$CategoryCopyWithImpl<$Res, Category>;
   @useResult
-  $Res call({
-    String id,
-    String name,
-    String icon,
-    List<SubCategory> subcategories,
-    TransactionType type,
-    int? order,
-    int? color,
-  });
+  $Res call(
+      {String id,
+      String name,
+      String icon,
+      List<SubCategory> subcategories,
+      TransactionType type,
+      int? order,
+      int? color});
 }
 
 /// @nodoc
@@ -79,39 +77,36 @@ class _$CategoryCopyWithImpl<$Res, $Val extends Category>
     Object? order = freezed,
     Object? color = freezed,
   }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            name: null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                      as String,
-            icon: null == icon
-                ? _value.icon
-                : icon // ignore: cast_nullable_to_non_nullable
-                      as String,
-            subcategories: null == subcategories
-                ? _value.subcategories
-                : subcategories // ignore: cast_nullable_to_non_nullable
-                      as List<SubCategory>,
-            type: null == type
-                ? _value.type
-                : type // ignore: cast_nullable_to_non_nullable
-                      as TransactionType,
-            order: freezed == order
-                ? _value.order
-                : order // ignore: cast_nullable_to_non_nullable
-                      as int?,
-            color: freezed == color
-                ? _value.color
-                : color // ignore: cast_nullable_to_non_nullable
-                      as int?,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      icon: null == icon
+          ? _value.icon
+          : icon // ignore: cast_nullable_to_non_nullable
+              as String,
+      subcategories: null == subcategories
+          ? _value.subcategories
+          : subcategories // ignore: cast_nullable_to_non_nullable
+              as List<SubCategory>,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as TransactionType,
+      order: freezed == order
+          ? _value.order
+          : order // ignore: cast_nullable_to_non_nullable
+              as int?,
+      color: freezed == color
+          ? _value.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ) as $Val);
   }
 }
 
@@ -119,20 +114,18 @@ class _$CategoryCopyWithImpl<$Res, $Val extends Category>
 abstract class _$$CategoryImplCopyWith<$Res>
     implements $CategoryCopyWith<$Res> {
   factory _$$CategoryImplCopyWith(
-    _$CategoryImpl value,
-    $Res Function(_$CategoryImpl) then,
-  ) = __$$CategoryImplCopyWithImpl<$Res>;
+          _$CategoryImpl value, $Res Function(_$CategoryImpl) then) =
+      __$$CategoryImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String id,
-    String name,
-    String icon,
-    List<SubCategory> subcategories,
-    TransactionType type,
-    int? order,
-    int? color,
-  });
+  $Res call(
+      {String id,
+      String name,
+      String icon,
+      List<SubCategory> subcategories,
+      TransactionType type,
+      int? order,
+      int? color});
 }
 
 /// @nodoc
@@ -140,9 +133,8 @@ class __$$CategoryImplCopyWithImpl<$Res>
     extends _$CategoryCopyWithImpl<$Res, _$CategoryImpl>
     implements _$$CategoryImplCopyWith<$Res> {
   __$$CategoryImplCopyWithImpl(
-    _$CategoryImpl _value,
-    $Res Function(_$CategoryImpl) _then,
-  ) : super(_value, _then);
+      _$CategoryImpl _value, $Res Function(_$CategoryImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of Category
   /// with the given fields replaced by the non-null parameter values.
@@ -157,53 +149,51 @@ class __$$CategoryImplCopyWithImpl<$Res>
     Object? order = freezed,
     Object? color = freezed,
   }) {
-    return _then(
-      _$CategoryImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        icon: null == icon
-            ? _value.icon
-            : icon // ignore: cast_nullable_to_non_nullable
-                  as String,
-        subcategories: null == subcategories
-            ? _value._subcategories
-            : subcategories // ignore: cast_nullable_to_non_nullable
-                  as List<SubCategory>,
-        type: null == type
-            ? _value.type
-            : type // ignore: cast_nullable_to_non_nullable
-                  as TransactionType,
-        order: freezed == order
-            ? _value.order
-            : order // ignore: cast_nullable_to_non_nullable
-                  as int?,
-        color: freezed == color
-            ? _value.color
-            : color // ignore: cast_nullable_to_non_nullable
-                  as int?,
-      ),
-    );
+    return _then(_$CategoryImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      icon: null == icon
+          ? _value.icon
+          : icon // ignore: cast_nullable_to_non_nullable
+              as String,
+      subcategories: null == subcategories
+          ? _value._subcategories
+          : subcategories // ignore: cast_nullable_to_non_nullable
+              as List<SubCategory>,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as TransactionType,
+      order: freezed == order
+          ? _value.order
+          : order // ignore: cast_nullable_to_non_nullable
+              as int?,
+      color: freezed == color
+          ? _value.color
+          : color // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$CategoryImpl implements _Category {
-  const _$CategoryImpl({
-    required this.id,
-    required this.name,
-    required this.icon,
-    final List<SubCategory> subcategories = const [],
-    this.type = TransactionType.expense,
-    this.order,
-    this.color,
-  }) : _subcategories = subcategories;
+  const _$CategoryImpl(
+      {required this.id,
+      required this.name,
+      required this.icon,
+      final List<SubCategory> subcategories = const [],
+      this.type = TransactionType.expense,
+      this.order,
+      this.color})
+      : _subcategories = subcategories;
 
   factory _$CategoryImpl.fromJson(Map<String, dynamic> json) =>
       _$$CategoryImplFromJson(json);
@@ -214,9 +204,9 @@ class _$CategoryImpl implements _Category {
   final String name;
   @override
   final String icon;
-  // Emoji or IconData string
+// Emoji or IconData string
   final List<SubCategory> _subcategories;
-  // Emoji or IconData string
+// Emoji or IconData string
   @override
   @JsonKey()
   List<SubCategory> get subcategories {
@@ -246,10 +236,8 @@ class _$CategoryImpl implements _Category {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.icon, icon) || other.icon == icon) &&
-            const DeepCollectionEquality().equals(
-              other._subcategories,
-              _subcategories,
-            ) &&
+            const DeepCollectionEquality()
+                .equals(other._subcategories, _subcategories) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.order, order) || other.order == order) &&
             (identical(other.color, color) || other.color == color));
@@ -257,16 +245,8 @@ class _$CategoryImpl implements _Category {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    name,
-    icon,
-    const DeepCollectionEquality().hash(_subcategories),
-    type,
-    order,
-    color,
-  );
+  int get hashCode => Object.hash(runtimeType, id, name, icon,
+      const DeepCollectionEquality().hash(_subcategories), type, order, color);
 
   /// Create a copy of Category
   /// with the given fields replaced by the non-null parameter values.
@@ -278,20 +258,21 @@ class _$CategoryImpl implements _Category {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$CategoryImplToJson(this);
+    return _$$CategoryImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _Category implements Category {
-  const factory _Category({
-    required final String id,
-    required final String name,
-    required final String icon,
-    final List<SubCategory> subcategories,
-    final TransactionType type,
-    final int? order,
-    final int? color,
-  }) = _$CategoryImpl;
+  const factory _Category(
+      {required final String id,
+      required final String name,
+      required final String icon,
+      final List<SubCategory> subcategories,
+      final TransactionType type,
+      final int? order,
+      final int? color}) = _$CategoryImpl;
 
   factory _Category.fromJson(Map<String, dynamic> json) =
       _$CategoryImpl.fromJson;
@@ -351,21 +332,19 @@ mixin _$SubCategory {
 /// @nodoc
 abstract class $SubCategoryCopyWith<$Res> {
   factory $SubCategoryCopyWith(
-    SubCategory value,
-    $Res Function(SubCategory) then,
-  ) = _$SubCategoryCopyWithImpl<$Res, SubCategory>;
+          SubCategory value, $Res Function(SubCategory) then) =
+      _$SubCategoryCopyWithImpl<$Res, SubCategory>;
   @useResult
-  $Res call({
-    String id,
-    String name,
-    double monthlyBudget,
-    bool isFixed,
-    String? defaultPayerId,
-    int? paymentDay,
-    PaymentTiming paymentTiming,
-    String? linkedSavingsGoalId,
-    String? linkedDebtId,
-  });
+  $Res call(
+      {String id,
+      String name,
+      double monthlyBudget,
+      bool isFixed,
+      String? defaultPayerId,
+      int? paymentDay,
+      PaymentTiming paymentTiming,
+      String? linkedSavingsGoalId,
+      String? linkedDebtId});
 }
 
 /// @nodoc
@@ -393,47 +372,44 @@ class _$SubCategoryCopyWithImpl<$Res, $Val extends SubCategory>
     Object? linkedSavingsGoalId = freezed,
     Object? linkedDebtId = freezed,
   }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            name: null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                      as String,
-            monthlyBudget: null == monthlyBudget
-                ? _value.monthlyBudget
-                : monthlyBudget // ignore: cast_nullable_to_non_nullable
-                      as double,
-            isFixed: null == isFixed
-                ? _value.isFixed
-                : isFixed // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            defaultPayerId: freezed == defaultPayerId
-                ? _value.defaultPayerId
-                : defaultPayerId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            paymentDay: freezed == paymentDay
-                ? _value.paymentDay
-                : paymentDay // ignore: cast_nullable_to_non_nullable
-                      as int?,
-            paymentTiming: null == paymentTiming
-                ? _value.paymentTiming
-                : paymentTiming // ignore: cast_nullable_to_non_nullable
-                      as PaymentTiming,
-            linkedSavingsGoalId: freezed == linkedSavingsGoalId
-                ? _value.linkedSavingsGoalId
-                : linkedSavingsGoalId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            linkedDebtId: freezed == linkedDebtId
-                ? _value.linkedDebtId
-                : linkedDebtId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      monthlyBudget: null == monthlyBudget
+          ? _value.monthlyBudget
+          : monthlyBudget // ignore: cast_nullable_to_non_nullable
+              as double,
+      isFixed: null == isFixed
+          ? _value.isFixed
+          : isFixed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      defaultPayerId: freezed == defaultPayerId
+          ? _value.defaultPayerId
+          : defaultPayerId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      paymentDay: freezed == paymentDay
+          ? _value.paymentDay
+          : paymentDay // ignore: cast_nullable_to_non_nullable
+              as int?,
+      paymentTiming: null == paymentTiming
+          ? _value.paymentTiming
+          : paymentTiming // ignore: cast_nullable_to_non_nullable
+              as PaymentTiming,
+      linkedSavingsGoalId: freezed == linkedSavingsGoalId
+          ? _value.linkedSavingsGoalId
+          : linkedSavingsGoalId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      linkedDebtId: freezed == linkedDebtId
+          ? _value.linkedDebtId
+          : linkedDebtId // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
   }
 }
 
@@ -441,22 +417,20 @@ class _$SubCategoryCopyWithImpl<$Res, $Val extends SubCategory>
 abstract class _$$SubCategoryImplCopyWith<$Res>
     implements $SubCategoryCopyWith<$Res> {
   factory _$$SubCategoryImplCopyWith(
-    _$SubCategoryImpl value,
-    $Res Function(_$SubCategoryImpl) then,
-  ) = __$$SubCategoryImplCopyWithImpl<$Res>;
+          _$SubCategoryImpl value, $Res Function(_$SubCategoryImpl) then) =
+      __$$SubCategoryImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String id,
-    String name,
-    double monthlyBudget,
-    bool isFixed,
-    String? defaultPayerId,
-    int? paymentDay,
-    PaymentTiming paymentTiming,
-    String? linkedSavingsGoalId,
-    String? linkedDebtId,
-  });
+  $Res call(
+      {String id,
+      String name,
+      double monthlyBudget,
+      bool isFixed,
+      String? defaultPayerId,
+      int? paymentDay,
+      PaymentTiming paymentTiming,
+      String? linkedSavingsGoalId,
+      String? linkedDebtId});
 }
 
 /// @nodoc
@@ -464,9 +438,8 @@ class __$$SubCategoryImplCopyWithImpl<$Res>
     extends _$SubCategoryCopyWithImpl<$Res, _$SubCategoryImpl>
     implements _$$SubCategoryImplCopyWith<$Res> {
   __$$SubCategoryImplCopyWithImpl(
-    _$SubCategoryImpl _value,
-    $Res Function(_$SubCategoryImpl) _then,
-  ) : super(_value, _then);
+      _$SubCategoryImpl _value, $Res Function(_$SubCategoryImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of SubCategory
   /// with the given fields replaced by the non-null parameter values.
@@ -483,63 +456,60 @@ class __$$SubCategoryImplCopyWithImpl<$Res>
     Object? linkedSavingsGoalId = freezed,
     Object? linkedDebtId = freezed,
   }) {
-    return _then(
-      _$SubCategoryImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        monthlyBudget: null == monthlyBudget
-            ? _value.monthlyBudget
-            : monthlyBudget // ignore: cast_nullable_to_non_nullable
-                  as double,
-        isFixed: null == isFixed
-            ? _value.isFixed
-            : isFixed // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        defaultPayerId: freezed == defaultPayerId
-            ? _value.defaultPayerId
-            : defaultPayerId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        paymentDay: freezed == paymentDay
-            ? _value.paymentDay
-            : paymentDay // ignore: cast_nullable_to_non_nullable
-                  as int?,
-        paymentTiming: null == paymentTiming
-            ? _value.paymentTiming
-            : paymentTiming // ignore: cast_nullable_to_non_nullable
-                  as PaymentTiming,
-        linkedSavingsGoalId: freezed == linkedSavingsGoalId
-            ? _value.linkedSavingsGoalId
-            : linkedSavingsGoalId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        linkedDebtId: freezed == linkedDebtId
-            ? _value.linkedDebtId
-            : linkedDebtId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-      ),
-    );
+    return _then(_$SubCategoryImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      monthlyBudget: null == monthlyBudget
+          ? _value.monthlyBudget
+          : monthlyBudget // ignore: cast_nullable_to_non_nullable
+              as double,
+      isFixed: null == isFixed
+          ? _value.isFixed
+          : isFixed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      defaultPayerId: freezed == defaultPayerId
+          ? _value.defaultPayerId
+          : defaultPayerId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      paymentDay: freezed == paymentDay
+          ? _value.paymentDay
+          : paymentDay // ignore: cast_nullable_to_non_nullable
+              as int?,
+      paymentTiming: null == paymentTiming
+          ? _value.paymentTiming
+          : paymentTiming // ignore: cast_nullable_to_non_nullable
+              as PaymentTiming,
+      linkedSavingsGoalId: freezed == linkedSavingsGoalId
+          ? _value.linkedSavingsGoalId
+          : linkedSavingsGoalId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      linkedDebtId: freezed == linkedDebtId
+          ? _value.linkedDebtId
+          : linkedDebtId // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$SubCategoryImpl implements _SubCategory {
-  const _$SubCategoryImpl({
-    required this.id,
-    required this.name,
-    required this.monthlyBudget,
-    this.isFixed = false,
-    this.defaultPayerId,
-    this.paymentDay,
-    this.paymentTiming = PaymentTiming.specificDay,
-    this.linkedSavingsGoalId,
-    this.linkedDebtId,
-  });
+  const _$SubCategoryImpl(
+      {required this.id,
+      required this.name,
+      required this.monthlyBudget,
+      this.isFixed = false,
+      this.defaultPayerId,
+      this.paymentDay,
+      this.paymentTiming = PaymentTiming.specificDay,
+      this.linkedSavingsGoalId,
+      this.linkedDebtId});
 
   factory _$SubCategoryImpl.fromJson(Map<String, dynamic> json) =>
       _$$SubCategoryImplFromJson(json);
@@ -555,16 +525,16 @@ class _$SubCategoryImpl implements _SubCategory {
   final bool isFixed;
   @override
   final String? defaultPayerId;
-  // Who usually pays this
+// Who usually pays this
   @override
   final int? paymentDay;
-  // Day of month (1-31) for fixed expenses
+// Day of month (1-31) for fixed expenses
   @override
   @JsonKey()
   final PaymentTiming paymentTiming;
   @override
   final String? linkedSavingsGoalId;
-  // ID of the savings goal to contribute to automatically
+// ID of the savings goal to contribute to automatically
   @override
   final String? linkedDebtId;
 
@@ -598,17 +568,16 @@ class _$SubCategoryImpl implements _SubCategory {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    name,
-    monthlyBudget,
-    isFixed,
-    defaultPayerId,
-    paymentDay,
-    paymentTiming,
-    linkedSavingsGoalId,
-    linkedDebtId,
-  );
+      runtimeType,
+      id,
+      name,
+      monthlyBudget,
+      isFixed,
+      defaultPayerId,
+      paymentDay,
+      paymentTiming,
+      linkedSavingsGoalId,
+      linkedDebtId);
 
   /// Create a copy of SubCategory
   /// with the given fields replaced by the non-null parameter values.
@@ -620,22 +589,23 @@ class _$SubCategoryImpl implements _SubCategory {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$SubCategoryImplToJson(this);
+    return _$$SubCategoryImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _SubCategory implements SubCategory {
-  const factory _SubCategory({
-    required final String id,
-    required final String name,
-    required final double monthlyBudget,
-    final bool isFixed,
-    final String? defaultPayerId,
-    final int? paymentDay,
-    final PaymentTiming paymentTiming,
-    final String? linkedSavingsGoalId,
-    final String? linkedDebtId,
-  }) = _$SubCategoryImpl;
+  const factory _SubCategory(
+      {required final String id,
+      required final String name,
+      required final double monthlyBudget,
+      final bool isFixed,
+      final String? defaultPayerId,
+      final int? paymentDay,
+      final PaymentTiming paymentTiming,
+      final String? linkedSavingsGoalId,
+      final String? linkedDebtId}) = _$SubCategoryImpl;
 
   factory _SubCategory.fromJson(Map<String, dynamic> json) =
       _$SubCategoryImpl.fromJson;
@@ -655,7 +625,8 @@ abstract class _SubCategory implements SubCategory {
   @override
   PaymentTiming get paymentTiming;
   @override
-  String? get linkedSavingsGoalId; // ID of the savings goal to contribute to automatically
+  String?
+      get linkedSavingsGoalId; // ID of the savings goal to contribute to automatically
   @override
   String? get linkedDebtId;
 

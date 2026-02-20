@@ -7,12 +7,12 @@ part of 'asset.dart';
 // **************************************************************************
 
 _$AssetImpl _$$AssetImplFromJson(Map<String, dynamic> json) => _$AssetImpl(
-  id: json['id'] as String,
-  name: json['name'] as String,
-  amount: (json['amount'] as num).toDouble(),
-  type: $enumDecode(_$AssetTypeEnumMap, json['type']),
-  bankName: json['bankName'] as String?,
-);
+      id: json['id'] as String,
+      name: json['name'] as String,
+      amount: (json['amount'] as num).toDouble(),
+      type: $enumDecode(_$AssetTypeEnumMap, json['type']),
+      bankName: json['bankName'] as String?,
+    );
 
 Map<String, dynamic> _$$AssetImplToJson(_$AssetImpl instance) =>
     <String, dynamic>{

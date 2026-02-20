@@ -1,5 +1,8 @@
 ﻿# Release Notes
 
+## v1.1.4
+Moviments: Al afegir moviments s'actualizen al compte.
+Importar: Amb dos formats i també actualitzen al compte.
 ## v1.1.3
 GitHub Actions: Modificació per a que funcioni bé.
 ## v1.1.2
@@ -15,6 +18,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

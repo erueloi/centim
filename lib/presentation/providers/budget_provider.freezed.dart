@@ -12,8 +12,7 @@ part of 'budget_provider.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 /// @nodoc
 mixin _$SubcategoryBudgetStatus {
@@ -31,26 +30,22 @@ mixin _$SubcategoryBudgetStatus {
 
 /// @nodoc
 abstract class $SubcategoryBudgetStatusCopyWith<$Res> {
-  factory $SubcategoryBudgetStatusCopyWith(
-    SubcategoryBudgetStatus value,
-    $Res Function(SubcategoryBudgetStatus) then,
-  ) = _$SubcategoryBudgetStatusCopyWithImpl<$Res, SubcategoryBudgetStatus>;
+  factory $SubcategoryBudgetStatusCopyWith(SubcategoryBudgetStatus value,
+          $Res Function(SubcategoryBudgetStatus) then) =
+      _$SubcategoryBudgetStatusCopyWithImpl<$Res, SubcategoryBudgetStatus>;
   @useResult
-  $Res call({
-    SubCategory subcategory,
-    double spent,
-    double budget,
-    double percentage,
-  });
+  $Res call(
+      {SubCategory subcategory,
+      double spent,
+      double budget,
+      double percentage});
 
   $SubCategoryCopyWith<$Res> get subcategory;
 }
 
 /// @nodoc
-class _$SubcategoryBudgetStatusCopyWithImpl<
-  $Res,
-  $Val extends SubcategoryBudgetStatus
->
+class _$SubcategoryBudgetStatusCopyWithImpl<$Res,
+        $Val extends SubcategoryBudgetStatus>
     implements $SubcategoryBudgetStatusCopyWith<$Res> {
   _$SubcategoryBudgetStatusCopyWithImpl(this._value, this._then);
 
@@ -69,27 +64,24 @@ class _$SubcategoryBudgetStatusCopyWithImpl<
     Object? budget = null,
     Object? percentage = null,
   }) {
-    return _then(
-      _value.copyWith(
-            subcategory: null == subcategory
-                ? _value.subcategory
-                : subcategory // ignore: cast_nullable_to_non_nullable
-                      as SubCategory,
-            spent: null == spent
-                ? _value.spent
-                : spent // ignore: cast_nullable_to_non_nullable
-                      as double,
-            budget: null == budget
-                ? _value.budget
-                : budget // ignore: cast_nullable_to_non_nullable
-                      as double,
-            percentage: null == percentage
-                ? _value.percentage
-                : percentage // ignore: cast_nullable_to_non_nullable
-                      as double,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      subcategory: null == subcategory
+          ? _value.subcategory
+          : subcategory // ignore: cast_nullable_to_non_nullable
+              as SubCategory,
+      spent: null == spent
+          ? _value.spent
+          : spent // ignore: cast_nullable_to_non_nullable
+              as double,
+      budget: null == budget
+          ? _value.budget
+          : budget // ignore: cast_nullable_to_non_nullable
+              as double,
+      percentage: null == percentage
+          ? _value.percentage
+          : percentage // ignore: cast_nullable_to_non_nullable
+              as double,
+    ) as $Val);
   }
 
   /// Create a copy of SubcategoryBudgetStatus
@@ -107,17 +99,16 @@ class _$SubcategoryBudgetStatusCopyWithImpl<
 abstract class _$$SubcategoryBudgetStatusImplCopyWith<$Res>
     implements $SubcategoryBudgetStatusCopyWith<$Res> {
   factory _$$SubcategoryBudgetStatusImplCopyWith(
-    _$SubcategoryBudgetStatusImpl value,
-    $Res Function(_$SubcategoryBudgetStatusImpl) then,
-  ) = __$$SubcategoryBudgetStatusImplCopyWithImpl<$Res>;
+          _$SubcategoryBudgetStatusImpl value,
+          $Res Function(_$SubcategoryBudgetStatusImpl) then) =
+      __$$SubcategoryBudgetStatusImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    SubCategory subcategory,
-    double spent,
-    double budget,
-    double percentage,
-  });
+  $Res call(
+      {SubCategory subcategory,
+      double spent,
+      double budget,
+      double percentage});
 
   @override
   $SubCategoryCopyWith<$Res> get subcategory;
@@ -125,16 +116,13 @@ abstract class _$$SubcategoryBudgetStatusImplCopyWith<$Res>
 
 /// @nodoc
 class __$$SubcategoryBudgetStatusImplCopyWithImpl<$Res>
-    extends
-        _$SubcategoryBudgetStatusCopyWithImpl<
-          $Res,
-          _$SubcategoryBudgetStatusImpl
-        >
+    extends _$SubcategoryBudgetStatusCopyWithImpl<$Res,
+        _$SubcategoryBudgetStatusImpl>
     implements _$$SubcategoryBudgetStatusImplCopyWith<$Res> {
   __$$SubcategoryBudgetStatusImplCopyWithImpl(
-    _$SubcategoryBudgetStatusImpl _value,
-    $Res Function(_$SubcategoryBudgetStatusImpl) _then,
-  ) : super(_value, _then);
+      _$SubcategoryBudgetStatusImpl _value,
+      $Res Function(_$SubcategoryBudgetStatusImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of SubcategoryBudgetStatus
   /// with the given fields replaced by the non-null parameter values.
@@ -146,38 +134,35 @@ class __$$SubcategoryBudgetStatusImplCopyWithImpl<$Res>
     Object? budget = null,
     Object? percentage = null,
   }) {
-    return _then(
-      _$SubcategoryBudgetStatusImpl(
-        subcategory: null == subcategory
-            ? _value.subcategory
-            : subcategory // ignore: cast_nullable_to_non_nullable
-                  as SubCategory,
-        spent: null == spent
-            ? _value.spent
-            : spent // ignore: cast_nullable_to_non_nullable
-                  as double,
-        budget: null == budget
-            ? _value.budget
-            : budget // ignore: cast_nullable_to_non_nullable
-                  as double,
-        percentage: null == percentage
-            ? _value.percentage
-            : percentage // ignore: cast_nullable_to_non_nullable
-                  as double,
-      ),
-    );
+    return _then(_$SubcategoryBudgetStatusImpl(
+      subcategory: null == subcategory
+          ? _value.subcategory
+          : subcategory // ignore: cast_nullable_to_non_nullable
+              as SubCategory,
+      spent: null == spent
+          ? _value.spent
+          : spent // ignore: cast_nullable_to_non_nullable
+              as double,
+      budget: null == budget
+          ? _value.budget
+          : budget // ignore: cast_nullable_to_non_nullable
+              as double,
+      percentage: null == percentage
+          ? _value.percentage
+          : percentage // ignore: cast_nullable_to_non_nullable
+              as double,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$SubcategoryBudgetStatusImpl implements _SubcategoryBudgetStatus {
-  const _$SubcategoryBudgetStatusImpl({
-    required this.subcategory,
-    required this.spent,
-    required this.budget,
-    required this.percentage,
-  });
+  const _$SubcategoryBudgetStatusImpl(
+      {required this.subcategory,
+      required this.spent,
+      required this.budget,
+      required this.percentage});
 
   @override
   final SubCategory subcategory;
@@ -216,19 +201,16 @@ class _$SubcategoryBudgetStatusImpl implements _SubcategoryBudgetStatus {
   @override
   @pragma('vm:prefer-inline')
   _$$SubcategoryBudgetStatusImplCopyWith<_$SubcategoryBudgetStatusImpl>
-  get copyWith =>
-      __$$SubcategoryBudgetStatusImplCopyWithImpl<
-        _$SubcategoryBudgetStatusImpl
-      >(this, _$identity);
+      get copyWith => __$$SubcategoryBudgetStatusImplCopyWithImpl<
+          _$SubcategoryBudgetStatusImpl>(this, _$identity);
 }
 
 abstract class _SubcategoryBudgetStatus implements SubcategoryBudgetStatus {
-  const factory _SubcategoryBudgetStatus({
-    required final SubCategory subcategory,
-    required final double spent,
-    required final double budget,
-    required final double percentage,
-  }) = _$SubcategoryBudgetStatusImpl;
+  const factory _SubcategoryBudgetStatus(
+      {required final SubCategory subcategory,
+      required final double spent,
+      required final double budget,
+      required final double percentage}) = _$SubcategoryBudgetStatusImpl;
 
   @override
   SubCategory get subcategory;
@@ -244,7 +226,7 @@ abstract class _SubcategoryBudgetStatus implements SubcategoryBudgetStatus {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$SubcategoryBudgetStatusImplCopyWith<_$SubcategoryBudgetStatusImpl>
-  get copyWith => throw _privateConstructorUsedError;
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -267,18 +249,16 @@ mixin _$BudgetStatus {
 /// @nodoc
 abstract class $BudgetStatusCopyWith<$Res> {
   factory $BudgetStatusCopyWith(
-    BudgetStatus value,
-    $Res Function(BudgetStatus) then,
-  ) = _$BudgetStatusCopyWithImpl<$Res, BudgetStatus>;
+          BudgetStatus value, $Res Function(BudgetStatus) then) =
+      _$BudgetStatusCopyWithImpl<$Res, BudgetStatus>;
   @useResult
-  $Res call({
-    Category category,
-    double spent,
-    double total,
-    double percentage,
-    bool isOverBudget,
-    List<SubcategoryBudgetStatus> subcategoryStatuses,
-  });
+  $Res call(
+      {Category category,
+      double spent,
+      double total,
+      double percentage,
+      bool isOverBudget,
+      List<SubcategoryBudgetStatus> subcategoryStatuses});
 
   $CategoryCopyWith<$Res> get category;
 }
@@ -305,35 +285,32 @@ class _$BudgetStatusCopyWithImpl<$Res, $Val extends BudgetStatus>
     Object? isOverBudget = null,
     Object? subcategoryStatuses = null,
   }) {
-    return _then(
-      _value.copyWith(
-            category: null == category
-                ? _value.category
-                : category // ignore: cast_nullable_to_non_nullable
-                      as Category,
-            spent: null == spent
-                ? _value.spent
-                : spent // ignore: cast_nullable_to_non_nullable
-                      as double,
-            total: null == total
-                ? _value.total
-                : total // ignore: cast_nullable_to_non_nullable
-                      as double,
-            percentage: null == percentage
-                ? _value.percentage
-                : percentage // ignore: cast_nullable_to_non_nullable
-                      as double,
-            isOverBudget: null == isOverBudget
-                ? _value.isOverBudget
-                : isOverBudget // ignore: cast_nullable_to_non_nullable
-                      as bool,
-            subcategoryStatuses: null == subcategoryStatuses
-                ? _value.subcategoryStatuses
-                : subcategoryStatuses // ignore: cast_nullable_to_non_nullable
-                      as List<SubcategoryBudgetStatus>,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      category: null == category
+          ? _value.category
+          : category // ignore: cast_nullable_to_non_nullable
+              as Category,
+      spent: null == spent
+          ? _value.spent
+          : spent // ignore: cast_nullable_to_non_nullable
+              as double,
+      total: null == total
+          ? _value.total
+          : total // ignore: cast_nullable_to_non_nullable
+              as double,
+      percentage: null == percentage
+          ? _value.percentage
+          : percentage // ignore: cast_nullable_to_non_nullable
+              as double,
+      isOverBudget: null == isOverBudget
+          ? _value.isOverBudget
+          : isOverBudget // ignore: cast_nullable_to_non_nullable
+              as bool,
+      subcategoryStatuses: null == subcategoryStatuses
+          ? _value.subcategoryStatuses
+          : subcategoryStatuses // ignore: cast_nullable_to_non_nullable
+              as List<SubcategoryBudgetStatus>,
+    ) as $Val);
   }
 
   /// Create a copy of BudgetStatus
@@ -351,19 +328,17 @@ class _$BudgetStatusCopyWithImpl<$Res, $Val extends BudgetStatus>
 abstract class _$$BudgetStatusImplCopyWith<$Res>
     implements $BudgetStatusCopyWith<$Res> {
   factory _$$BudgetStatusImplCopyWith(
-    _$BudgetStatusImpl value,
-    $Res Function(_$BudgetStatusImpl) then,
-  ) = __$$BudgetStatusImplCopyWithImpl<$Res>;
+          _$BudgetStatusImpl value, $Res Function(_$BudgetStatusImpl) then) =
+      __$$BudgetStatusImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    Category category,
-    double spent,
-    double total,
-    double percentage,
-    bool isOverBudget,
-    List<SubcategoryBudgetStatus> subcategoryStatuses,
-  });
+  $Res call(
+      {Category category,
+      double spent,
+      double total,
+      double percentage,
+      bool isOverBudget,
+      List<SubcategoryBudgetStatus> subcategoryStatuses});
 
   @override
   $CategoryCopyWith<$Res> get category;
@@ -374,9 +349,8 @@ class __$$BudgetStatusImplCopyWithImpl<$Res>
     extends _$BudgetStatusCopyWithImpl<$Res, _$BudgetStatusImpl>
     implements _$$BudgetStatusImplCopyWith<$Res> {
   __$$BudgetStatusImplCopyWithImpl(
-    _$BudgetStatusImpl _value,
-    $Res Function(_$BudgetStatusImpl) _then,
-  ) : super(_value, _then);
+      _$BudgetStatusImpl _value, $Res Function(_$BudgetStatusImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of BudgetStatus
   /// with the given fields replaced by the non-null parameter values.
@@ -390,48 +364,46 @@ class __$$BudgetStatusImplCopyWithImpl<$Res>
     Object? isOverBudget = null,
     Object? subcategoryStatuses = null,
   }) {
-    return _then(
-      _$BudgetStatusImpl(
-        category: null == category
-            ? _value.category
-            : category // ignore: cast_nullable_to_non_nullable
-                  as Category,
-        spent: null == spent
-            ? _value.spent
-            : spent // ignore: cast_nullable_to_non_nullable
-                  as double,
-        total: null == total
-            ? _value.total
-            : total // ignore: cast_nullable_to_non_nullable
-                  as double,
-        percentage: null == percentage
-            ? _value.percentage
-            : percentage // ignore: cast_nullable_to_non_nullable
-                  as double,
-        isOverBudget: null == isOverBudget
-            ? _value.isOverBudget
-            : isOverBudget // ignore: cast_nullable_to_non_nullable
-                  as bool,
-        subcategoryStatuses: null == subcategoryStatuses
-            ? _value._subcategoryStatuses
-            : subcategoryStatuses // ignore: cast_nullable_to_non_nullable
-                  as List<SubcategoryBudgetStatus>,
-      ),
-    );
+    return _then(_$BudgetStatusImpl(
+      category: null == category
+          ? _value.category
+          : category // ignore: cast_nullable_to_non_nullable
+              as Category,
+      spent: null == spent
+          ? _value.spent
+          : spent // ignore: cast_nullable_to_non_nullable
+              as double,
+      total: null == total
+          ? _value.total
+          : total // ignore: cast_nullable_to_non_nullable
+              as double,
+      percentage: null == percentage
+          ? _value.percentage
+          : percentage // ignore: cast_nullable_to_non_nullable
+              as double,
+      isOverBudget: null == isOverBudget
+          ? _value.isOverBudget
+          : isOverBudget // ignore: cast_nullable_to_non_nullable
+              as bool,
+      subcategoryStatuses: null == subcategoryStatuses
+          ? _value._subcategoryStatuses
+          : subcategoryStatuses // ignore: cast_nullable_to_non_nullable
+              as List<SubcategoryBudgetStatus>,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$BudgetStatusImpl implements _BudgetStatus {
-  const _$BudgetStatusImpl({
-    required this.category,
-    required this.spent,
-    required this.total,
-    required this.percentage,
-    required this.isOverBudget,
-    final List<SubcategoryBudgetStatus> subcategoryStatuses = const [],
-  }) : _subcategoryStatuses = subcategoryStatuses;
+  const _$BudgetStatusImpl(
+      {required this.category,
+      required this.spent,
+      required this.total,
+      required this.percentage,
+      required this.isOverBudget,
+      final List<SubcategoryBudgetStatus> subcategoryStatuses = const []})
+      : _subcategoryStatuses = subcategoryStatuses;
 
   @override
   final Category category;
@@ -471,22 +443,19 @@ class _$BudgetStatusImpl implements _BudgetStatus {
                 other.percentage == percentage) &&
             (identical(other.isOverBudget, isOverBudget) ||
                 other.isOverBudget == isOverBudget) &&
-            const DeepCollectionEquality().equals(
-              other._subcategoryStatuses,
-              _subcategoryStatuses,
-            ));
+            const DeepCollectionEquality()
+                .equals(other._subcategoryStatuses, _subcategoryStatuses));
   }
 
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    category,
-    spent,
-    total,
-    percentage,
-    isOverBudget,
-    const DeepCollectionEquality().hash(_subcategoryStatuses),
-  );
+      runtimeType,
+      category,
+      spent,
+      total,
+      percentage,
+      isOverBudget,
+      const DeepCollectionEquality().hash(_subcategoryStatuses));
 
   /// Create a copy of BudgetStatus
   /// with the given fields replaced by the non-null parameter values.
@@ -498,14 +467,14 @@ class _$BudgetStatusImpl implements _BudgetStatus {
 }
 
 abstract class _BudgetStatus implements BudgetStatus {
-  const factory _BudgetStatus({
-    required final Category category,
-    required final double spent,
-    required final double total,
-    required final double percentage,
-    required final bool isOverBudget,
-    final List<SubcategoryBudgetStatus> subcategoryStatuses,
-  }) = _$BudgetStatusImpl;
+  const factory _BudgetStatus(
+          {required final Category category,
+          required final double spent,
+          required final double total,
+          required final double percentage,
+          required final bool isOverBudget,
+          final List<SubcategoryBudgetStatus> subcategoryStatuses}) =
+      _$BudgetStatusImpl;
 
   @override
   Category get category;
@@ -544,9 +513,8 @@ mixin _$ZeroBudgetSummary {
 /// @nodoc
 abstract class $ZeroBudgetSummaryCopyWith<$Res> {
   factory $ZeroBudgetSummaryCopyWith(
-    ZeroBudgetSummary value,
-    $Res Function(ZeroBudgetSummary) then,
-  ) = _$ZeroBudgetSummaryCopyWithImpl<$Res, ZeroBudgetSummary>;
+          ZeroBudgetSummary value, $Res Function(ZeroBudgetSummary) then) =
+      _$ZeroBudgetSummaryCopyWithImpl<$Res, ZeroBudgetSummary>;
   @useResult
   $Res call({double totalIncome, double totalExpenses, double remainder});
 }
@@ -570,33 +538,29 @@ class _$ZeroBudgetSummaryCopyWithImpl<$Res, $Val extends ZeroBudgetSummary>
     Object? totalExpenses = null,
     Object? remainder = null,
   }) {
-    return _then(
-      _value.copyWith(
-            totalIncome: null == totalIncome
-                ? _value.totalIncome
-                : totalIncome // ignore: cast_nullable_to_non_nullable
-                      as double,
-            totalExpenses: null == totalExpenses
-                ? _value.totalExpenses
-                : totalExpenses // ignore: cast_nullable_to_non_nullable
-                      as double,
-            remainder: null == remainder
-                ? _value.remainder
-                : remainder // ignore: cast_nullable_to_non_nullable
-                      as double,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      totalIncome: null == totalIncome
+          ? _value.totalIncome
+          : totalIncome // ignore: cast_nullable_to_non_nullable
+              as double,
+      totalExpenses: null == totalExpenses
+          ? _value.totalExpenses
+          : totalExpenses // ignore: cast_nullable_to_non_nullable
+              as double,
+      remainder: null == remainder
+          ? _value.remainder
+          : remainder // ignore: cast_nullable_to_non_nullable
+              as double,
+    ) as $Val);
   }
 }
 
 /// @nodoc
 abstract class _$$ZeroBudgetSummaryImplCopyWith<$Res>
     implements $ZeroBudgetSummaryCopyWith<$Res> {
-  factory _$$ZeroBudgetSummaryImplCopyWith(
-    _$ZeroBudgetSummaryImpl value,
-    $Res Function(_$ZeroBudgetSummaryImpl) then,
-  ) = __$$ZeroBudgetSummaryImplCopyWithImpl<$Res>;
+  factory _$$ZeroBudgetSummaryImplCopyWith(_$ZeroBudgetSummaryImpl value,
+          $Res Function(_$ZeroBudgetSummaryImpl) then) =
+      __$$ZeroBudgetSummaryImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({double totalIncome, double totalExpenses, double remainder});
@@ -606,10 +570,9 @@ abstract class _$$ZeroBudgetSummaryImplCopyWith<$Res>
 class __$$ZeroBudgetSummaryImplCopyWithImpl<$Res>
     extends _$ZeroBudgetSummaryCopyWithImpl<$Res, _$ZeroBudgetSummaryImpl>
     implements _$$ZeroBudgetSummaryImplCopyWith<$Res> {
-  __$$ZeroBudgetSummaryImplCopyWithImpl(
-    _$ZeroBudgetSummaryImpl _value,
-    $Res Function(_$ZeroBudgetSummaryImpl) _then,
-  ) : super(_value, _then);
+  __$$ZeroBudgetSummaryImplCopyWithImpl(_$ZeroBudgetSummaryImpl _value,
+      $Res Function(_$ZeroBudgetSummaryImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of ZeroBudgetSummary
   /// with the given fields replaced by the non-null parameter values.
@@ -620,33 +583,30 @@ class __$$ZeroBudgetSummaryImplCopyWithImpl<$Res>
     Object? totalExpenses = null,
     Object? remainder = null,
   }) {
-    return _then(
-      _$ZeroBudgetSummaryImpl(
-        totalIncome: null == totalIncome
-            ? _value.totalIncome
-            : totalIncome // ignore: cast_nullable_to_non_nullable
-                  as double,
-        totalExpenses: null == totalExpenses
-            ? _value.totalExpenses
-            : totalExpenses // ignore: cast_nullable_to_non_nullable
-                  as double,
-        remainder: null == remainder
-            ? _value.remainder
-            : remainder // ignore: cast_nullable_to_non_nullable
-                  as double,
-      ),
-    );
+    return _then(_$ZeroBudgetSummaryImpl(
+      totalIncome: null == totalIncome
+          ? _value.totalIncome
+          : totalIncome // ignore: cast_nullable_to_non_nullable
+              as double,
+      totalExpenses: null == totalExpenses
+          ? _value.totalExpenses
+          : totalExpenses // ignore: cast_nullable_to_non_nullable
+              as double,
+      remainder: null == remainder
+          ? _value.remainder
+          : remainder // ignore: cast_nullable_to_non_nullable
+              as double,
+    ));
   }
 }
 
 /// @nodoc
 
 class _$ZeroBudgetSummaryImpl implements _ZeroBudgetSummary {
-  const _$ZeroBudgetSummaryImpl({
-    required this.totalIncome,
-    required this.totalExpenses,
-    required this.remainder,
-  });
+  const _$ZeroBudgetSummaryImpl(
+      {required this.totalIncome,
+      required this.totalExpenses,
+      required this.remainder});
 
   @override
   final double totalIncome;
@@ -684,17 +644,14 @@ class _$ZeroBudgetSummaryImpl implements _ZeroBudgetSummary {
   @pragma('vm:prefer-inline')
   _$$ZeroBudgetSummaryImplCopyWith<_$ZeroBudgetSummaryImpl> get copyWith =>
       __$$ZeroBudgetSummaryImplCopyWithImpl<_$ZeroBudgetSummaryImpl>(
-        this,
-        _$identity,
-      );
+          this, _$identity);
 }
 
 abstract class _ZeroBudgetSummary implements ZeroBudgetSummary {
-  const factory _ZeroBudgetSummary({
-    required final double totalIncome,
-    required final double totalExpenses,
-    required final double remainder,
-  }) = _$ZeroBudgetSummaryImpl;
+  const factory _ZeroBudgetSummary(
+      {required final double totalIncome,
+      required final double totalExpenses,
+      required final double remainder}) = _$ZeroBudgetSummaryImpl;
 
   @override
   double get totalIncome;

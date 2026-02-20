@@ -12,8 +12,7 @@ part of 'asset.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 Asset _$AssetFromJson(Map<String, dynamic> json) {
   return _Asset.fromJson(json);
@@ -41,13 +40,12 @@ abstract class $AssetCopyWith<$Res> {
   factory $AssetCopyWith(Asset value, $Res Function(Asset) then) =
       _$AssetCopyWithImpl<$Res, Asset>;
   @useResult
-  $Res call({
-    String id,
-    String name,
-    double amount,
-    AssetType type,
-    String? bankName,
-  });
+  $Res call(
+      {String id,
+      String name,
+      double amount,
+      AssetType type,
+      String? bankName});
 }
 
 /// @nodoc
@@ -71,49 +69,44 @@ class _$AssetCopyWithImpl<$Res, $Val extends Asset>
     Object? type = null,
     Object? bankName = freezed,
   }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            name: null == name
-                ? _value.name
-                : name // ignore: cast_nullable_to_non_nullable
-                      as String,
-            amount: null == amount
-                ? _value.amount
-                : amount // ignore: cast_nullable_to_non_nullable
-                      as double,
-            type: null == type
-                ? _value.type
-                : type // ignore: cast_nullable_to_non_nullable
-                      as AssetType,
-            bankName: freezed == bankName
-                ? _value.bankName
-                : bankName // ignore: cast_nullable_to_non_nullable
-                      as String?,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as double,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as AssetType,
+      bankName: freezed == bankName
+          ? _value.bankName
+          : bankName // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
   }
 }
 
 /// @nodoc
 abstract class _$$AssetImplCopyWith<$Res> implements $AssetCopyWith<$Res> {
   factory _$$AssetImplCopyWith(
-    _$AssetImpl value,
-    $Res Function(_$AssetImpl) then,
-  ) = __$$AssetImplCopyWithImpl<$Res>;
+          _$AssetImpl value, $Res Function(_$AssetImpl) then) =
+      __$$AssetImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String id,
-    String name,
-    double amount,
-    AssetType type,
-    String? bankName,
-  });
+  $Res call(
+      {String id,
+      String name,
+      double amount,
+      AssetType type,
+      String? bankName});
 }
 
 /// @nodoc
@@ -121,9 +114,8 @@ class __$$AssetImplCopyWithImpl<$Res>
     extends _$AssetCopyWithImpl<$Res, _$AssetImpl>
     implements _$$AssetImplCopyWith<$Res> {
   __$$AssetImplCopyWithImpl(
-    _$AssetImpl _value,
-    $Res Function(_$AssetImpl) _then,
-  ) : super(_value, _then);
+      _$AssetImpl _value, $Res Function(_$AssetImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of Asset
   /// with the given fields replaced by the non-null parameter values.
@@ -136,43 +128,40 @@ class __$$AssetImplCopyWithImpl<$Res>
     Object? type = null,
     Object? bankName = freezed,
   }) {
-    return _then(
-      _$AssetImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        name: null == name
-            ? _value.name
-            : name // ignore: cast_nullable_to_non_nullable
-                  as String,
-        amount: null == amount
-            ? _value.amount
-            : amount // ignore: cast_nullable_to_non_nullable
-                  as double,
-        type: null == type
-            ? _value.type
-            : type // ignore: cast_nullable_to_non_nullable
-                  as AssetType,
-        bankName: freezed == bankName
-            ? _value.bankName
-            : bankName // ignore: cast_nullable_to_non_nullable
-                  as String?,
-      ),
-    );
+    return _then(_$AssetImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      name: null == name
+          ? _value.name
+          : name // ignore: cast_nullable_to_non_nullable
+              as String,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as double,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as AssetType,
+      bankName: freezed == bankName
+          ? _value.bankName
+          : bankName // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$AssetImpl implements _Asset {
-  const _$AssetImpl({
-    required this.id,
-    required this.name,
-    required this.amount,
-    required this.type,
-    this.bankName,
-  });
+  const _$AssetImpl(
+      {required this.id,
+      required this.name,
+      required this.amount,
+      required this.type,
+      this.bankName});
 
   factory _$AssetImpl.fromJson(Map<String, dynamic> json) =>
       _$$AssetImplFromJson(json);
@@ -221,18 +210,19 @@ class _$AssetImpl implements _Asset {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$AssetImplToJson(this);
+    return _$$AssetImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _Asset implements Asset {
-  const factory _Asset({
-    required final String id,
-    required final String name,
-    required final double amount,
-    required final AssetType type,
-    final String? bankName,
-  }) = _$AssetImpl;
+  const factory _Asset(
+      {required final String id,
+      required final String name,
+      required final double amount,
+      required final AssetType type,
+      final String? bankName}) = _$AssetImpl;
 
   factory _Asset.fromJson(Map<String, dynamic> json) = _$AssetImpl.fromJson;
 

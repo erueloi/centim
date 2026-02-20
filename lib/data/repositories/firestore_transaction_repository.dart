@@ -16,11 +16,11 @@ class FirestoreTransactionRepository implements TransactionRepository {
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            final data = doc.data();
-            return _fromMap(data, doc.id);
-          }).toList();
-        });
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return _fromMap(data, doc.id);
+      }).toList();
+    });
   }
 
   @override
@@ -73,6 +73,7 @@ class FirestoreTransactionRepository implements TransactionRepository {
       'subCategoryName': transaction.subCategoryName,
       'payer': transaction.payer,
       'isIncome': transaction.isIncome,
+      'accountId': transaction.accountId,
     };
   }
 
@@ -86,14 +87,13 @@ class FirestoreTransactionRepository implements TransactionRepository {
       // Map new fields with fallbacks for old data
       categoryId: data['categoryId'] as String? ?? 'legacy_cat',
       subCategoryId: data['subCategoryId'] as String? ?? 'legacy_sub',
-      categoryName:
-          data['categoryName'] as String? ??
+      categoryName: data['categoryName'] as String? ??
           (data['category'] as String? ?? 'Unknown'),
       subCategoryName: data['subCategoryName'] as String? ?? 'General',
-      payer:
-          data['payer'] as String? ??
+      payer: data['payer'] as String? ??
           'unknown', // Handle potentially missing payer in v1 docs
       isIncome: data['isIncome'] as bool? ?? false,
+      accountId: data['accountId'] as String?,
     );
   }
 }

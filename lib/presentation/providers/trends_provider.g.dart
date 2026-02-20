@@ -6,20 +6,20 @@ part of 'trends_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$trendsNotifierHash() => r'791e0c818c45c1561f02a7eadac0f91e99be79fe';
+String _$trendsNotifierHash() => r'36a8a969672540525523a61de38a094a65aee9ef';
 
 /// See also [TrendsNotifier].
 @ProviderFor(TrendsNotifier)
 final trendsNotifierProvider =
     AutoDisposeAsyncNotifierProvider<TrendsNotifier, TrendsData>.internal(
-      TrendsNotifier.new,
-      name: r'trendsNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$trendsNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  TrendsNotifier.new,
+  name: r'trendsNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$trendsNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$TrendsNotifier = AutoDisposeAsyncNotifier<TrendsData>;
 // ignore_for_file: type=lint

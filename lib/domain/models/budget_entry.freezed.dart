@@ -12,8 +12,7 @@ part of 'budget_entry.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 BudgetEntry _$BudgetEntryFromJson(Map<String, dynamic> json) {
   return _BudgetEntry.fromJson(json);
@@ -40,17 +39,11 @@ mixin _$BudgetEntry {
 /// @nodoc
 abstract class $BudgetEntryCopyWith<$Res> {
   factory $BudgetEntryCopyWith(
-    BudgetEntry value,
-    $Res Function(BudgetEntry) then,
-  ) = _$BudgetEntryCopyWithImpl<$Res, BudgetEntry>;
+          BudgetEntry value, $Res Function(BudgetEntry) then) =
+      _$BudgetEntryCopyWithImpl<$Res, BudgetEntry>;
   @useResult
-  $Res call({
-    String id,
-    String subCategoryId,
-    int year,
-    int month,
-    double amount,
-  });
+  $Res call(
+      {String id, String subCategoryId, int year, int month, double amount});
 }
 
 /// @nodoc
@@ -74,31 +67,28 @@ class _$BudgetEntryCopyWithImpl<$Res, $Val extends BudgetEntry>
     Object? month = null,
     Object? amount = null,
   }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            subCategoryId: null == subCategoryId
-                ? _value.subCategoryId
-                : subCategoryId // ignore: cast_nullable_to_non_nullable
-                      as String,
-            year: null == year
-                ? _value.year
-                : year // ignore: cast_nullable_to_non_nullable
-                      as int,
-            month: null == month
-                ? _value.month
-                : month // ignore: cast_nullable_to_non_nullable
-                      as int,
-            amount: null == amount
-                ? _value.amount
-                : amount // ignore: cast_nullable_to_non_nullable
-                      as double,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      subCategoryId: null == subCategoryId
+          ? _value.subCategoryId
+          : subCategoryId // ignore: cast_nullable_to_non_nullable
+              as String,
+      year: null == year
+          ? _value.year
+          : year // ignore: cast_nullable_to_non_nullable
+              as int,
+      month: null == month
+          ? _value.month
+          : month // ignore: cast_nullable_to_non_nullable
+              as int,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as double,
+    ) as $Val);
   }
 }
 
@@ -106,18 +96,12 @@ class _$BudgetEntryCopyWithImpl<$Res, $Val extends BudgetEntry>
 abstract class _$$BudgetEntryImplCopyWith<$Res>
     implements $BudgetEntryCopyWith<$Res> {
   factory _$$BudgetEntryImplCopyWith(
-    _$BudgetEntryImpl value,
-    $Res Function(_$BudgetEntryImpl) then,
-  ) = __$$BudgetEntryImplCopyWithImpl<$Res>;
+          _$BudgetEntryImpl value, $Res Function(_$BudgetEntryImpl) then) =
+      __$$BudgetEntryImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String id,
-    String subCategoryId,
-    int year,
-    int month,
-    double amount,
-  });
+  $Res call(
+      {String id, String subCategoryId, int year, int month, double amount});
 }
 
 /// @nodoc
@@ -125,9 +109,8 @@ class __$$BudgetEntryImplCopyWithImpl<$Res>
     extends _$BudgetEntryCopyWithImpl<$Res, _$BudgetEntryImpl>
     implements _$$BudgetEntryImplCopyWith<$Res> {
   __$$BudgetEntryImplCopyWithImpl(
-    _$BudgetEntryImpl _value,
-    $Res Function(_$BudgetEntryImpl) _then,
-  ) : super(_value, _then);
+      _$BudgetEntryImpl _value, $Res Function(_$BudgetEntryImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of BudgetEntry
   /// with the given fields replaced by the non-null parameter values.
@@ -140,43 +123,40 @@ class __$$BudgetEntryImplCopyWithImpl<$Res>
     Object? month = null,
     Object? amount = null,
   }) {
-    return _then(
-      _$BudgetEntryImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        subCategoryId: null == subCategoryId
-            ? _value.subCategoryId
-            : subCategoryId // ignore: cast_nullable_to_non_nullable
-                  as String,
-        year: null == year
-            ? _value.year
-            : year // ignore: cast_nullable_to_non_nullable
-                  as int,
-        month: null == month
-            ? _value.month
-            : month // ignore: cast_nullable_to_non_nullable
-                  as int,
-        amount: null == amount
-            ? _value.amount
-            : amount // ignore: cast_nullable_to_non_nullable
-                  as double,
-      ),
-    );
+    return _then(_$BudgetEntryImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      subCategoryId: null == subCategoryId
+          ? _value.subCategoryId
+          : subCategoryId // ignore: cast_nullable_to_non_nullable
+              as String,
+      year: null == year
+          ? _value.year
+          : year // ignore: cast_nullable_to_non_nullable
+              as int,
+      month: null == month
+          ? _value.month
+          : month // ignore: cast_nullable_to_non_nullable
+              as int,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as double,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$BudgetEntryImpl implements _BudgetEntry {
-  const _$BudgetEntryImpl({
-    required this.id,
-    required this.subCategoryId,
-    required this.year,
-    required this.month,
-    required this.amount,
-  });
+  const _$BudgetEntryImpl(
+      {required this.id,
+      required this.subCategoryId,
+      required this.year,
+      required this.month,
+      required this.amount});
 
   factory _$BudgetEntryImpl.fromJson(Map<String, dynamic> json) =>
       _$$BudgetEntryImplFromJson(json);
@@ -189,7 +169,7 @@ class _$BudgetEntryImpl implements _BudgetEntry {
   final int year;
   @override
   final int month;
-  // 1-12
+// 1-12
   @override
   final double amount;
 
@@ -226,18 +206,19 @@ class _$BudgetEntryImpl implements _BudgetEntry {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$BudgetEntryImplToJson(this);
+    return _$$BudgetEntryImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _BudgetEntry implements BudgetEntry {
-  const factory _BudgetEntry({
-    required final String id,
-    required final String subCategoryId,
-    required final int year,
-    required final int month,
-    required final double amount,
-  }) = _$BudgetEntryImpl;
+  const factory _BudgetEntry(
+      {required final String id,
+      required final String subCategoryId,
+      required final int year,
+      required final int month,
+      required final double amount}) = _$BudgetEntryImpl;
 
   factory _BudgetEntry.fromJson(Map<String, dynamic> json) =
       _$BudgetEntryImpl.fromJson;

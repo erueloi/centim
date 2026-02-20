@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../../../core/theme/app_theme.dart';
+import '../../../domain/models/asset.dart';
 import '../../../domain/models/transaction.dart';
 import '../../../domain/models/transfer.dart';
 import '../../../domain/models/category.dart';
+import '../../providers/asset_provider.dart';
 import '../../providers/transaction_notifier.dart';
 import '../../providers/transfer_provider.dart';
 import '../../providers/fixed_expenses_provider.dart';
@@ -79,6 +82,184 @@ class MovimentsScreen extends ConsumerWidget {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Error important: $e')),
+                    );
+                  }
+                }
+              },
+            ),
+            // --- MIGRATION BUTTON (TEMPORARY) ---
+            IconButton(
+              icon: const Icon(Icons.build_circle_outlined),
+              tooltip: '🛠️ Migrar Moviments Antics',
+              onPressed: () async {
+                final groupId = await ref.read(currentGroupIdProvider.future);
+                if (groupId == null || !context.mounted) return;
+
+                // Query Firestore for transactions without accountId
+                final firestore = FirebaseFirestore.instance;
+                final snapshot = await firestore
+                    .collection('transactions')
+                    .where('groupId', isEqualTo: groupId)
+                    .get();
+
+                // Filter locally: accountId == null or field missing
+                final orphaned = snapshot.docs.where((doc) {
+                  final data = doc.data();
+                  return !data.containsKey('accountId') ||
+                      data['accountId'] == null;
+                }).toList();
+
+                if (!context.mounted) return;
+
+                if (orphaned.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Tots els moviments estan actualitzats ✅'),
+                    ),
+                  );
+                  return;
+                }
+
+                // Show dialog with account selector
+                final assets = await ref.read(assetNotifierProvider.future);
+                final liquidAssets = assets
+                    .where((a) =>
+                        a.type == AssetType.bankAccount ||
+                        a.type == AssetType.cash)
+                    .toList();
+
+                if (liquidAssets.isEmpty) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('No hi ha comptes líquids disponibles'),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                String? selectedId;
+                if (!context.mounted) return;
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) {
+                    return StatefulBuilder(
+                      builder: (ctx, setDialogState) {
+                        return AlertDialog(
+                          title: const Text('Migrar Moviments Antics'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'S\'han trobat ${orphaned.length} moviments sense compte assignat.\n\nA quin compte els vols vincular?',
+                              ),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                initialValue: selectedId,
+                                decoration: const InputDecoration(
+                                  labelText: 'Compte',
+                                  prefixIcon: Icon(Icons.account_balance),
+                                ),
+                                items: liquidAssets
+                                    .map((a) => DropdownMenuItem(
+                                          value: a.id,
+                                          child: Text(
+                                              '${a.name} (${a.amount.toStringAsFixed(2)} €)'),
+                                        ))
+                                    .toList(),
+                                onChanged: (v) =>
+                                    setDialogState(() => selectedId = v),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx, false),
+                              child: const Text('Cancel·lar'),
+                            ),
+                            ElevatedButton(
+                              onPressed: selectedId == null
+                                  ? null
+                                  : () => Navigator.pop(ctx, true),
+                              child: const Text('Migrar'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                );
+
+                if (confirmed != true ||
+                    selectedId == null ||
+                    !context.mounted) {
+                  return;
+                }
+
+                // Execute migration with WriteBatch
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) =>
+                      const Center(child: CircularProgressIndicator()),
+                );
+
+                try {
+                  final batch = firestore.batch();
+
+                  double totalIncome = 0;
+                  double totalExpense = 0;
+
+                  for (final doc in orphaned) {
+                    final data = doc.data();
+                    final amount = (data['amount'] as num?)?.toDouble() ?? 0;
+                    final isIncome = data['isIncome'] as bool? ?? false;
+
+                    if (isIncome) {
+                      totalIncome += amount;
+                    } else {
+                      totalExpense += amount;
+                    }
+
+                    batch.update(
+                      firestore.collection('transactions').doc(doc.id),
+                      {'accountId': selectedId},
+                    );
+                  }
+
+                  // Calculate net impact and update asset balance
+                  final netImpact = totalIncome - totalExpense;
+                  final asset =
+                      liquidAssets.firstWhere((a) => a.id == selectedId);
+                  final assetDoc = firestore
+                      .collection('groups')
+                      .doc(groupId)
+                      .collection('assets')
+                      .doc(selectedId);
+                  batch.update(assetDoc, {
+                    'amount': asset.amount + netImpact,
+                  });
+
+                  await batch.commit();
+
+                  if (context.mounted) {
+                    Navigator.pop(context); // close loading
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Migració completada amb èxit! ${orphaned.length} moviments actualitzats.',
+                        ),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context); // close loading
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error en la migració: $e')),
                     );
                   }
                 }

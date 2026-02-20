@@ -11,13 +11,11 @@ _$CategoryImpl _$$CategoryImplFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String,
       name: json['name'] as String,
       icon: json['icon'] as String,
-      subcategories:
-          (json['subcategories'] as List<dynamic>?)
+      subcategories: (json['subcategories'] as List<dynamic>?)
               ?.map((e) => SubCategory.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const [],
-      type:
-          $enumDecodeNullable(_$TransactionTypeEnumMap, json['type']) ??
+      type: $enumDecodeNullable(_$TransactionTypeEnumMap, json['type']) ??
           TransactionType.expense,
       order: (json['order'] as num?)?.toInt(),
       color: (json['color'] as num?)?.toInt(),
@@ -49,7 +47,7 @@ _$SubCategoryImpl _$$SubCategoryImplFromJson(Map<String, dynamic> json) =>
       paymentDay: (json['paymentDay'] as num?)?.toInt(),
       paymentTiming:
           $enumDecodeNullable(_$PaymentTimingEnumMap, json['paymentTiming']) ??
-          PaymentTiming.specificDay,
+              PaymentTiming.specificDay,
       linkedSavingsGoalId: json['linkedSavingsGoalId'] as String?,
       linkedDebtId: json['linkedDebtId'] as String?,
     );

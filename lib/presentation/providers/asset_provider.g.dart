@@ -6,20 +6,20 @@ part of 'asset_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$assetNotifierHash() => r'b7c3e630ccc897355f53ac29adaa832282517641';
+String _$assetNotifierHash() => r'cdf0429efa6de151f812d463aa0c02261d997b28';
 
 /// See also [AssetNotifier].
 @ProviderFor(AssetNotifier)
 final assetNotifierProvider =
     AutoDisposeStreamNotifierProvider<AssetNotifier, List<Asset>>.internal(
-      AssetNotifier.new,
-      name: r'assetNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$assetNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  AssetNotifier.new,
+  name: r'assetNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$assetNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$AssetNotifier = AutoDisposeStreamNotifier<List<Asset>>;
 // ignore_for_file: type=lint

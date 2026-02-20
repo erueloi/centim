@@ -11,19 +11,16 @@ String _$transactionFilterNotifierHash() =>
 
 /// See also [TransactionFilterNotifier].
 @ProviderFor(TransactionFilterNotifier)
-final transactionFilterNotifierProvider =
-    AutoDisposeNotifierProvider<
-      TransactionFilterNotifier,
-      TransactionFilter
-    >.internal(
-      TransactionFilterNotifier.new,
-      name: r'transactionFilterNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$transactionFilterNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final transactionFilterNotifierProvider = AutoDisposeNotifierProvider<
+    TransactionFilterNotifier, TransactionFilter>.internal(
+  TransactionFilterNotifier.new,
+  name: r'transactionFilterNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$transactionFilterNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$TransactionFilterNotifier = AutoDisposeNotifier<TransactionFilter>;
 // ignore_for_file: type=lint

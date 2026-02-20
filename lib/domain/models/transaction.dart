@@ -19,7 +19,8 @@ class Transaction with _$Transaction {
     required String payer,
     @Default(false) bool isIncome, // true = income, false = expense
     String?
-    savingsGoalId, // Non-null if this transaction is paid FROM savings (or is a withdrawal)
+        savingsGoalId, // Non-null if this transaction is paid FROM savings (or is a withdrawal)
+    String? accountId, // Linked bank account / cash asset ID
   }) = _Transaction;
 
   factory Transaction.fromFirestore(DocumentSnapshot doc) {
@@ -37,6 +38,7 @@ class Transaction with _$Transaction {
       payer: data['payer'] as String? ?? '',
       isIncome: data['isIncome'] as bool? ?? false,
       savingsGoalId: data['savingsGoalId'] as String?,
+      accountId: data['accountId'] as String?,
     );
   }
 }

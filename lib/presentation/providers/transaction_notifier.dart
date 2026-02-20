@@ -83,9 +83,8 @@ class TransactionNotifier extends _$TransactionNotifier {
       try {
         final goal = goals.firstWhere((g) => g.id == linkedGoalId);
         final isWithdrawal = transaction.isIncome;
-        final effectiveAmount = isWithdrawal
-            ? -transaction.amount
-            : transaction.amount;
+        final effectiveAmount =
+            isWithdrawal ? -transaction.amount : transaction.amount;
         final updatedGoal = goal.copyWith(
           currentAmount: goal.currentAmount + effectiveAmount,
           history: [
@@ -123,9 +122,7 @@ class TransactionNotifier extends _$TransactionNotifier {
           final debts = await ref.read(debtNotifierProvider.future);
           final debt = debts.firstWhere((d) => d.id == linkedDebtId);
 
-          await ref
-              .read(transferNotifierProvider.notifier)
-              .addTransfer(
+          await ref.read(transferNotifierProvider.notifier).addTransfer(
                 amount: transaction.amount,
                 sourceAssetId: source.id,
                 sourceAssetName: source.name,
@@ -141,11 +138,63 @@ class TransactionNotifier extends _$TransactionNotifier {
       }
     }
 
+    // 4. Update linked account balance
+    if (transaction.accountId != null) {
+      try {
+        final assets = await ref.read(assetNotifierProvider.future);
+        final asset = assets.firstWhere((a) => a.id == transaction.accountId);
+        final delta =
+            transaction.isIncome ? transaction.amount : -transaction.amount;
+        await ref.read(assetNotifierProvider.notifier).updateAsset(
+              asset.copyWith(amount: asset.amount + delta),
+            );
+      } catch (e) {
+        debugPrint('Error updating account balance on add: $e');
+      }
+    }
+
     await repository.addTransaction(transaction);
   }
 
   Future<void> updateTransaction(Transaction transaction) async {
     final repository = ref.read(transactionRepositoryProvider);
+
+    // Calculate balance difference if account changed or amount changed
+    // We need to fetch the OLD transaction to compute the diff
+    try {
+      final allTransactions =
+          await ref.read(transactionNotifierProvider.future);
+      final oldTx = allTransactions.firstWhere((t) => t.id == transaction.id);
+
+      // Reverse old effect
+      if (oldTx.accountId != null) {
+        final assets = await ref.read(assetNotifierProvider.future);
+        try {
+          final oldAsset = assets.firstWhere((a) => a.id == oldTx.accountId);
+          final oldDelta = oldTx.isIncome ? -oldTx.amount : oldTx.amount;
+          await ref.read(assetNotifierProvider.notifier).updateAsset(
+                oldAsset.copyWith(amount: oldAsset.amount + oldDelta),
+              );
+        } catch (_) {}
+      }
+
+      // Apply new effect
+      if (transaction.accountId != null) {
+        final assets = await ref.read(assetNotifierProvider.future);
+        try {
+          final newAsset =
+              assets.firstWhere((a) => a.id == transaction.accountId);
+          final newDelta =
+              transaction.isIncome ? transaction.amount : -transaction.amount;
+          await ref.read(assetNotifierProvider.notifier).updateAsset(
+                newAsset.copyWith(amount: newAsset.amount + newDelta),
+              );
+        } catch (_) {}
+      }
+    } catch (e) {
+      debugPrint('Error updating account balance on edit: $e');
+    }
+
     await repository.updateTransaction(transaction);
   }
 
@@ -199,9 +248,8 @@ class TransactionNotifier extends _$TransactionNotifier {
         // Reverse: if original was income (withdrawal, -amount), reverse = add back
         //          if original was expense (contribution, +amount), reverse = subtract
         final wasWithdrawal = transaction.isIncome;
-        final reverseAmount = wasWithdrawal
-            ? transaction.amount
-            : -transaction.amount;
+        final reverseAmount =
+            wasWithdrawal ? transaction.amount : -transaction.amount;
         final updatedGoal = goal.copyWith(
           currentAmount: goal.currentAmount + reverseAmount,
           history: [
@@ -237,6 +285,21 @@ class TransactionNotifier extends _$TransactionNotifier {
         }
       } catch (e) {
         debugPrint('Error reversing linked debt transfer: $e');
+      }
+    }
+
+    // 3. Reverse linked account balance
+    if (transaction.accountId != null) {
+      try {
+        final assets = await ref.read(assetNotifierProvider.future);
+        final asset = assets.firstWhere((a) => a.id == transaction.accountId);
+        final delta =
+            transaction.isIncome ? -transaction.amount : transaction.amount;
+        await ref.read(assetNotifierProvider.notifier).updateAsset(
+              asset.copyWith(amount: asset.amount + delta),
+            );
+      } catch (e) {
+        debugPrint('Error reversing account balance on delete: $e');
       }
     }
 

@@ -13,9 +13,8 @@ String _$userProfileHash() => r'fa0809552c1fa26c7dbcd4426a1093c8a6d0ff84';
 final userProfileProvider = AutoDisposeStreamProvider<UserProfile?>.internal(
   userProfile,
   name: r'userProfileProvider',
-  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-      ? null
-      : _$userProfileHash,
+  debugGetCreateSourceHash:
+      const bool.fromEnvironment('dart.vm.product') ? null : _$userProfileHash,
   dependencies: null,
   allTransitiveDependencies: null,
 );

@@ -12,8 +12,7 @@ part of 'transfer.dart';
 T _$identity<T>(T value) => value;
 
 final _privateConstructorUsedError = UnsupportedError(
-  'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
-);
+    'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models');
 
 Transfer _$TransferFromJson(Map<String, dynamic> json) {
   return _Transfer.fromJson(json);
@@ -48,18 +47,17 @@ abstract class $TransferCopyWith<$Res> {
   factory $TransferCopyWith(Transfer value, $Res Function(Transfer) then) =
       _$TransferCopyWithImpl<$Res, Transfer>;
   @useResult
-  $Res call({
-    String id,
-    String groupId,
-    DateTime date,
-    double amount,
-    String sourceAssetId,
-    String sourceAssetName,
-    TransferDestinationType destinationType,
-    String destinationId,
-    String destinationName,
-    String? note,
-  });
+  $Res call(
+      {String id,
+      String groupId,
+      DateTime date,
+      double amount,
+      String sourceAssetId,
+      String sourceAssetName,
+      TransferDestinationType destinationType,
+      String destinationId,
+      String destinationName,
+      String? note});
 }
 
 /// @nodoc
@@ -88,51 +86,48 @@ class _$TransferCopyWithImpl<$Res, $Val extends Transfer>
     Object? destinationName = null,
     Object? note = freezed,
   }) {
-    return _then(
-      _value.copyWith(
-            id: null == id
-                ? _value.id
-                : id // ignore: cast_nullable_to_non_nullable
-                      as String,
-            groupId: null == groupId
-                ? _value.groupId
-                : groupId // ignore: cast_nullable_to_non_nullable
-                      as String,
-            date: null == date
-                ? _value.date
-                : date // ignore: cast_nullable_to_non_nullable
-                      as DateTime,
-            amount: null == amount
-                ? _value.amount
-                : amount // ignore: cast_nullable_to_non_nullable
-                      as double,
-            sourceAssetId: null == sourceAssetId
-                ? _value.sourceAssetId
-                : sourceAssetId // ignore: cast_nullable_to_non_nullable
-                      as String,
-            sourceAssetName: null == sourceAssetName
-                ? _value.sourceAssetName
-                : sourceAssetName // ignore: cast_nullable_to_non_nullable
-                      as String,
-            destinationType: null == destinationType
-                ? _value.destinationType
-                : destinationType // ignore: cast_nullable_to_non_nullable
-                      as TransferDestinationType,
-            destinationId: null == destinationId
-                ? _value.destinationId
-                : destinationId // ignore: cast_nullable_to_non_nullable
-                      as String,
-            destinationName: null == destinationName
-                ? _value.destinationName
-                : destinationName // ignore: cast_nullable_to_non_nullable
-                      as String,
-            note: freezed == note
-                ? _value.note
-                : note // ignore: cast_nullable_to_non_nullable
-                      as String?,
-          )
-          as $Val,
-    );
+    return _then(_value.copyWith(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      groupId: null == groupId
+          ? _value.groupId
+          : groupId // ignore: cast_nullable_to_non_nullable
+              as String,
+      date: null == date
+          ? _value.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as double,
+      sourceAssetId: null == sourceAssetId
+          ? _value.sourceAssetId
+          : sourceAssetId // ignore: cast_nullable_to_non_nullable
+              as String,
+      sourceAssetName: null == sourceAssetName
+          ? _value.sourceAssetName
+          : sourceAssetName // ignore: cast_nullable_to_non_nullable
+              as String,
+      destinationType: null == destinationType
+          ? _value.destinationType
+          : destinationType // ignore: cast_nullable_to_non_nullable
+              as TransferDestinationType,
+      destinationId: null == destinationId
+          ? _value.destinationId
+          : destinationId // ignore: cast_nullable_to_non_nullable
+              as String,
+      destinationName: null == destinationName
+          ? _value.destinationName
+          : destinationName // ignore: cast_nullable_to_non_nullable
+              as String,
+      note: freezed == note
+          ? _value.note
+          : note // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ) as $Val);
   }
 }
 
@@ -140,23 +135,21 @@ class _$TransferCopyWithImpl<$Res, $Val extends Transfer>
 abstract class _$$TransferImplCopyWith<$Res>
     implements $TransferCopyWith<$Res> {
   factory _$$TransferImplCopyWith(
-    _$TransferImpl value,
-    $Res Function(_$TransferImpl) then,
-  ) = __$$TransferImplCopyWithImpl<$Res>;
+          _$TransferImpl value, $Res Function(_$TransferImpl) then) =
+      __$$TransferImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({
-    String id,
-    String groupId,
-    DateTime date,
-    double amount,
-    String sourceAssetId,
-    String sourceAssetName,
-    TransferDestinationType destinationType,
-    String destinationId,
-    String destinationName,
-    String? note,
-  });
+  $Res call(
+      {String id,
+      String groupId,
+      DateTime date,
+      double amount,
+      String sourceAssetId,
+      String sourceAssetName,
+      TransferDestinationType destinationType,
+      String destinationId,
+      String destinationName,
+      String? note});
 }
 
 /// @nodoc
@@ -164,9 +157,8 @@ class __$$TransferImplCopyWithImpl<$Res>
     extends _$TransferCopyWithImpl<$Res, _$TransferImpl>
     implements _$$TransferImplCopyWith<$Res> {
   __$$TransferImplCopyWithImpl(
-    _$TransferImpl _value,
-    $Res Function(_$TransferImpl) _then,
-  ) : super(_value, _then);
+      _$TransferImpl _value, $Res Function(_$TransferImpl) _then)
+      : super(_value, _then);
 
   /// Create a copy of Transfer
   /// with the given fields replaced by the non-null parameter values.
@@ -184,68 +176,65 @@ class __$$TransferImplCopyWithImpl<$Res>
     Object? destinationName = null,
     Object? note = freezed,
   }) {
-    return _then(
-      _$TransferImpl(
-        id: null == id
-            ? _value.id
-            : id // ignore: cast_nullable_to_non_nullable
-                  as String,
-        groupId: null == groupId
-            ? _value.groupId
-            : groupId // ignore: cast_nullable_to_non_nullable
-                  as String,
-        date: null == date
-            ? _value.date
-            : date // ignore: cast_nullable_to_non_nullable
-                  as DateTime,
-        amount: null == amount
-            ? _value.amount
-            : amount // ignore: cast_nullable_to_non_nullable
-                  as double,
-        sourceAssetId: null == sourceAssetId
-            ? _value.sourceAssetId
-            : sourceAssetId // ignore: cast_nullable_to_non_nullable
-                  as String,
-        sourceAssetName: null == sourceAssetName
-            ? _value.sourceAssetName
-            : sourceAssetName // ignore: cast_nullable_to_non_nullable
-                  as String,
-        destinationType: null == destinationType
-            ? _value.destinationType
-            : destinationType // ignore: cast_nullable_to_non_nullable
-                  as TransferDestinationType,
-        destinationId: null == destinationId
-            ? _value.destinationId
-            : destinationId // ignore: cast_nullable_to_non_nullable
-                  as String,
-        destinationName: null == destinationName
-            ? _value.destinationName
-            : destinationName // ignore: cast_nullable_to_non_nullable
-                  as String,
-        note: freezed == note
-            ? _value.note
-            : note // ignore: cast_nullable_to_non_nullable
-                  as String?,
-      ),
-    );
+    return _then(_$TransferImpl(
+      id: null == id
+          ? _value.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      groupId: null == groupId
+          ? _value.groupId
+          : groupId // ignore: cast_nullable_to_non_nullable
+              as String,
+      date: null == date
+          ? _value.date
+          : date // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      amount: null == amount
+          ? _value.amount
+          : amount // ignore: cast_nullable_to_non_nullable
+              as double,
+      sourceAssetId: null == sourceAssetId
+          ? _value.sourceAssetId
+          : sourceAssetId // ignore: cast_nullable_to_non_nullable
+              as String,
+      sourceAssetName: null == sourceAssetName
+          ? _value.sourceAssetName
+          : sourceAssetName // ignore: cast_nullable_to_non_nullable
+              as String,
+      destinationType: null == destinationType
+          ? _value.destinationType
+          : destinationType // ignore: cast_nullable_to_non_nullable
+              as TransferDestinationType,
+      destinationId: null == destinationId
+          ? _value.destinationId
+          : destinationId // ignore: cast_nullable_to_non_nullable
+              as String,
+      destinationName: null == destinationName
+          ? _value.destinationName
+          : destinationName // ignore: cast_nullable_to_non_nullable
+              as String,
+      note: freezed == note
+          ? _value.note
+          : note // ignore: cast_nullable_to_non_nullable
+              as String?,
+    ));
   }
 }
 
 /// @nodoc
 @JsonSerializable()
 class _$TransferImpl implements _Transfer {
-  const _$TransferImpl({
-    required this.id,
-    required this.groupId,
-    required this.date,
-    required this.amount,
-    required this.sourceAssetId,
-    required this.sourceAssetName,
-    required this.destinationType,
-    required this.destinationId,
-    required this.destinationName,
-    this.note,
-  });
+  const _$TransferImpl(
+      {required this.id,
+      required this.groupId,
+      required this.date,
+      required this.amount,
+      required this.sourceAssetId,
+      required this.sourceAssetName,
+      required this.destinationType,
+      required this.destinationId,
+      required this.destinationName,
+      this.note});
 
   factory _$TransferImpl.fromJson(Map<String, dynamic> json) =>
       _$$TransferImplFromJson(json);
@@ -262,14 +251,14 @@ class _$TransferImpl implements _Transfer {
   final String sourceAssetId;
   @override
   final String sourceAssetName;
-  // Snapshot
+// Snapshot
   @override
   final TransferDestinationType destinationType;
   @override
   final String destinationId;
   @override
   final String destinationName;
-  // Snapshot
+// Snapshot
   @override
   final String? note;
 
@@ -303,18 +292,17 @@ class _$TransferImpl implements _Transfer {
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   int get hashCode => Object.hash(
-    runtimeType,
-    id,
-    groupId,
-    date,
-    amount,
-    sourceAssetId,
-    sourceAssetName,
-    destinationType,
-    destinationId,
-    destinationName,
-    note,
-  );
+      runtimeType,
+      id,
+      groupId,
+      date,
+      amount,
+      sourceAssetId,
+      sourceAssetName,
+      destinationType,
+      destinationId,
+      destinationName,
+      note);
 
   /// Create a copy of Transfer
   /// with the given fields replaced by the non-null parameter values.
@@ -326,23 +314,24 @@ class _$TransferImpl implements _Transfer {
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$TransferImplToJson(this);
+    return _$$TransferImplToJson(
+      this,
+    );
   }
 }
 
 abstract class _Transfer implements Transfer {
-  const factory _Transfer({
-    required final String id,
-    required final String groupId,
-    required final DateTime date,
-    required final double amount,
-    required final String sourceAssetId,
-    required final String sourceAssetName,
-    required final TransferDestinationType destinationType,
-    required final String destinationId,
-    required final String destinationName,
-    final String? note,
-  }) = _$TransferImpl;
+  const factory _Transfer(
+      {required final String id,
+      required final String groupId,
+      required final DateTime date,
+      required final double amount,
+      required final String sourceAssetId,
+      required final String sourceAssetName,
+      required final TransferDestinationType destinationType,
+      required final String destinationId,
+      required final String destinationName,
+      final String? note}) = _$TransferImpl;
 
   factory _Transfer.fromJson(Map<String, dynamic> json) =
       _$TransferImpl.fromJson;

@@ -87,143 +87,207 @@ class ImportService {
     // Row 4: Column Names
     // Row 5+: Data
 
-    // Using default CsvDecoder (available in 7.1.0)
-    final List<List<dynamic>> rows = const csv.CsvDecoder(
-      fieldDelimiter: ';', // CaixaBank often uses ; but sometimes ,
-    ).convert(csvContent);
+    // Detect Format
+    bool isFormatA = false; // Detailed
+    bool isFormatB = false; // Fast
 
-    // If rows < 5, probably empty or wrong format
-    // But let's be flexible. Find the header row.
-    // 'D. Operació' is a key column.
-
-    int dataStartIndex = -1;
-    Map<String, int> headerMap = {};
-
-    for (int i = 0; i < rows.length; i++) {
-      final row = rows[i];
-      if (row.isNotEmpty) {
-        // Find header row
-        // Looking for 'D. Operació' or similar
-        // Convert dynamic to string safely
-        final rowStrings = row.map((e) => e.toString().trim()).toList();
-        if (rowStrings.contains('D. Operació') ||
-            rowStrings.contains('Fecha') ||
-            rowStrings.contains('Date')) {
-          // Found header
-          for (int j = 0; j < rowStrings.length; j++) {
-            headerMap[rowStrings[j]] = j;
-          }
-          dataStartIndex = i + 1;
-          break;
-        }
+    final lines = const LineSplitter().convert(csvContent);
+    if (lines.length > 3) {
+      final line4 = lines[3];
+      if (line4.contains('Número de compte') ||
+          line4.contains('Numero de cuenta')) {
+        isFormatA = true;
+      } else if (line4.contains('Data;Data valor;Moviment') ||
+          line4.contains('Fecha;Fecha valor;Movimiento')) {
+        isFormatB = true;
       }
     }
 
-    if (dataStartIndex == -1) {
-      // Fallback: try reading from row 0 if it looks like data?
-      // Or throw error
-      throw Exception('Format no reconegut (no s\'ha trobat la capçalera)');
+    // Fallback detection
+    if (!isFormatA && !isFormatB) {
+      if (csvContent.contains('Data;Data valor;Moviment')) {
+        isFormatB = true;
+      } else {
+        isFormatA = true;
+      }
     }
 
     final List<ImportedTransaction> imported = [];
-    final dateFormat = DateFormat('dd/MM/yyyy'); // CaixaBank format
-
-    // Existing transactions for duplicate check
+    final dateFormat = DateFormat('dd/MM/yyyy');
     final existingTransactions = await _fetchExistingTransactions();
 
-    for (int i = dataStartIndex; i < rows.length; i++) {
-      final row = rows[i];
-      if (row.isEmpty) continue;
+    if (isFormatB) {
+      // --- FORMAT B (Fast) ---
+      final rows =
+          const csv.CsvDecoder(fieldDelimiter: ';').convert(csvContent);
 
-      try {
-        // Extract fields
-        // Date
-        String dateStr = _getValue(row, headerMap, [
-          'D. Operació',
-          'Fecha',
-          'Date',
-        ]);
-        DateTime date;
+      // Find header row for Format B
+      int startRow = -1;
+      for (int i = 0; i < rows.length; i++) {
+        final rowStr = rows[i].join(';');
+        if (rowStr.contains('Data;Data valor;Moviment') ||
+            rowStr.contains('Fecha;Fecha valor')) {
+          startRow = i + 1;
+          break;
+        }
+      }
+      if (startRow == -1) startRow = 4; // Default fallback
+
+      for (int i = startRow; i < rows.length; i++) {
+        final row = rows[i];
+        if (row.isEmpty || row.length < 5) continue;
+
         try {
-          date = dateFormat.parse(dateStr);
-        } catch (_) {
-          continue; // Skip invalid dates
+          // Col 0: Date
+          String dateStr = row[0].toString().trim();
+          DateTime date;
+          try {
+            date = dateFormat.parse(dateStr);
+          } catch (_) {
+            continue;
+          }
+
+          // Col 2: Concept, Col 3: Extra
+          String concept = row[2].toString().trim();
+          String extra = row[3].toString().trim();
+          if (extra.isNotEmpty) concept = "$concept $extra".trim();
+
+          // Col 4: Amount (signed, ES format)
+          String amountStr = row[4].toString().trim();
+          // Replace , with .
+          amountStr = amountStr.replaceAll(',', '.');
+          double amount = double.tryParse(amountStr) ?? 0.0;
+
+          if (amount == 0.0) continue;
+
+          ImportedTransaction tx = ImportedTransaction(
+            id: UniqueKey().toString(),
+            date: date,
+            dateString: dateStr,
+            concept: concept,
+            amount: amount,
+            selected: true,
+          );
+
+          tx.isDuplicate = _checkIsDuplicate(tx, existingTransactions);
+          if (tx.isDuplicate) tx.selected = false;
+          await _autoCategorize(tx);
+          imported.add(tx);
+        } catch (e) {
+          debugPrint('Error parsing row B $i: $e');
         }
-
-        // Concept
-        // 'Concepte' + 'Concepte complementari 1' (optional)
-        String concept = _getValue(row, headerMap, [
-          'Concepte',
-          'Concepto',
-          'Concept',
-        ]);
-        String extraInfo = _getValue(row, headerMap, [
-          'Concepte complementari 1',
-          'Más información',
-        ]);
-        if (extraInfo.isNotEmpty) {
-          concept += " $extraInfo";
+      }
+    } else {
+      // --- FORMAT A (Detailed) ---
+      // Try semicolon first as per original code, but check if comma is better
+      String delimiter = ';';
+      if (lines.length > 3) {
+        if (lines[3].split(',').length > lines[3].split(';').length) {
+          delimiter = ',';
         }
-        concept = concept.trim();
+      }
 
-        // Amount
-        // 'Ingrés (+)' or 'Import' (signed) or 'Despesa (-)'
-        // CaixaBank often has 'Ingrés (+)' (positive) and 'Despesa (-)' (positive number, implies negative)
-        // Or single 'Import' column.
+      final rows =
+          csv.CsvDecoder(fieldDelimiter: delimiter).convert(csvContent);
 
-        double amount = 0.0;
+      int dataStartIndex = -1;
+      Map<String, int> headerMap = {};
 
-        String amountIncomeStr = _getValue(row, headerMap, [
-          'Ingrés (+)',
-          'Ingresos',
-          'Income',
-        ]);
-        String amountExpenseStr = _getValue(row, headerMap, [
-          'Despesa (-)',
-          'Gastos',
-          'Expense',
-        ]);
-        String amountSingleStr = _getValue(row, headerMap, [
-          'Import',
-          'Importe',
-          'Amount',
-        ]); // Sometimes signed
-
-        if (amountIncomeStr.isNotEmpty) {
-          amount = _parseAmount(amountIncomeStr);
-        } else if (amountExpenseStr.isNotEmpty) {
-          amount = -_parseAmount(amountExpenseStr); // Make negative
-        } else if (amountSingleStr.isNotEmpty) {
-          amount = _parseAmount(amountSingleStr);
+      for (int i = 0; i < rows.length; i++) {
+        final row = rows[i];
+        if (row.isNotEmpty) {
+          final rowStrings = row.map((e) => e.toString().trim()).toList();
+          if (rowStrings.contains('D. Operació') ||
+              rowStrings.contains('Fecha') ||
+              rowStrings.contains('Date') ||
+              rowStrings.contains('Número de compte')) {
+            for (int j = 0; j < rowStrings.length; j++) {
+              headerMap[rowStrings[j]] = j;
+            }
+            dataStartIndex = i + 1;
+            break;
+          }
         }
+      }
 
-        if (amount == 0.0) continue; // Skip zero/empty
+      if (dataStartIndex != -1) {
+        for (int i = dataStartIndex; i < rows.length; i++) {
+          final row = rows[i];
+          if (row.isEmpty) continue;
 
-        // Create object
-        final transaction = ImportedTransaction(
-          id: UniqueKey().toString(), // Temp ID
-          date: date,
-          dateString: dateStr,
-          concept: concept,
-          amount: amount,
-          selected: true,
-        );
+          try {
+            String dateStr = _getValue(row, headerMap, [
+              'D. Operació',
+              'Fecha',
+              'Date',
+            ]);
+            DateTime date;
+            try {
+              date = dateFormat.parse(dateStr);
+            } catch (_) {
+              continue;
+            }
 
-        // Duplicate Check
-        transaction.isDuplicate = _checkIsDuplicate(
-          transaction,
-          existingTransactions,
-        );
-        if (transaction.isDuplicate) {
-          transaction.selected = false;
+            String concept = _getValue(row, headerMap, [
+              'Concepte',
+              'Concepto',
+              'Concept',
+            ]);
+            String extraInfo = _getValue(row, headerMap, [
+              'Concepte complementari 1',
+              'Más información',
+            ]);
+            if (extraInfo.isNotEmpty) concept += " $extraInfo";
+            concept = concept.trim();
+
+            double amount = 0.0;
+            String amountIncomeStr = _getValue(row, headerMap, [
+              'Ingrés (+)',
+              'Ingresos',
+              'Income',
+            ]);
+            String amountExpenseStr = _getValue(row, headerMap, [
+              'Despesa (-)',
+              'Gastos',
+              'Expense',
+            ]);
+            String amountSingleStr = _getValue(row, headerMap, [
+              'Import',
+              'Importe',
+              'Amount',
+            ]);
+
+            if (amountIncomeStr.isNotEmpty) {
+              amount = _parseAmount(amountIncomeStr);
+            } else if (amountExpenseStr.isNotEmpty) {
+              amount = -_parseAmount(amountExpenseStr);
+            } else if (amountSingleStr.isNotEmpty) {
+              amount = _parseAmount(amountSingleStr);
+            }
+
+            if (amount == 0.0) continue;
+
+            final transaction = ImportedTransaction(
+              id: UniqueKey().toString(),
+              date: date,
+              dateString: dateStr,
+              concept: concept,
+              amount: amount,
+              selected: true,
+            );
+
+            transaction.isDuplicate = _checkIsDuplicate(
+              transaction,
+              existingTransactions,
+            );
+            if (transaction.isDuplicate) transaction.selected = false;
+            await _autoCategorize(transaction);
+
+            imported.add(transaction);
+          } catch (e) {
+            debugPrint('Error parsing row A $i: $e');
+          }
         }
-
-        // Auto Categorize
-        await _autoCategorize(transaction);
-
-        imported.add(transaction);
-      } catch (e) {
-        debugPrint('Error parsing row $i: $e');
       }
     }
 

@@ -13,33 +13,33 @@ String _$currentMonthBudgetEntriesHash() =>
 @ProviderFor(currentMonthBudgetEntries)
 final currentMonthBudgetEntriesProvider =
     AutoDisposeStreamProvider<List<BudgetEntry>>.internal(
-      currentMonthBudgetEntries,
-      name: r'currentMonthBudgetEntriesProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$currentMonthBudgetEntriesHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  currentMonthBudgetEntries,
+  name: r'currentMonthBudgetEntriesProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$currentMonthBudgetEntriesHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef CurrentMonthBudgetEntriesRef =
-    AutoDisposeStreamProviderRef<List<BudgetEntry>>;
+typedef CurrentMonthBudgetEntriesRef
+    = AutoDisposeStreamProviderRef<List<BudgetEntry>>;
 String _$zeroBudgetBalanceHash() => r'2b5006c7a7f947b24698fa78f9ab8bd0b314717c';
 
 /// See also [zeroBudgetBalance].
 @ProviderFor(zeroBudgetBalance)
 final zeroBudgetBalanceProvider =
     AutoDisposeFutureProvider<ZeroBudgetSummary>.internal(
-      zeroBudgetBalance,
-      name: r'zeroBudgetBalanceProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$zeroBudgetBalanceHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  zeroBudgetBalance,
+  name: r'zeroBudgetBalanceProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$zeroBudgetBalanceHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
@@ -48,19 +48,16 @@ String _$budgetNotifierHash() => r'd73cfc7f29e8ee53d5e44777d612e7a3721647d7';
 
 /// See also [BudgetNotifier].
 @ProviderFor(BudgetNotifier)
-final budgetNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<
-      BudgetNotifier,
-      List<BudgetStatus>
-    >.internal(
-      BudgetNotifier.new,
-      name: r'budgetNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$budgetNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final budgetNotifierProvider = AutoDisposeAsyncNotifierProvider<BudgetNotifier,
+    List<BudgetStatus>>.internal(
+  BudgetNotifier.new,
+  name: r'budgetNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$budgetNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$BudgetNotifier = AutoDisposeAsyncNotifier<List<BudgetStatus>>;
 String _$dashboardBudgetNotifierHash() =>
@@ -68,22 +65,19 @@ String _$dashboardBudgetNotifierHash() =>
 
 /// See also [DashboardBudgetNotifier].
 @ProviderFor(DashboardBudgetNotifier)
-final dashboardBudgetNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<
-      DashboardBudgetNotifier,
-      List<BudgetStatus>
-    >.internal(
-      DashboardBudgetNotifier.new,
-      name: r'dashboardBudgetNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$dashboardBudgetNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final dashboardBudgetNotifierProvider = AutoDisposeAsyncNotifierProvider<
+    DashboardBudgetNotifier, List<BudgetStatus>>.internal(
+  DashboardBudgetNotifier.new,
+  name: r'dashboardBudgetNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$dashboardBudgetNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
-typedef _$DashboardBudgetNotifier =
-    AutoDisposeAsyncNotifier<List<BudgetStatus>>;
+typedef _$DashboardBudgetNotifier
+    = AutoDisposeAsyncNotifier<List<BudgetStatus>>;
 String _$budgetContextNotifierHash() =>
     r'35113d303e4f6b7b836f53507c813fc7bccf2a08';
 
@@ -93,14 +87,14 @@ String _$budgetContextNotifierHash() =>
 @ProviderFor(BudgetContextNotifier)
 final budgetContextNotifierProvider =
     AutoDisposeNotifierProvider<BudgetContextNotifier, BillingCycle?>.internal(
-      BudgetContextNotifier.new,
-      name: r'budgetContextNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$budgetContextNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+  BudgetContextNotifier.new,
+  name: r'budgetContextNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$budgetContextNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$BudgetContextNotifier = AutoDisposeNotifier<BillingCycle?>;
 // ignore_for_file: type=lint

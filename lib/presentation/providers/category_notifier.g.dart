@@ -10,19 +10,16 @@ String _$categoryNotifierHash() => r'18a06c446a9607e6565311a07056cebb5dac70f7';
 
 /// See also [CategoryNotifier].
 @ProviderFor(CategoryNotifier)
-final categoryNotifierProvider =
-    AutoDisposeStreamNotifierProvider<
-      CategoryNotifier,
-      List<Category>
-    >.internal(
-      CategoryNotifier.new,
-      name: r'categoryNotifierProvider',
-      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
-          ? null
-          : _$categoryNotifierHash,
-      dependencies: null,
-      allTransitiveDependencies: null,
-    );
+final categoryNotifierProvider = AutoDisposeStreamNotifierProvider<
+    CategoryNotifier, List<Category>>.internal(
+  CategoryNotifier.new,
+  name: r'categoryNotifierProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$categoryNotifierHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
 
 typedef _$CategoryNotifier = AutoDisposeStreamNotifier<List<Category>>;
 // ignore_for_file: type=lint
