@@ -90,9 +90,8 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
       }
 
       final daysInStartMonth = DateTime(startYear, startMonth + 1, 0).day;
-      final startDay = anchorDay > daysInStartMonth
-          ? daysInStartMonth
-          : anchorDay;
+      final startDay =
+          anchorDay > daysInStartMonth ? daysInStartMonth : anchorDay;
       final newStartDate = DateTime(startYear, startMonth, startDay);
 
       // End Date: Target Month, Anchor Day - 1 second (so it ends day before next cycle starts)
@@ -101,9 +100,8 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
       // So End Date is (targetYear, targetMonth, anchorDay) - 1 second.
 
       final daysInTargetMonth = DateTime(targetYear, targetMonth + 1, 0).day;
-      final endDay = anchorDay > daysInTargetMonth
-          ? daysInTargetMonth
-          : anchorDay;
+      final endDay =
+          anchorDay > daysInTargetMonth ? daysInTargetMonth : anchorDay;
       final nextCycleStart = DateTime(targetYear, targetMonth, endDay);
       final newEndDate = nextCycleStart.subtract(const Duration(seconds: 1));
 
@@ -157,9 +155,8 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
 
       // Calculate End Date
       final daysInTargetMonth = DateTime(targetYear, targetMonth + 1, 0).day;
-      final eDay = anchorDay > daysInTargetMonth
-          ? daysInTargetMonth
-          : anchorDay;
+      final eDay =
+          anchorDay > daysInTargetMonth ? daysInTargetMonth : anchorDay;
       final nextStart = DateTime(targetYear, targetMonth, eDay);
       final endDate = nextStart.subtract(const Duration(seconds: 1));
 

@@ -150,8 +150,7 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
   Future<void> _save() async {
     if (_nameController.text.trim().isEmpty) return;
 
-    final newCategory =
-        widget.category?.copyWith(
+    final newCategory = widget.category?.copyWith(
           name: _nameController.text.trim(),
           icon: _selectedIcon,
           type: _selectedType,
@@ -183,9 +182,8 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
   @override
   Widget build(BuildContext context) {
     // Determine the active color for UI feedback
-    final activeColor = _selectedColor != null
-        ? Color(_selectedColor!)
-        : AppTheme.copper;
+    final activeColor =
+        _selectedColor != null ? Color(_selectedColor!) : AppTheme.copper;
 
     return Container(
       padding: EdgeInsets.only(
@@ -230,9 +228,9 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
               controller: _nameController,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.anthracite,
-              ),
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.anthracite,
+                  ),
               decoration: const InputDecoration(
                 hintText: 'Nom',
                 border: InputBorder.none,
@@ -280,9 +278,9 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
               child: Text(
                 'Color',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Colors.grey[700],
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ),
             const SizedBox(height: 12),

@@ -108,4 +108,57 @@ class SavingsGoalNotifier extends _$SavingsGoalNotifier {
     );
     await repo.updateSavingsGoal(updatedGoal);
   }
+
+  Future<void> adjustBalance(String goalId, double newAmount) async {
+    final groupId = await ref.read(currentGroupIdProvider.future);
+    if (groupId == null) return;
+
+    final repo = ref.read(savingsGoalRepositoryProvider);
+    final goals = await future;
+    final goal = goals.firstWhere((g) => g.id == goalId);
+
+    if (newAmount == goal.currentAmount) return;
+
+    final difference = newAmount - goal.currentAmount;
+    final isPositiveAdjustment = difference > 0;
+
+    // 1. Update Goal
+    final newEntry = SavingsEntry(
+      date: DateTime.now(),
+      amount: difference,
+      note: 'Ajust de saldo',
+    );
+    final history = [...goal.history, newEntry];
+    final updatedGoal = goal.copyWith(
+      currentAmount: newAmount,
+      history: history,
+    );
+    await repo.updateSavingsGoal(updatedGoal);
+
+    // 2. Create Transaction to balance the main budget
+    final transactionRepo = ref.read(transactionRepositoryProvider);
+    const categoryId = 'savings_category_id'; // Placeholder
+    const categoryName = 'Estalvi';
+
+    final transaction = Transaction(
+      id: null,
+      groupId: groupId,
+      date: DateTime.now(),
+      amount: difference.abs(),
+      concept: 'Ajust de saldo a ${goal.name}',
+      categoryId: categoryId,
+      subCategoryId: 'adjustment_sub',
+      categoryName: categoryName,
+      subCategoryName: 'Ajust',
+      payer: 'User',
+      // If positive adjustment (added to goal), it's an expense from main budget
+      // If negative adjustment (removed from goal), it's an income to main budget
+      isIncome: !isPositiveAdjustment,
+      // If it's a withdrawal (negative difference -> income),
+      // do NOT set savingsGoalId here because we ALREADY updated the goal above.
+      // TransactionNotifier deducts from goal if savingsGoalId is set.
+    );
+
+    await transactionRepo.addTransaction(transaction);
+  }
 }

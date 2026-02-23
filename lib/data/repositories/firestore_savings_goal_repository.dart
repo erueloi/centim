@@ -11,11 +11,11 @@ class FirestoreSavingsGoalRepository {
         .where('groupId', isEqualTo: groupId)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            final data = doc.data();
-            return _fromMap(data, doc.id);
-          }).toList();
-        });
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return _fromMap(data, doc.id);
+      }).toList();
+    });
   }
 
   Future<void> addSavingsGoal(SavingsGoal goal) async {
@@ -53,8 +53,7 @@ class FirestoreSavingsGoalRepository {
       currentAmount: (data['currentAmount'] as num?)?.toDouble() ?? 0.0,
       targetAmount: (data['targetAmount'] as num?)?.toDouble(),
       color: (data['color'] as int?) ?? 0xFF4CAF50, // Default Green
-      history:
-          (data['history'] as List<dynamic>?)
+      history: (data['history'] as List<dynamic>?)
               ?.map((e) => SavingsEntry.fromMap(e as Map<String, dynamic>))
               .toList() ??
           [],

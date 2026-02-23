@@ -14,11 +14,11 @@ class FirestoreBillingCycleRepository implements BillingCycleRepository {
         .orderBy('startDate', descending: false)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs.map((doc) {
-            final data = doc.data();
-            return _fromMap(data, doc.id);
-          }).toList();
-        });
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return _fromMap(data, doc.id);
+      }).toList();
+    });
   }
 
   @override

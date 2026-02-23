@@ -5,6 +5,26 @@ import 'category_notifier.dart';
 
 part 'trends_provider.g.dart';
 
+enum TrendsTimeFilter {
+  thisMonth,
+  lastMonth,
+  last3Months,
+  thisYear,
+}
+
+// Provider for the currently selected filter
+@riverpod
+class TrendsFilterNotifier extends _$TrendsFilterNotifier {
+  @override
+  TrendsTimeFilter build() {
+    return TrendsTimeFilter.thisYear; // Default to 12 months/this year
+  }
+
+  void setFilter(TrendsTimeFilter filter) {
+    state = filter;
+  }
+}
+
 class MonthlyTrendData {
   final DateTime month;
   final double income;
@@ -33,11 +53,15 @@ class TrendsData {
   final List<MonthlyTrendData> monthlyFlow;
   final List<CategoryTrendData> topCategories;
   final double savingsRate;
+  final DateTime startDate;
+  final DateTime endDate;
 
   TrendsData({
     required this.monthlyFlow,
     required this.topCategories,
     required this.savingsRate,
+    required this.startDate,
+    required this.endDate,
   });
 }
 
@@ -47,25 +71,51 @@ class TrendsNotifier extends _$TrendsNotifier {
   Future<TrendsData> build() async {
     final transactions = await ref.watch(transactionNotifierProvider.future);
     final categories = await ref.watch(categoryNotifierProvider.future);
+    final selectedFilter = ref.watch(trendsFilterNotifierProvider);
 
-    // 1. Filter Last 12 Months
     final now = DateTime.now();
-    final startDate = DateTime(
-      now.year,
-      now.month - 11,
-      1,
-    ); // 12 months roughly
+    DateTime startDate;
+    DateTime endDate;
+    int monthsToPlot = 0;
+
+    switch (selectedFilter) {
+      case TrendsTimeFilter.thisMonth:
+        startDate = DateTime(now.year, now.month, 1);
+        endDate = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+        monthsToPlot = 1;
+        break;
+      case TrendsTimeFilter.lastMonth:
+        startDate = DateTime(now.year, now.month - 1, 1);
+        endDate = DateTime(now.year, now.month, 0, 23, 59, 59);
+        monthsToPlot = 1;
+        break;
+      case TrendsTimeFilter.last3Months:
+        // Include current month + 2 previous
+        startDate = DateTime(now.year, now.month - 2, 1);
+        endDate = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+        monthsToPlot = 3;
+        break;
+      case TrendsTimeFilter.thisYear:
+        // Last 12 months (or current year, let's stick to last 12 for trends)
+        startDate = DateTime(now.year, now.month - 11, 1);
+        endDate = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+        monthsToPlot = 12;
+        break;
+    }
 
     final recentTransactions = transactions.where((t) {
-      return t.date.isAfter(startDate.subtract(const Duration(days: 1)));
+      return t.date.isAfter(startDate.subtract(const Duration(days: 1))) &&
+          t.date.isBefore(endDate.add(const Duration(days: 1)));
     }).toList();
 
     // 2. Monthly Flow
     Map<String, MonthlyTrendData> monthlyMap = {};
 
-    // Initialize map for all 12 months to ensure 0s
-    for (int i = 0; i < 12; i++) {
-      final d = DateTime(now.year, now.month - i, 1);
+    // Initialize map for the required months to ensure 0s
+    for (int i = 0; i < monthsToPlot; i++) {
+      // If filtering 'lastMonth', we start from now.month-1, so base date offset varies
+      final offset = (selectedFilter == TrendsTimeFilter.lastMonth) ? i + 1 : i;
+      final d = DateTime(now.year, now.month - offset, 1);
       final key = "${d.year}-${d.month}";
       monthlyMap[key] = MonthlyTrendData(month: d, income: 0, expense: 0);
     }
@@ -172,6 +222,8 @@ class TrendsNotifier extends _$TrendsNotifier {
       monthlyFlow: monthlyFlow,
       topCategories: topCategories,
       savingsRate: savingsRate,
+      startDate: startDate,
+      endDate: endDate,
     );
   }
 }

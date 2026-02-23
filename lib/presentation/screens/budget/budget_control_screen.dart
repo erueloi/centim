@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../providers/budget_provider.dart';
@@ -11,6 +12,8 @@ import '../../widgets/responsive_center.dart';
 import 'package:centim/l10n/app_localizations.dart';
 import '../../providers/auth_providers.dart';
 import '../../../data/providers/repository_providers.dart';
+import '../../providers/transaction_notifier.dart';
+import '../../providers/billing_cycle_provider.dart';
 import '../../../domain/models/budget_entry.dart';
 import '../../widgets/cycle_selector.dart';
 import '../../widgets/trends_tab.dart'; // Import TrendsTab
@@ -244,13 +247,12 @@ class _BudgetCard extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '${status.spent.toStringAsFixed(0)}€ / ${status.total.toStringAsFixed(0)}€',
+                  '${status.spent.toStringAsFixed(2).replaceAll('.', ',')}€ / ${status.total.toStringAsFixed(2).replaceAll('.', ',')}€',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    color: status.isOverBudget
-                        ? Colors.red
-                        : AppTheme.anthracite,
+                    color:
+                        status.isOverBudget ? Colors.red : AppTheme.anthracite,
                   ),
                 ),
               ],
@@ -276,6 +278,18 @@ class _BudgetCard extends ConsumerWidget {
                 isReadOnly: isReadOnly,
               );
             }),
+
+          if (status.spent > 0 || status.total > 0) const Divider(height: 24),
+
+          if (status.spent > 0 || status.total > 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: _CategoryTrendsCharts(
+                categoryId: status.category.id,
+                totalBudget: status.total,
+                isIncome: type == TransactionType.income,
+              ),
+            ),
         ],
       ),
     );
@@ -320,9 +334,7 @@ class _SubcategoryRow extends ConsumerWidget {
 
     return InkWell(
       onTap: () {
-        ref
-            .read(transactionFilterNotifierProvider.notifier)
-            .setSubCategory(
+        ref.read(transactionFilterNotifierProvider.notifier).setSubCategory(
               category.id,
               category.name,
               subStatus.subcategory.id,
@@ -372,7 +384,7 @@ class _SubcategoryRow extends ConsumerWidget {
             SizedBox(
               width: 85,
               child: Text(
-                '${subStatus.spent.toStringAsFixed(0)}€/${subStatus.budget.toStringAsFixed(0)}€',
+                '${subStatus.spent.toStringAsFixed(2).replaceAll('.', ',')}€/${subStatus.budget.toStringAsFixed(2).replaceAll('.', ',')}€',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 textAlign: TextAlign.right,
               ),
@@ -401,7 +413,7 @@ class _SubcategoryRow extends ConsumerWidget {
     WidgetRef ref,
   ) async {
     final budgetController = TextEditingController(
-      text: subStatus.budget.toStringAsFixed(0),
+      text: subStatus.budget.toStringAsFixed(2).replaceAll('.', ','),
     );
 
     await showDialog(
@@ -438,7 +450,9 @@ class _SubcategoryRow extends ConsumerWidget {
           ),
           ElevatedButton(
             onPressed: () async {
-              final newBudget = double.tryParse(budgetController.text) ?? 0.0;
+              final newBudget =
+                  double.tryParse(budgetController.text.replaceAll(',', '.')) ??
+                      0.0;
               final selectedDate = ref.read(selectedDateProvider);
               final groupId = ref.read(currentGroupIdProvider).valueOrNull;
 
@@ -473,6 +487,349 @@ class _SubcategoryRow extends ConsumerWidget {
               foregroundColor: Colors.white,
             ),
             child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryTrendsCharts extends ConsumerWidget {
+  final String categoryId;
+  final double totalBudget;
+  final bool isIncome;
+
+  const _CategoryTrendsCharts({
+    required this.categoryId,
+    required this.totalBudget,
+    required this.isIncome,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeCycle = ref.watch(activeCycleProvider);
+    final transactionsAsync = ref.watch(transactionNotifierProvider);
+
+    return transactionsAsync.when(
+      data: (transactions) {
+        // Prepare data for the charts
+        final now = DateTime.now();
+        final cycleStart = activeCycle.startDate;
+        final cycleEnd = activeCycle.endDate;
+        final totalDays = cycleEnd.difference(cycleStart).inDays + 1;
+
+        // --- 1. Burn Rate (LineChart) Data ---
+        // Accumulate spent amount per day for current cycle
+        final dailySpent = <int, double>{};
+        var cumulativeSpent = 0.0;
+
+        // Filter current cycle transactions for this category
+        final currentCycleTx = transactions
+            .where((t) =>
+                t.categoryId == categoryId &&
+                t.date.isAfter(cycleStart.subtract(const Duration(days: 1))) &&
+                t.date.isBefore(cycleEnd.add(const Duration(days: 1))) &&
+                t.isIncome == isIncome)
+            .toList();
+
+        // Sort by date from older to newer
+        currentCycleTx.sort((a, b) => a.date.compareTo(b.date));
+
+        for (int i = 0; i < totalDays; i++) {
+          final currentDate = cycleStart.add(Duration(days: i));
+          // If the day hasn't happened yet, we stop the actual line
+          if (currentDate.isAfter(now)) {
+            break;
+          }
+
+          final spentThatDay = currentCycleTx
+              .where((t) =>
+                  t.date.year == currentDate.year &&
+                  t.date.month == currentDate.month &&
+                  t.date.day == currentDate.day)
+              .fold(0.0, (sum, t) => sum + t.amount);
+
+          cumulativeSpent += spentThatDay;
+          dailySpent[i] = cumulativeSpent;
+        }
+
+        // --- 2. Month-over-Month (BarChart) Data ---
+        // Calculate previous cycle dates (rough approx: minus 1 month)
+        final prevCycleStart =
+            DateTime(cycleStart.year, cycleStart.month - 1, cycleStart.day);
+        final prevCycleEnd = cycleStart.subtract(const Duration(days: 1));
+
+        final prevCycleTx = transactions
+            .where((t) =>
+                t.categoryId == categoryId &&
+                t.date.isAfter(
+                    prevCycleStart.subtract(const Duration(days: 1))) &&
+                t.date.isBefore(prevCycleEnd.add(const Duration(days: 1))) &&
+                t.isIncome == isIncome)
+            .toList();
+
+        final totalCurrentStr =
+            currentCycleTx.fold(0.0, (sum, t) => sum + t.amount);
+        final totalPrevStr = prevCycleTx.fold(0.0, (sum, t) => sum + t.amount);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Burn Rate title
+            Text(
+              'Ritme de Despesa vs Pressupost',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Burn Rate Chart
+            SizedBox(
+              height: 140,
+              child: _buildBurnRateChart(
+                  dailySpent, totalDays, totalBudget, isIncome),
+            ),
+
+            const SizedBox(height: 24),
+
+            // MoM title
+            Text(
+              'Comparativa (Aquest mes vs Anterior)',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // MoM Chart
+            SizedBox(
+              height: 120,
+              child: _buildMoMChart(totalCurrentStr, totalPrevStr, isIncome),
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox(
+        height: 100,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => const SizedBox(),
+    );
+  }
+
+  Widget _buildBurnRateChart(Map<int, double> dailySpent, int totalDays,
+      double totalBudget, bool isIncome) {
+    if (totalBudget == 0 && dailySpent.isEmpty) return const SizedBox();
+
+    final maxY = [
+      totalBudget,
+      if (dailySpent.isNotEmpty)
+        dailySpent.values.reduce((a, b) => a > b ? a : b),
+    ].reduce((a, b) => a > b ? a : b);
+
+    final finalMaxY = (maxY * 1.2).ceilToDouble(); // Add some padding
+
+    return LineChart(
+      LineChartData(
+        minY: 0,
+        maxY: finalMaxY == 0 ? 10 : finalMaxY,
+        minX: 0,
+        maxX: (totalDays - 1).toDouble(),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: finalMaxY > 0 ? finalMaxY / 4 : 2.5,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.grey[200]!,
+            strokeWidth: 1,
+            dashArray: [4, 4],
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 22,
+              interval: 5,
+              getTitlesWidget: (value, meta) {
+                final day = value.toInt() + 1;
+                return SideTitleWidget(
+                  meta: meta,
+                  child: Text(
+                    '$day',
+                    style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                  ),
+                );
+              },
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 36,
+              getTitlesWidget: (value, meta) {
+                if (value == 0 || value == finalMaxY) {
+                  return const SizedBox.shrink();
+                }
+                return Text(
+                  '${value.toInt()}€',
+                  style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                );
+              },
+            ),
+          ),
+        ),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          // Ideal Budget Line (Linear)
+          if (totalBudget > 0)
+            LineChartBarData(
+              spots: [
+                const FlSpot(0, 0),
+                FlSpot((totalDays - 1).toDouble(), totalBudget),
+              ],
+              isCurved: false,
+              color: Colors.grey[400],
+              barWidth: 2,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              dashArray: [5, 5],
+            ),
+
+          // Actual Spent Line
+          if (dailySpent.isNotEmpty)
+            LineChartBarData(
+              spots: dailySpent.entries
+                  .map((e) => FlSpot(e.key.toDouble(), e.value))
+                  .toList(),
+              isCurved: true,
+              color: isIncome ? Colors.green : AppTheme.copper,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: (isIncome ? Colors.green : AppTheme.copper)
+                    .withValues(alpha: 0.1),
+              ),
+            ),
+        ],
+        lineTouchData: LineTouchData(
+          touchTooltipData: LineTouchTooltipData(
+            tooltipRoundedRadius: 8,
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                final isIdeal = spot.barIndex == 0 && totalBudget > 0;
+                return LineTooltipItem(
+                  '${isIdeal ? "Ideal: " : ""}${spot.y.toStringAsFixed(0)}€',
+                  const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                );
+              }).toList();
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoMChart(double currentMonth, double prevMonth, bool isIncome) {
+    if (currentMonth == 0 && prevMonth == 0) return const SizedBox();
+
+    final maxVal = [currentMonth, prevMonth].reduce((a, b) => a > b ? a : b);
+    final isHigher = currentMonth > prevMonth;
+
+    // Determine color based on type
+    final currentColor = isIncome
+        ? Colors.green[600]!
+        : (isHigher ? Colors.red[400]! : Colors.green[400]!);
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceEvenly,
+        maxY: (maxVal * 1.2).ceilToDouble(),
+        barTouchData: BarTouchData(
+          enabled: true,
+          touchTooltipData: BarTouchTooltipData(
+            tooltipRoundedRadius: 8,
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              return BarTooltipItem(
+                '${rod.toY.toStringAsFixed(0)}€',
+                const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold),
+              );
+            },
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 28,
+              getTitlesWidget: (value, meta) {
+                final style = TextStyle(
+                  color: Colors.grey[700],
+                  fontWeight: value == 1 ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 11,
+                );
+                return SideTitleWidget(
+                  meta: meta,
+                  child: Text(value == 0 ? 'Mes Ant.' : 'Actual', style: style),
+                );
+              },
+            ),
+          ),
+          leftTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        barGroups: [
+          // Previous Month
+          BarChartGroupData(
+            x: 0,
+            barRods: [
+              BarChartRodData(
+                toY: prevMonth,
+                color: Colors.grey[400],
+                width: 28,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  topRight: Radius.circular(4),
+                ),
+              ),
+            ],
+          ),
+          // Current Month
+          BarChartGroupData(
+            x: 1,
+            barRods: [
+              BarChartRodData(
+                toY: currentMonth,
+                color: currentColor,
+                width: 28,
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  topRight: Radius.circular(4),
+                ),
+              ),
+            ],
           ),
         ],
       ),

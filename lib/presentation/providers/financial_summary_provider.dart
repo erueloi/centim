@@ -32,9 +32,8 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
 
     // 1. Assets & Liabilities
     // If group.totalAssets is 0, we fallback to the user's specific figure for a better initial experience
-    final totalAssets = (group?.totalAssets ?? 0) > 0
-        ? group!.totalAssets
-        : 100389.92;
+    final totalAssets =
+        (group?.totalAssets ?? 0) > 0 ? group!.totalAssets : 100389.92;
 
     final totalLiabilities = debts.fold(
       0.0,
@@ -91,9 +90,8 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
       availableToSpend: availableToSpend,
       savingsPercentage: totalForBudget > 0 ? savings / totalForBudget : 0.0,
       debtPercentage: totalForBudget > 0 ? debtsPayment / totalForBudget : 0.0,
-      livingExpensesPercentage: totalForBudget > 0
-          ? otherExpenses / totalForBudget
-          : 0.0,
+      livingExpensesPercentage:
+          totalForBudget > 0 ? otherExpenses / totalForBudget : 0.0,
     );
   }
 }

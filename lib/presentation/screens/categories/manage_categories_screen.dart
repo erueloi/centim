@@ -681,30 +681,51 @@ class _CategoryTile extends ConsumerWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: Icon(Icons.edit, size: 20, color: Colors.grey[600]),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      showDragHandle: true,
-                      backgroundColor: Colors.white,
-                      builder: (_) => CategoryEditorSheet(category: category),
-                    );
+                PopupMenuButton<String>(
+                  icon:
+                      Icon(Icons.more_vert, size: 20, color: Colors.grey[600]),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        showDragHandle: true,
+                        backgroundColor: Colors.white,
+                        builder: (_) => CategoryEditorSheet(category: category),
+                      );
+                    } else if (value == 'delete') {
+                      _deleteCategory(context, ref, category);
+                    }
                   },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 18),
+                          SizedBox(width: 8),
+                          Text('Editar'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 18, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Eliminar', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: Icon(Icons.delete, size: 20, color: Colors.grey[600]),
-                  onPressed: () => _deleteCategory(context, ref, category),
-                ),
-                const SizedBox(width: 8),
-                // Custom Drag Handle
                 ReorderableDragStartListener(
                   index: index,
                   child: const Icon(Icons.drag_handle, color: Colors.grey),
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.expand_more),
               ],
             ),
             children: [

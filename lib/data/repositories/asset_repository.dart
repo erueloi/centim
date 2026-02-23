@@ -11,10 +11,8 @@ class AssetRepository {
         .collection('assets')
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => Asset.fromJson(doc.data()))
-              .toList();
-        });
+      return snapshot.docs.map((doc) => Asset.fromJson(doc.data())).toList();
+    });
   }
 
   Future<void> addAsset(String groupId, Asset asset) async {

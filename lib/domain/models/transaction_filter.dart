@@ -5,10 +5,10 @@ part 'transaction_filter.freezed.dart';
 @freezed
 class TransactionFilter with _$TransactionFilter {
   const factory TransactionFilter({
-    String? categoryId,
-    String? categoryName,
-    String? subCategoryId,
-    String? subCategoryName,
+    @Default([]) List<String> categoryIds,
+    @Default({}) Map<String, String> categoryNames, // id -> name
+    @Default([]) List<String> subCategoryIds,
+    @Default({}) Map<String, String> subCategoryNames, // id -> name
     String? searchQuery,
     bool? isIncome, // null = all, true = income, false = expense
     String? payer,

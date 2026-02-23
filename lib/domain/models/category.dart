@@ -30,11 +30,12 @@ class SubCategory with _$SubCategory {
     required String name,
     required double monthlyBudget,
     @Default(false) bool isFixed,
+    @Default(false) bool isWatched,
     String? defaultPayerId, // Who usually pays this
     int? paymentDay, // Day of month (1-31) for fixed expenses
     @Default(PaymentTiming.specificDay) PaymentTiming paymentTiming,
     String?
-    linkedSavingsGoalId, // ID of the savings goal to contribute to automatically
+        linkedSavingsGoalId, // ID of the savings goal to contribute to automatically
     String? linkedDebtId, // ID of the debt to auto-pay via transfer
   }) = _SubCategory;
 

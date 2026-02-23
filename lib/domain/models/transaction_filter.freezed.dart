@@ -16,10 +16,12 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$TransactionFilter {
-  String? get categoryId => throw _privateConstructorUsedError;
-  String? get categoryName => throw _privateConstructorUsedError;
-  String? get subCategoryId => throw _privateConstructorUsedError;
-  String? get subCategoryName => throw _privateConstructorUsedError;
+  List<String> get categoryIds => throw _privateConstructorUsedError;
+  Map<String, String> get categoryNames =>
+      throw _privateConstructorUsedError; // id -> name
+  List<String> get subCategoryIds => throw _privateConstructorUsedError;
+  Map<String, String> get subCategoryNames =>
+      throw _privateConstructorUsedError; // id -> name
   String? get searchQuery => throw _privateConstructorUsedError;
   bool? get isIncome =>
       throw _privateConstructorUsedError; // null = all, true = income, false = expense
@@ -41,10 +43,10 @@ abstract class $TransactionFilterCopyWith<$Res> {
       _$TransactionFilterCopyWithImpl<$Res, TransactionFilter>;
   @useResult
   $Res call(
-      {String? categoryId,
-      String? categoryName,
-      String? subCategoryId,
-      String? subCategoryName,
+      {List<String> categoryIds,
+      Map<String, String> categoryNames,
+      List<String> subCategoryIds,
+      Map<String, String> subCategoryNames,
       String? searchQuery,
       bool? isIncome,
       String? payer,
@@ -67,10 +69,10 @@ class _$TransactionFilterCopyWithImpl<$Res, $Val extends TransactionFilter>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? categoryId = freezed,
-    Object? categoryName = freezed,
-    Object? subCategoryId = freezed,
-    Object? subCategoryName = freezed,
+    Object? categoryIds = null,
+    Object? categoryNames = null,
+    Object? subCategoryIds = null,
+    Object? subCategoryNames = null,
     Object? searchQuery = freezed,
     Object? isIncome = freezed,
     Object? payer = freezed,
@@ -78,22 +80,22 @@ class _$TransactionFilterCopyWithImpl<$Res, $Val extends TransactionFilter>
     Object? maxAmount = freezed,
   }) {
     return _then(_value.copyWith(
-      categoryId: freezed == categoryId
-          ? _value.categoryId
-          : categoryId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      categoryName: freezed == categoryName
-          ? _value.categoryName
-          : categoryName // ignore: cast_nullable_to_non_nullable
-              as String?,
-      subCategoryId: freezed == subCategoryId
-          ? _value.subCategoryId
-          : subCategoryId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      subCategoryName: freezed == subCategoryName
-          ? _value.subCategoryName
-          : subCategoryName // ignore: cast_nullable_to_non_nullable
-              as String?,
+      categoryIds: null == categoryIds
+          ? _value.categoryIds
+          : categoryIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      categoryNames: null == categoryNames
+          ? _value.categoryNames
+          : categoryNames // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
+      subCategoryIds: null == subCategoryIds
+          ? _value.subCategoryIds
+          : subCategoryIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      subCategoryNames: null == subCategoryNames
+          ? _value.subCategoryNames
+          : subCategoryNames // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
       searchQuery: freezed == searchQuery
           ? _value.searchQuery
           : searchQuery // ignore: cast_nullable_to_non_nullable
@@ -127,10 +129,10 @@ abstract class _$$TransactionFilterImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String? categoryId,
-      String? categoryName,
-      String? subCategoryId,
-      String? subCategoryName,
+      {List<String> categoryIds,
+      Map<String, String> categoryNames,
+      List<String> subCategoryIds,
+      Map<String, String> subCategoryNames,
       String? searchQuery,
       bool? isIncome,
       String? payer,
@@ -151,10 +153,10 @@ class __$$TransactionFilterImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? categoryId = freezed,
-    Object? categoryName = freezed,
-    Object? subCategoryId = freezed,
-    Object? subCategoryName = freezed,
+    Object? categoryIds = null,
+    Object? categoryNames = null,
+    Object? subCategoryIds = null,
+    Object? subCategoryNames = null,
     Object? searchQuery = freezed,
     Object? isIncome = freezed,
     Object? payer = freezed,
@@ -162,22 +164,22 @@ class __$$TransactionFilterImplCopyWithImpl<$Res>
     Object? maxAmount = freezed,
   }) {
     return _then(_$TransactionFilterImpl(
-      categoryId: freezed == categoryId
-          ? _value.categoryId
-          : categoryId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      categoryName: freezed == categoryName
-          ? _value.categoryName
-          : categoryName // ignore: cast_nullable_to_non_nullable
-              as String?,
-      subCategoryId: freezed == subCategoryId
-          ? _value.subCategoryId
-          : subCategoryId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      subCategoryName: freezed == subCategoryName
-          ? _value.subCategoryName
-          : subCategoryName // ignore: cast_nullable_to_non_nullable
-              as String?,
+      categoryIds: null == categoryIds
+          ? _value._categoryIds
+          : categoryIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      categoryNames: null == categoryNames
+          ? _value._categoryNames
+          : categoryNames // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
+      subCategoryIds: null == subCategoryIds
+          ? _value._subCategoryIds
+          : subCategoryIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
+      subCategoryNames: null == subCategoryNames
+          ? _value._subCategoryNames
+          : subCategoryNames // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
       searchQuery: freezed == searchQuery
           ? _value.searchQuery
           : searchQuery // ignore: cast_nullable_to_non_nullable
@@ -206,24 +208,59 @@ class __$$TransactionFilterImplCopyWithImpl<$Res>
 
 class _$TransactionFilterImpl implements _TransactionFilter {
   const _$TransactionFilterImpl(
-      {this.categoryId,
-      this.categoryName,
-      this.subCategoryId,
-      this.subCategoryName,
+      {final List<String> categoryIds = const [],
+      final Map<String, String> categoryNames = const {},
+      final List<String> subCategoryIds = const [],
+      final Map<String, String> subCategoryNames = const {},
       this.searchQuery,
       this.isIncome,
       this.payer,
       this.minAmount,
-      this.maxAmount});
+      this.maxAmount})
+      : _categoryIds = categoryIds,
+        _categoryNames = categoryNames,
+        _subCategoryIds = subCategoryIds,
+        _subCategoryNames = subCategoryNames;
 
+  final List<String> _categoryIds;
   @override
-  final String? categoryId;
+  @JsonKey()
+  List<String> get categoryIds {
+    if (_categoryIds is EqualUnmodifiableListView) return _categoryIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_categoryIds);
+  }
+
+  final Map<String, String> _categoryNames;
   @override
-  final String? categoryName;
+  @JsonKey()
+  Map<String, String> get categoryNames {
+    if (_categoryNames is EqualUnmodifiableMapView) return _categoryNames;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_categoryNames);
+  }
+
+// id -> name
+  final List<String> _subCategoryIds;
+// id -> name
   @override
-  final String? subCategoryId;
+  @JsonKey()
+  List<String> get subCategoryIds {
+    if (_subCategoryIds is EqualUnmodifiableListView) return _subCategoryIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_subCategoryIds);
+  }
+
+  final Map<String, String> _subCategoryNames;
   @override
-  final String? subCategoryName;
+  @JsonKey()
+  Map<String, String> get subCategoryNames {
+    if (_subCategoryNames is EqualUnmodifiableMapView) return _subCategoryNames;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_subCategoryNames);
+  }
+
+// id -> name
   @override
   final String? searchQuery;
   @override
@@ -238,7 +275,7 @@ class _$TransactionFilterImpl implements _TransactionFilter {
 
   @override
   String toString() {
-    return 'TransactionFilter(categoryId: $categoryId, categoryName: $categoryName, subCategoryId: $subCategoryId, subCategoryName: $subCategoryName, searchQuery: $searchQuery, isIncome: $isIncome, payer: $payer, minAmount: $minAmount, maxAmount: $maxAmount)';
+    return 'TransactionFilter(categoryIds: $categoryIds, categoryNames: $categoryNames, subCategoryIds: $subCategoryIds, subCategoryNames: $subCategoryNames, searchQuery: $searchQuery, isIncome: $isIncome, payer: $payer, minAmount: $minAmount, maxAmount: $maxAmount)';
   }
 
   @override
@@ -246,14 +283,14 @@ class _$TransactionFilterImpl implements _TransactionFilter {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$TransactionFilterImpl &&
-            (identical(other.categoryId, categoryId) ||
-                other.categoryId == categoryId) &&
-            (identical(other.categoryName, categoryName) ||
-                other.categoryName == categoryName) &&
-            (identical(other.subCategoryId, subCategoryId) ||
-                other.subCategoryId == subCategoryId) &&
-            (identical(other.subCategoryName, subCategoryName) ||
-                other.subCategoryName == subCategoryName) &&
+            const DeepCollectionEquality()
+                .equals(other._categoryIds, _categoryIds) &&
+            const DeepCollectionEquality()
+                .equals(other._categoryNames, _categoryNames) &&
+            const DeepCollectionEquality()
+                .equals(other._subCategoryIds, _subCategoryIds) &&
+            const DeepCollectionEquality()
+                .equals(other._subCategoryNames, _subCategoryNames) &&
             (identical(other.searchQuery, searchQuery) ||
                 other.searchQuery == searchQuery) &&
             (identical(other.isIncome, isIncome) ||
@@ -268,10 +305,10 @@ class _$TransactionFilterImpl implements _TransactionFilter {
   @override
   int get hashCode => Object.hash(
       runtimeType,
-      categoryId,
-      categoryName,
-      subCategoryId,
-      subCategoryName,
+      const DeepCollectionEquality().hash(_categoryIds),
+      const DeepCollectionEquality().hash(_categoryNames),
+      const DeepCollectionEquality().hash(_subCategoryIds),
+      const DeepCollectionEquality().hash(_subCategoryNames),
       searchQuery,
       isIncome,
       payer,
@@ -290,10 +327,10 @@ class _$TransactionFilterImpl implements _TransactionFilter {
 
 abstract class _TransactionFilter implements TransactionFilter {
   const factory _TransactionFilter(
-      {final String? categoryId,
-      final String? categoryName,
-      final String? subCategoryId,
-      final String? subCategoryName,
+      {final List<String> categoryIds,
+      final Map<String, String> categoryNames,
+      final List<String> subCategoryIds,
+      final Map<String, String> subCategoryNames,
       final String? searchQuery,
       final bool? isIncome,
       final String? payer,
@@ -301,13 +338,13 @@ abstract class _TransactionFilter implements TransactionFilter {
       final double? maxAmount}) = _$TransactionFilterImpl;
 
   @override
-  String? get categoryId;
+  List<String> get categoryIds;
   @override
-  String? get categoryName;
+  Map<String, String> get categoryNames; // id -> name
   @override
-  String? get subCategoryId;
+  List<String> get subCategoryIds;
   @override
-  String? get subCategoryName;
+  Map<String, String> get subCategoryNames; // id -> name
   @override
   String? get searchQuery;
   @override

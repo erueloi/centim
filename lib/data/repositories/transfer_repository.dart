@@ -12,10 +12,8 @@ class TransferRepository {
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => Transfer.fromJson(doc.data()))
-              .toList();
-        });
+      return snapshot.docs.map((doc) => Transfer.fromJson(doc.data())).toList();
+    });
   }
 
   Future<void> addTransfer(String groupId, Transfer transfer) async {

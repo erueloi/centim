@@ -11,34 +11,32 @@ class CategoryRepository {
         .collection('categories')
         .snapshots() // Remove orderBy to include docs without 'order' field
         .map((snapshot) {
-          final categories = snapshot.docs
-              .map((doc) => Category.fromJson(doc.data()))
-              .toList();
+      final categories =
+          snapshot.docs.map((doc) => Category.fromJson(doc.data())).toList();
 
-          // Client-side sort: existing orders first, nulls last (or by name/date)
-          categories.sort((a, b) {
-            if (a.order != null && b.order != null) {
-              return a.order!.compareTo(b.order!);
-            }
-            if (a.order != null) {
-              return -1; // a has order, b doesn't -> a comes first
-            }
-            if (b.order != null) {
-              return 1; // b has order, a doesn't -> b comes first
-            }
-            return a.name.compareTo(b.name); // Fallback to name
-          });
+      // Client-side sort: existing orders first, nulls last (or by name/date)
+      categories.sort((a, b) {
+        if (a.order != null && b.order != null) {
+          return a.order!.compareTo(b.order!);
+        }
+        if (a.order != null) {
+          return -1; // a has order, b doesn't -> a comes first
+        }
+        if (b.order != null) {
+          return 1; // b has order, a doesn't -> b comes first
+        }
+        return a.name.compareTo(b.name); // Fallback to name
+      });
 
-          return categories;
-        });
+      return categories;
+    });
   }
 
   Future<void> addCategory(String groupId, Category category) async {
     final data = category.toJson();
     // Ensure subcategories are properly serialized as maps
-    data['subcategories'] = category.subcategories
-        .map((s) => s.toJson())
-        .toList();
+    data['subcategories'] =
+        category.subcategories.map((s) => s.toJson()).toList();
 
     // If order is not set, set it to a high value so it appears at the end.
     // However, to respect the separation between Expense (0+) and Income (10000+),
@@ -88,9 +86,8 @@ class CategoryRepository {
   Future<void> updateCategory(String groupId, Category category) async {
     final data = category.toJson();
     // Ensure subcategories are properly serialized as maps
-    data['subcategories'] = category.subcategories
-        .map((s) => s.toJson())
-        .toList();
+    data['subcategories'] =
+        category.subcategories.map((s) => s.toJson()).toList();
 
     await _firestore
         .collection('groups')

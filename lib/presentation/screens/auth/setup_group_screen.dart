@@ -92,7 +92,9 @@ class _SetupGroupScreenState extends ConsumerState<SetupGroupScreen> {
                           children: [
                             Text(
                               l10n.createGroupTitle,
-                              style: Theme.of(context).textTheme.titleLarge
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context).primaryColor,
@@ -123,7 +125,9 @@ class _SetupGroupScreenState extends ConsumerState<SetupGroupScreen> {
                             ),
                             Text(
                               l10n.orJoinGroupText,
-                              style: Theme.of(context).textTheme.titleLarge
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
                                   ?.copyWith(
                                     fontWeight: FontWeight.bold,
                                     color: Theme.of(context).primaryColor,

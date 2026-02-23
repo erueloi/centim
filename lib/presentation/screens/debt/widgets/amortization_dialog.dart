@@ -53,8 +53,7 @@ class _AmortizationDialogState extends State<AmortizationDialog> {
       -widget.debt.monthlyInstallment,
       widget.debt.currentBalance,
     );
-    _originalInterest =
-        (_originalMonths * widget.debt.monthlyInstallment) -
+    _originalInterest = (_originalMonths * widget.debt.monthlyInstallment) -
         widget.debt.currentBalance;
 
     // NEW SCENARIO (With extra payment upfront)

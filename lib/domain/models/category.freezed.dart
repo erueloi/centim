@@ -310,6 +310,7 @@ mixin _$SubCategory {
   String get name => throw _privateConstructorUsedError;
   double get monthlyBudget => throw _privateConstructorUsedError;
   bool get isFixed => throw _privateConstructorUsedError;
+  bool get isWatched => throw _privateConstructorUsedError;
   String? get defaultPayerId =>
       throw _privateConstructorUsedError; // Who usually pays this
   int? get paymentDay =>
@@ -340,6 +341,7 @@ abstract class $SubCategoryCopyWith<$Res> {
       String name,
       double monthlyBudget,
       bool isFixed,
+      bool isWatched,
       String? defaultPayerId,
       int? paymentDay,
       PaymentTiming paymentTiming,
@@ -366,6 +368,7 @@ class _$SubCategoryCopyWithImpl<$Res, $Val extends SubCategory>
     Object? name = null,
     Object? monthlyBudget = null,
     Object? isFixed = null,
+    Object? isWatched = null,
     Object? defaultPayerId = freezed,
     Object? paymentDay = freezed,
     Object? paymentTiming = null,
@@ -388,6 +391,10 @@ class _$SubCategoryCopyWithImpl<$Res, $Val extends SubCategory>
       isFixed: null == isFixed
           ? _value.isFixed
           : isFixed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isWatched: null == isWatched
+          ? _value.isWatched
+          : isWatched // ignore: cast_nullable_to_non_nullable
               as bool,
       defaultPayerId: freezed == defaultPayerId
           ? _value.defaultPayerId
@@ -426,6 +433,7 @@ abstract class _$$SubCategoryImplCopyWith<$Res>
       String name,
       double monthlyBudget,
       bool isFixed,
+      bool isWatched,
       String? defaultPayerId,
       int? paymentDay,
       PaymentTiming paymentTiming,
@@ -450,6 +458,7 @@ class __$$SubCategoryImplCopyWithImpl<$Res>
     Object? name = null,
     Object? monthlyBudget = null,
     Object? isFixed = null,
+    Object? isWatched = null,
     Object? defaultPayerId = freezed,
     Object? paymentDay = freezed,
     Object? paymentTiming = null,
@@ -472,6 +481,10 @@ class __$$SubCategoryImplCopyWithImpl<$Res>
       isFixed: null == isFixed
           ? _value.isFixed
           : isFixed // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isWatched: null == isWatched
+          ? _value.isWatched
+          : isWatched // ignore: cast_nullable_to_non_nullable
               as bool,
       defaultPayerId: freezed == defaultPayerId
           ? _value.defaultPayerId
@@ -505,6 +518,7 @@ class _$SubCategoryImpl implements _SubCategory {
       required this.name,
       required this.monthlyBudget,
       this.isFixed = false,
+      this.isWatched = false,
       this.defaultPayerId,
       this.paymentDay,
       this.paymentTiming = PaymentTiming.specificDay,
@@ -524,6 +538,9 @@ class _$SubCategoryImpl implements _SubCategory {
   @JsonKey()
   final bool isFixed;
   @override
+  @JsonKey()
+  final bool isWatched;
+  @override
   final String? defaultPayerId;
 // Who usually pays this
   @override
@@ -540,7 +557,7 @@ class _$SubCategoryImpl implements _SubCategory {
 
   @override
   String toString() {
-    return 'SubCategory(id: $id, name: $name, monthlyBudget: $monthlyBudget, isFixed: $isFixed, defaultPayerId: $defaultPayerId, paymentDay: $paymentDay, paymentTiming: $paymentTiming, linkedSavingsGoalId: $linkedSavingsGoalId, linkedDebtId: $linkedDebtId)';
+    return 'SubCategory(id: $id, name: $name, monthlyBudget: $monthlyBudget, isFixed: $isFixed, isWatched: $isWatched, defaultPayerId: $defaultPayerId, paymentDay: $paymentDay, paymentTiming: $paymentTiming, linkedSavingsGoalId: $linkedSavingsGoalId, linkedDebtId: $linkedDebtId)';
   }
 
   @override
@@ -553,6 +570,8 @@ class _$SubCategoryImpl implements _SubCategory {
             (identical(other.monthlyBudget, monthlyBudget) ||
                 other.monthlyBudget == monthlyBudget) &&
             (identical(other.isFixed, isFixed) || other.isFixed == isFixed) &&
+            (identical(other.isWatched, isWatched) ||
+                other.isWatched == isWatched) &&
             (identical(other.defaultPayerId, defaultPayerId) ||
                 other.defaultPayerId == defaultPayerId) &&
             (identical(other.paymentDay, paymentDay) ||
@@ -573,6 +592,7 @@ class _$SubCategoryImpl implements _SubCategory {
       name,
       monthlyBudget,
       isFixed,
+      isWatched,
       defaultPayerId,
       paymentDay,
       paymentTiming,
@@ -601,6 +621,7 @@ abstract class _SubCategory implements SubCategory {
       required final String name,
       required final double monthlyBudget,
       final bool isFixed,
+      final bool isWatched,
       final String? defaultPayerId,
       final int? paymentDay,
       final PaymentTiming paymentTiming,
@@ -618,6 +639,8 @@ abstract class _SubCategory implements SubCategory {
   double get monthlyBudget;
   @override
   bool get isFixed;
+  @override
+  bool get isWatched;
   @override
   String? get defaultPayerId; // Who usually pays this
   @override

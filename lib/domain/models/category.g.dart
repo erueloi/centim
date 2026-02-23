@@ -43,6 +43,7 @@ _$SubCategoryImpl _$$SubCategoryImplFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       monthlyBudget: (json['monthlyBudget'] as num).toDouble(),
       isFixed: json['isFixed'] as bool? ?? false,
+      isWatched: json['isWatched'] as bool? ?? false,
       defaultPayerId: json['defaultPayerId'] as String?,
       paymentDay: (json['paymentDay'] as num?)?.toInt(),
       paymentTiming:
@@ -58,6 +59,7 @@ Map<String, dynamic> _$$SubCategoryImplToJson(_$SubCategoryImpl instance) =>
       'name': instance.name,
       'monthlyBudget': instance.monthlyBudget,
       'isFixed': instance.isFixed,
+      'isWatched': instance.isWatched,
       'defaultPayerId': instance.defaultPayerId,
       'paymentDay': instance.paymentDay,
       'paymentTiming': _$PaymentTimingEnumMap[instance.paymentTiming]!,

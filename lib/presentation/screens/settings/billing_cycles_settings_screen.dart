@@ -180,7 +180,6 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
                   style: TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 32),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -337,7 +336,6 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-
                 TextField(
                   controller: nameController,
                   decoration: const InputDecoration(
@@ -347,7 +345,6 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-
                 Row(
                   children: [
                     Expanded(
@@ -399,15 +396,13 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 32),
                 ElevatedButton(
                   onPressed: () async {
                     if (nameController.text.isEmpty) return;
 
-                    final groupId = ref
-                        .read(currentGroupIdProvider)
-                        .valueOrNull;
+                    final groupId =
+                        ref.read(currentGroupIdProvider).valueOrNull;
                     if (groupId == null) return;
 
                     final adjustedEndDate = DateTime(
@@ -435,10 +430,9 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
                       // Check for duplicate name
                       final cycles =
                           ref.read(billingCycleNotifierProvider).valueOrNull ??
-                          [];
-                      final duplicate = cycles
-                          .where((c) => c.name == cycle.name)
-                          .firstOrNull;
+                              [];
+                      final duplicate =
+                          cycles.where((c) => c.name == cycle.name).firstOrNull;
 
                       if (duplicate != null) {
                         // Show warning dialog ON TOP of the sheet

@@ -11,10 +11,10 @@ class DebtRepository {
         .collection('debt_accounts')
         .snapshots()
         .map((snapshot) {
-          return snapshot.docs
-              .map((doc) => DebtAccount.fromJson(doc.data()))
-              .toList();
-        });
+      return snapshot.docs
+          .map((doc) => DebtAccount.fromJson(doc.data()))
+          .toList();
+    });
   }
 
   Future<void> addDebt(String groupId, DebtAccount debt) async {

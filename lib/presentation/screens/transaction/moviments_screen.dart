@@ -316,8 +316,8 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
     final currencyFormat = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
     final dateFormat = DateFormat('dd MMM yyyy', 'ca_ES');
 
-    final hasFilters = filter.categoryId != null ||
-        filter.subCategoryId != null ||
+    final hasFilters = filter.categoryIds.isNotEmpty ||
+        filter.subCategoryIds.isNotEmpty ||
         filter.isIncome != null ||
         filter.payer != null ||
         filter.minAmount != null ||
@@ -433,18 +433,17 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
               child: ListView(
                 scrollDirection: Axis.horizontal,
                 children: [
-                  if (filter.categoryId != null)
-                    _FilterChip(
-                      label: filter.categoryName ?? 'Categoria',
-                      icon: Icons.category,
-                      onRemove: () => filterNotifier.clearCategory(),
-                    ),
-                  if (filter.subCategoryId != null)
-                    _FilterChip(
-                      label: filter.subCategoryName ?? 'Subcategoria',
-                      icon: Icons.label,
-                      onRemove: () => filterNotifier.clearSubCategory(),
-                    ),
+                  ...filter.categoryIds.map((id) => _FilterChip(
+                        label: filter.categoryNames[id] ?? 'Categoria',
+                        icon: Icons.category,
+                        onRemove: () => filterNotifier.toggleCategory(id, ''),
+                      )),
+                  ...filter.subCategoryIds.map((id) => _FilterChip(
+                        label: filter.subCategoryNames[id] ?? 'Subcategoria',
+                        icon: Icons.label,
+                        onRemove: () =>
+                            filterNotifier.toggleSubCategory(id, ''),
+                      )),
                   if (filter.isIncome != null)
                     _FilterChip(
                       label: filter.isIncome! ? 'Ingressos' : 'Despeses',
@@ -520,14 +519,15 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                     )
                     .toList();
               }
-              if (filter.categoryId != null) {
+              if (filter.categoryIds.isNotEmpty) {
                 cycleTransactions = cycleTransactions
-                    .where((t) => t.categoryId == filter.categoryId)
+                    .where((t) => filter.categoryIds.contains(t.categoryId))
                     .toList();
               }
-              if (filter.subCategoryId != null) {
+              if (filter.subCategoryIds.isNotEmpty) {
                 cycleTransactions = cycleTransactions
-                    .where((t) => t.subCategoryId == filter.subCategoryId)
+                    .where(
+                        (t) => filter.subCategoryIds.contains(t.subCategoryId))
                     .toList();
               }
               if (filter.isIncome != null) {
@@ -553,8 +553,8 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
 
               // Get transfers for the active cycle (only if no category filter)
               final transfers = transfersAsync.valueOrNull ?? [];
-              final showTransfers = filter.categoryId == null &&
-                  filter.subCategoryId == null &&
+              final showTransfers = filter.categoryIds.isEmpty &&
+                  filter.subCategoryIds.isEmpty &&
                   filter.isIncome == null;
 
               final cycleTransfers = showTransfers
@@ -917,8 +917,10 @@ class _FilterSheet extends ConsumerStatefulWidget {
 }
 
 class _FilterSheetState extends ConsumerState<_FilterSheet> {
-  String? _selectedCategoryId;
-  String? _selectedSubCategoryId;
+  Set<String> _selectedCategoryIds = {};
+  Map<String, String> _selectedCategoryNames = {};
+  Set<String> _selectedSubCategoryIds = {};
+  Map<String, String> _selectedSubCategoryNames = {};
   bool? _selectedType;
   String? _selectedPayer;
   final _minController = TextEditingController();
@@ -928,8 +930,10 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   void initState() {
     super.initState();
     final filter = ref.read(transactionFilterNotifierProvider);
-    _selectedCategoryId = filter.categoryId;
-    _selectedSubCategoryId = filter.subCategoryId;
+    _selectedCategoryIds = Set.from(filter.categoryIds);
+    _selectedCategoryNames = Map.from(filter.categoryNames);
+    _selectedSubCategoryIds = Set.from(filter.subCategoryIds);
+    _selectedSubCategoryNames = Map.from(filter.subCategoryNames);
     _selectedType = filter.isIncome;
     _selectedPayer = filter.payer;
     _minController.text = filter.minAmount?.toStringAsFixed(0) ?? '';
@@ -945,24 +949,20 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
   void _apply() {
     final notifier = ref.read(transactionFilterNotifierProvider.notifier);
-    final categories = ref.read(categoryNotifierProvider).valueOrNull ?? [];
 
-    if (_selectedCategoryId != null) {
-      final cat = categories.firstWhere(
-        (c) => c.id == _selectedCategoryId,
-        orElse: () => categories.first,
-      );
-      if (_selectedSubCategoryId != null) {
-        final sub = cat.subcategories.firstWhere(
-          (s) => s.id == _selectedSubCategoryId,
-          orElse: () => cat.subcategories.first,
-        );
-        notifier.setSubCategory(cat.id, cat.name, sub.id, sub.name);
-      } else {
-        notifier.setCategory(cat.id, cat.name);
-      }
-    } else {
-      notifier.clearCategory();
+    // Clear all first, then apply selections
+    notifier.clearAll();
+
+    // Apply categories
+    for (final id in _selectedCategoryIds) {
+      final name = _selectedCategoryNames[id] ?? '';
+      notifier.toggleCategory(id, name);
+    }
+
+    // Apply subcategories
+    for (final id in _selectedSubCategoryIds) {
+      final name = _selectedSubCategoryNames[id] ?? '';
+      notifier.toggleSubCategory(id, name);
     }
 
     notifier.setType(_selectedType);
@@ -1050,7 +1050,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
             // Category filter
             Text(
-              'Categoria',
+              'Categories',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[700],
@@ -1060,39 +1060,41 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
             const SizedBox(height: 8),
             categoriesAsync.when(
               data: (categories) {
-                return DropdownButtonFormField<String?>(
-                  initialValue: _selectedCategoryId,
-                  decoration: InputDecoration(
-                    hintText: 'Totes les categories',
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey[300]!),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[50],
-                  ),
-                  items: [
-                    const DropdownMenuItem(value: null, child: Text('Totes')),
-                    ...categories.map(
-                      (c) => DropdownMenuItem(
-                        value: c.id,
-                        child: Text('${c.icon} ${c.name}'),
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: categories.map((c) {
+                    final isSelected = _selectedCategoryIds.contains(c.id);
+                    return FilterChip(
+                      label: Text('${c.icon} ${c.name}'),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        setState(() {
+                          if (selected) {
+                            _selectedCategoryIds.add(c.id);
+                            _selectedCategoryNames[c.id] = c.name;
+                          } else {
+                            _selectedCategoryIds.remove(c.id);
+                            _selectedCategoryNames.remove(c.id);
+                            for (final sub in c.subcategories) {
+                              _selectedSubCategoryIds.remove(sub.id);
+                              _selectedSubCategoryNames.remove(sub.id);
+                            }
+                          }
+                        });
+                      },
+                      selectedColor: AppTheme.copper.withValues(alpha: 0.2),
+                      checkmarkColor: AppTheme.copper,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color:
+                              isSelected ? AppTheme.copper : Colors.grey[300]!,
+                        ),
                       ),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    setState(() {
-                      _selectedCategoryId = v;
-                      _selectedSubCategoryId = null;
-                    });
-                  },
+                      visualDensity: VisualDensity.compact,
+                    );
+                  }).toList(),
                 );
               },
               loading: () => const LinearProgressIndicator(),
@@ -1100,19 +1102,25 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
             ),
             const SizedBox(height: 16),
 
-            // Subcategory filter (only if category selected)
-            if (_selectedCategoryId != null)
+            // Subcategory filter (for selected categories)
+            if (_selectedCategoryIds.isNotEmpty)
               categoriesAsync.when(
                 data: (categories) {
-                  final cat = categories.firstWhere(
-                    (c) => c.id == _selectedCategoryId,
-                    orElse: () => categories.first,
-                  );
+                  final selectedCats = categories
+                      .where((c) => _selectedCategoryIds.contains(c.id))
+                      .toList();
+                  final allSubs = <(String, SubCategory)>[];
+                  for (final cat in selectedCats) {
+                    for (final sub in cat.subcategories) {
+                      allSubs.add((cat.name, sub));
+                    }
+                  }
+                  if (allSubs.isEmpty) return const SizedBox.shrink();
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Subcategoria',
+                        'Subcategories',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.grey[700],
@@ -1120,38 +1128,47 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      DropdownButtonFormField<String?>(
-                        initialValue: _selectedSubCategoryId,
-                        decoration: InputDecoration(
-                          hintText: 'Totes les subcategories',
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                        ),
-                        items: [
-                          const DropdownMenuItem(
-                            value: null,
-                            child: Text('Totes'),
-                          ),
-                          ...cat.subcategories.map(
-                            (s) => DropdownMenuItem(
-                              value: s.id,
-                              child: Text(s.name),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: allSubs.map((item) {
+                          final catName = item.$1;
+                          final sub = item.$2;
+                          final isSelected =
+                              _selectedSubCategoryIds.contains(sub.id);
+                          return FilterChip(
+                            label: Text(
+                              selectedCats.length > 1
+                                  ? '$catName: ${sub.name}'
+                                  : sub.name,
+                              style: const TextStyle(fontSize: 12),
                             ),
-                          ),
-                        ],
-                        onChanged: (v) =>
-                            setState(() => _selectedSubCategoryId = v),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedSubCategoryIds.add(sub.id);
+                                  _selectedSubCategoryNames[sub.id] = sub.name;
+                                } else {
+                                  _selectedSubCategoryIds.remove(sub.id);
+                                  _selectedSubCategoryNames.remove(sub.id);
+                                }
+                              });
+                            },
+                            selectedColor:
+                                AppTheme.copper.withValues(alpha: 0.15),
+                            checkmarkColor: AppTheme.copper,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppTheme.copper
+                                    : Colors.grey[300]!,
+                              ),
+                            ),
+                            visualDensity: VisualDensity.compact,
+                          );
+                        }).toList(),
                       ),
                       const SizedBox(height: 16),
                     ],

@@ -8,15 +8,17 @@ class TransactionFilterNotifier extends _$TransactionFilterNotifier {
   @override
   TransactionFilter build() => const TransactionFilter();
 
+  // Single category (used from donut chart navigation)
   void setCategory(String categoryId, String categoryName) {
     state = state.copyWith(
-      categoryId: categoryId,
-      categoryName: categoryName,
-      subCategoryId: null,
-      subCategoryName: null,
+      categoryIds: [categoryId],
+      categoryNames: {categoryId: categoryName},
+      subCategoryIds: [],
+      subCategoryNames: {},
     );
   }
 
+  // Single subcategory (used from watchlist navigation)
   void setSubCategory(
     String categoryId,
     String categoryName,
@@ -24,10 +26,48 @@ class TransactionFilterNotifier extends _$TransactionFilterNotifier {
     String subCategoryName,
   ) {
     state = state.copyWith(
-      categoryId: categoryId,
-      categoryName: categoryName,
-      subCategoryId: subCategoryId,
-      subCategoryName: subCategoryName,
+      categoryIds: [categoryId],
+      categoryNames: {categoryId: categoryName},
+      subCategoryIds: [subCategoryId],
+      subCategoryNames: {subCategoryId: subCategoryName},
+    );
+  }
+
+  // Toggle category in multi-select
+  void toggleCategory(String categoryId, String categoryName) {
+    final ids = List<String>.from(state.categoryIds);
+    final names = Map<String, String>.from(state.categoryNames);
+
+    if (ids.contains(categoryId)) {
+      ids.remove(categoryId);
+      names.remove(categoryId);
+    } else {
+      ids.add(categoryId);
+      names[categoryId] = categoryName;
+    }
+
+    state = state.copyWith(
+      categoryIds: ids,
+      categoryNames: names,
+    );
+  }
+
+  // Toggle subcategory in multi-select
+  void toggleSubCategory(String subCategoryId, String subCategoryName) {
+    final ids = List<String>.from(state.subCategoryIds);
+    final names = Map<String, String>.from(state.subCategoryNames);
+
+    if (ids.contains(subCategoryId)) {
+      ids.remove(subCategoryId);
+      names.remove(subCategoryId);
+    } else {
+      ids.add(subCategoryId);
+      names[subCategoryId] = subCategoryName;
+    }
+
+    state = state.copyWith(
+      subCategoryIds: ids,
+      subCategoryNames: names,
     );
   }
 
@@ -49,15 +89,15 @@ class TransactionFilterNotifier extends _$TransactionFilterNotifier {
 
   void clearCategory() {
     state = state.copyWith(
-      categoryId: null,
-      categoryName: null,
-      subCategoryId: null,
-      subCategoryName: null,
+      categoryIds: [],
+      categoryNames: {},
+      subCategoryIds: [],
+      subCategoryNames: {},
     );
   }
 
   void clearSubCategory() {
-    state = state.copyWith(subCategoryId: null, subCategoryName: null);
+    state = state.copyWith(subCategoryIds: [], subCategoryNames: {});
   }
 
   void clearSearch() {
@@ -81,8 +121,8 @@ class TransactionFilterNotifier extends _$TransactionFilterNotifier {
   }
 
   bool get hasActiveFilters =>
-      state.categoryId != null ||
-      state.subCategoryId != null ||
+      state.categoryIds.isNotEmpty ||
+      state.subCategoryIds.isNotEmpty ||
       state.searchQuery != null ||
       state.isIncome != null ||
       state.payer != null ||

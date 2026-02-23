@@ -8,12 +8,84 @@ import '../../../../domain/models/savings_goal.dart';
 import '../../../../domain/models/transaction.dart';
 import '../../sheets/add_savings_goal_sheet.dart';
 import '../../providers/transaction_notifier.dart';
+import '../../providers/savings_goal_provider.dart';
 import '../../providers/auth_providers.dart';
 
 class SavingsGoalDetailScreen extends ConsumerWidget {
   final SavingsGoal goal;
 
   const SavingsGoalDetailScreen({super.key, required this.goal});
+
+  Future<void> _adjustBalance(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController(
+      text: goal.currentAmount.toStringAsFixed(2).replaceAll('.', ','),
+    );
+
+    final amount = await showDialog<double>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ajustar saldo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Aquest ajust registrarà un moviment per quadrar el saldo actual de la guardiola.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: true),
+              decoration: const InputDecoration(
+                labelText: 'Nou saldo actual (€)',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel·lar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final val = double.tryParse(controller.text.replaceAll(',', '.'));
+              if (val != null && val >= 0) Navigator.pop(context, val);
+            },
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+
+    if (amount == null || amount == goal.currentAmount) return;
+
+    try {
+      await ref
+          .read(savingsGoalNotifierProvider.notifier)
+          .adjustBalance(goal.id, amount);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Saldo ajustat correctament.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al ajustar el saldo: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _withdraw(BuildContext context, WidgetRef ref) async {
     final controller = TextEditingController();
@@ -100,7 +172,11 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currencyFormat = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
+    final currencyFormat = NumberFormat.currency(
+      locale: 'ca_ES',
+      symbol: '€',
+      decimalDigits: 2,
+    );
     final dateFormat = DateFormat('dd MMM yyyy', 'ca_ES');
 
     // Sort history by date descending for the list
@@ -129,9 +205,21 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
             onSelected: (value) {
               if (value == 'withdraw') {
                 _withdraw(context, ref);
+              } else if (value == 'adjust') {
+                _adjustBalance(context, ref);
               }
             },
             itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'adjust',
+                child: Row(
+                  children: [
+                    Icon(Icons.balance, color: AppTheme.copper),
+                    SizedBox(width: 8),
+                    Text('Quadrar Saldo'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'withdraw',
                 child: Row(
@@ -198,6 +286,21 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.all(24),
                 child: LineChart(
                   LineChartData(
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipItems: (touchedSpots) {
+                          return touchedSpots.map((spot) {
+                            return LineTooltipItem(
+                              currencyFormat.format(spot.y),
+                              const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          }).toList();
+                        },
+                      ),
+                    ),
                     gridData: const FlGridData(show: false),
                     titlesData: const FlTitlesData(show: false),
                     borderData: FlBorderData(show: false),

@@ -36,6 +36,7 @@ class _SubCategoryEditorSheetState
   late TextEditingController _nameController;
   late TextEditingController _amountController;
   late bool _isFixed;
+  late bool _isWatched;
   late PaymentTiming _paymentTiming;
   int _paymentDay = 1;
   String? _selectedPayerId;
@@ -53,6 +54,7 @@ class _SubCategoryEditorSheetState
       text: widget.subCategory?.monthlyBudget.toStringAsFixed(0) ?? '0',
     );
     _isFixed = widget.subCategory?.isFixed ?? false;
+    _isWatched = widget.subCategory?.isWatched ?? false;
     _paymentTiming =
         widget.subCategory?.paymentTiming ?? PaymentTiming.specificDay;
     _paymentDay = widget.subCategory?.paymentDay ?? 1;
@@ -114,11 +116,11 @@ class _SubCategoryEditorSheetState
         ? (widget.subCategory?.monthlyBudget ?? 0.0)
         : amount;
 
-    final newSub =
-        widget.subCategory?.copyWith(
+    final newSub = widget.subCategory?.copyWith(
           name: _nameController.text.trim(),
           monthlyBudget: baseAmount,
           isFixed: _isFixed,
+          isWatched: _isWatched,
           paymentTiming: _paymentTiming,
           paymentDay: (_isFixed && _paymentTiming == PaymentTiming.specificDay)
               ? _paymentDay
@@ -132,6 +134,7 @@ class _SubCategoryEditorSheetState
           name: _nameController.text.trim(),
           monthlyBudget: baseAmount,
           isFixed: _isFixed,
+          isWatched: _isWatched,
           paymentTiming: _paymentTiming,
           paymentDay: (_isFixed && _paymentTiming == PaymentTiming.specificDay)
               ? _paymentDay
@@ -294,9 +297,9 @@ class _SubCategoryEditorSheetState
                     ? 'Nova Subcategoria'
                     : 'Editar Subcategoria',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.anthracite,
-                ),
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.anthracite,
+                    ),
               ),
             ),
             const SizedBox(height: 32),
@@ -305,9 +308,9 @@ class _SubCategoryEditorSheetState
             Text(
               'Identitat',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.bold,
-              ),
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 12),
             // Name
@@ -431,9 +434,9 @@ class _SubCategoryEditorSheetState
                     ? 'Pressupost per ${widget.selectedCycle!.name}'
                     : 'Pressupost Mensual Base',
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
             ),
             const SizedBox(height: 8),
@@ -445,9 +448,9 @@ class _SubCategoryEditorSheetState
                 Text(
                   '€',
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: AppTheme.copper,
-                    fontWeight: FontWeight.bold,
-                  ),
+                        color: AppTheme.copper,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const SizedBox(width: 8),
                 IntrinsicWidth(
@@ -458,9 +461,9 @@ class _SubCategoryEditorSheetState
                     ),
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.anthracite,
-                    ),
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.anthracite,
+                        ),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       hintText: '0',
@@ -482,6 +485,20 @@ class _SubCategoryEditorSheetState
               ),
               child: Column(
                 children: [
+                  SwitchListTile(
+                    title: const Text(
+                      '👁 Vigilar al Dashboard',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: const Text(
+                      'Mostrar la barra de progrés a la pantalla Inici',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    value: _isWatched,
+                    onChanged: (val) => setState(() => _isWatched = val),
+                    activeTrackColor: Colors.orange,
+                  ),
+                  const Divider(),
                   SwitchListTile(
                     title: Text(
                       widget.category.type == TransactionType.income
@@ -701,8 +718,8 @@ class _SubCategoryEditorSheetState
                           decoration: InputDecoration(
                             labelText:
                                 widget.category.type == TransactionType.income
-                                ? 'Selecciona Guardiola'
-                                : 'Destí del pagament',
+                                    ? 'Selecciona Guardiola'
+                                    : 'Destí del pagament',
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

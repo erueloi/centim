@@ -153,9 +153,8 @@ List<BudgetStatus> _calculateBudgetStatus(
         ),
       );
 
-      final effectiveBudget = entry.id.isNotEmpty
-          ? entry.amount
-          : sub.monthlyBudget;
+      final effectiveBudget =
+          entry.id.isNotEmpty ? entry.amount : sub.monthlyBudget;
       return sum + effectiveBudget;
     });
 
@@ -181,9 +180,8 @@ List<BudgetStatus> _calculateBudgetStatus(
           amount: sub.monthlyBudget,
         ),
       );
-      final effectiveBudget = entry.id.isNotEmpty
-          ? entry.amount
-          : sub.monthlyBudget;
+      final effectiveBudget =
+          entry.id.isNotEmpty ? entry.amount : sub.monthlyBudget;
 
       // Get transactions for this specific subcategory
       final subSpent = categoryTransactions
@@ -202,9 +200,8 @@ List<BudgetStatus> _calculateBudgetStatus(
       );
     }).toList();
 
-    final percentage = totalBudget > 0
-        ? (spent / totalBudget)
-        : (spent > 0 ? 1.0 : 0.0);
+    final percentage =
+        totalBudget > 0 ? (spent / totalBudget) : (spent > 0 ? 1.0 : 0.0);
 
     return BudgetStatus(
       category: category,
@@ -279,9 +276,9 @@ Future<ZeroBudgetSummary> zeroBudgetBalance(Ref ref) async {
       double budget = sub.monthlyBudget;
       if (cycle != null) {
         final entry = entries.cast<BudgetEntry?>().firstWhere(
-          (e) => e!.subCategoryId == sub.id,
-          orElse: () => null,
-        );
+              (e) => e!.subCategoryId == sub.id,
+              orElse: () => null,
+            );
         if (entry != null) budget = entry.amount;
       }
 

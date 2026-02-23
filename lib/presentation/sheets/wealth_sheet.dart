@@ -77,8 +77,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
       _interestController.text = widget.initialDebt!.interestRate.toString();
       _pendingController.text = widget.initialDebt!.currentBalance.toString();
       _originalController.text = widget.initialDebt!.originalAmount.toString();
-      _installmentController.text = widget.initialDebt!.monthlyInstallment
-          .toString();
+      _installmentController.text =
+          widget.initialDebt!.monthlyInstallment.toString();
       _maturityDate = widget.initialDebt!.endDate;
     } else if (widget.initialAsset != null) {
       _selectedType = WealthType.asset;
@@ -161,10 +161,9 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
     // Add monthly installment
     final monthlyInstallment =
         double.tryParse(_installmentController.text.replaceAll(',', '.')) ??
-        0.0;
+            0.0;
 
-    final newDebt =
-        widget.initialDebt?.copyWith(
+    final newDebt = widget.initialDebt?.copyWith(
           name: _nameController.text,
           bankName: _bankController.text.isEmpty ? null : _bankController.text,
           currentBalance: currentBalance,
@@ -204,15 +203,14 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
       type = AssetType.cash;
     }
 
-    final newAsset =
-        widget.initialAsset?.copyWith(
+    final newAsset = widget.initialAsset?.copyWith(
           name: _nameController.text,
           amount: amount,
           type: type,
           bankName:
               type == AssetType.bankAccount && _bankController.text.isNotEmpty
-              ? _bankController.text
-              : null,
+                  ? _bankController.text
+                  : null,
         ) ??
         Asset(
           id: const Uuid().v4(),
@@ -225,8 +223,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
           // But let's stick to the generated Asset model which has bankName.
           bankName:
               type == AssetType.bankAccount && _bankController.text.isNotEmpty
-              ? _bankController.text
-              : null,
+                  ? _bankController.text
+                  : null,
         );
 
     if (widget.initialAsset == null) {
@@ -305,26 +303,26 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                         style: ButtonStyle(
                           backgroundColor:
                               WidgetStateProperty.resolveWith<Color>((states) {
-                                if (states.contains(WidgetState.selected)) {
-                                  if (_selectedType == WealthType.asset) {
-                                    return Colors.green.withValues(alpha: 0.2);
-                                  } else if (_selectedType == WealthType.debt) {
-                                    return Colors.red.withValues(alpha: 0.2);
-                                  } else {
-                                    return AppTheme.copper.withValues(
-                                      alpha: 0.2,
-                                    );
-                                  }
-                                }
-                                return Colors.transparent;
-                              }),
+                            if (states.contains(WidgetState.selected)) {
+                              if (_selectedType == WealthType.asset) {
+                                return Colors.green.withValues(alpha: 0.2);
+                              } else if (_selectedType == WealthType.debt) {
+                                return Colors.red.withValues(alpha: 0.2);
+                              } else {
+                                return AppTheme.copper.withValues(
+                                  alpha: 0.2,
+                                );
+                              }
+                            }
+                            return Colors.transparent;
+                          }),
                           foregroundColor:
                               WidgetStateProperty.resolveWith<Color>((states) {
-                                if (states.contains(WidgetState.selected)) {
-                                  return AppTheme.anthracite;
-                                }
-                                return Colors.grey;
-                              }),
+                            if (states.contains(WidgetState.selected)) {
+                              return AppTheme.anthracite;
+                            }
+                            return Colors.grey;
+                          }),
                         ),
                       ),
                     ),
@@ -339,8 +337,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                         hintText: _selectedType == WealthType.asset
                             ? 'ex: Masia, Fons Indexat'
                             : _selectedType == WealthType.debt
-                            ? 'ex: Hipoteca, Préstec Cotxe'
-                            : 'ex: Viatge a Japó, Fons Emergència',
+                                ? 'ex: Hipoteca, Préstec Cotxe'
+                                : 'ex: Viatge a Japó, Fons Emergència',
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -357,7 +355,9 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       // Bank Selector
                       Text(
                         'Entitat Bancària',
-                        style: Theme.of(context).textTheme.titleMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
@@ -365,45 +365,44 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                         spacing: 8,
                         children: ['CaixaBank', 'ING', 'Targeta YOU', 'Altres']
                             .map((bank) {
-                              final isSelected = _selectedBankOption == bank;
-                              return ChoiceChip(
-                                label: Text(bank),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  if (selected) {
-                                    setState(() {
-                                      _selectedBankOption = bank;
-                                      if (bank != 'Altres') {
-                                        _bankController.text = bank;
-                                      } else {
-                                        _bankController.text = '';
-                                      }
-                                    });
+                          final isSelected = _selectedBankOption == bank;
+                          return ChoiceChip(
+                            label: Text(bank),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected) {
+                                setState(() {
+                                  _selectedBankOption = bank;
+                                  if (bank != 'Altres') {
+                                    _bankController.text = bank;
+                                  } else {
+                                    _bankController.text = '';
                                   }
-                                },
-                                selectedColor: AppTheme.copper.withValues(
-                                  alpha: 0.2,
-                                ),
-                                labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? AppTheme.copper
-                                      : AppTheme.anthracite,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? Colors.transparent
-                                        : Colors.grey.withValues(alpha: 0.2),
-                                  ),
-                                ),
-                              );
-                            })
-                            .toList(),
+                                });
+                              }
+                            },
+                            selectedColor: AppTheme.copper.withValues(
+                              alpha: 0.2,
+                            ),
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? AppTheme.copper
+                                  : AppTheme.anthracite,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : Colors.grey.withValues(alpha: 0.2),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                       const SizedBox(height: 16),
 
@@ -432,8 +431,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                               controller: _originalController,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
+                                decimal: true,
+                              ),
                               decoration: InputDecoration(
                                 labelText: 'Import Inicial',
                                 suffixText: '€',
@@ -452,8 +451,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                               controller: _pendingController,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
+                                decimal: true,
+                              ),
                               decoration: InputDecoration(
                                 labelText: 'Pendent',
                                 suffixText: '€',
@@ -478,8 +477,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                               controller: _interestController,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
+                                decimal: true,
+                              ),
                               decoration: InputDecoration(
                                 labelText: 'Interès',
                                 suffixText: '%',
@@ -499,8 +498,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                               controller: _installmentController,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
-                                    decimal: true,
-                                  ),
+                                decimal: true,
+                              ),
                               decoration: InputDecoration(
                                 labelText: 'Quota Mensual',
                                 suffixText: '€',
@@ -542,8 +541,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                         onTap: () async {
                           final d = await showDatePicker(
                             context: context,
-                            initialDate:
-                                _maturityDate ??
+                            initialDate: _maturityDate ??
                                 DateTime.now().add(const Duration(days: 365)),
                             firstDate: DateTime.now(),
                             lastDate: DateTime(2060),
@@ -559,7 +557,9 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        style: Theme.of(context).textTheme.headlineMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium
                             ?.copyWith(
                               color: AppTheme.anthracite,
                               fontWeight: FontWeight.bold,
@@ -580,48 +580,49 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
 
                       Text(
                         'Tipus d\'Actiu',
-                        style: Theme.of(context).textTheme.titleMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
 
                       Wrap(
                         spacing: 8,
-                        children:
-                            [
-                              'Immobiliari',
-                              'Compte Bancari',
-                              'Efectiu',
-                              'Altres',
-                            ].map((type) {
-                              final isSelected = _assetType == type;
-                              return ChoiceChip(
-                                label: Text(type),
-                                selected: isSelected,
-                                onSelected: (v) =>
-                                    setState(() => _assetType = type),
-                                selectedColor: Colors.green.withValues(
-                                  alpha: 0.2,
-                                ),
-                                labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? Colors.green[900]
-                                      : AppTheme.anthracite,
-                                  fontWeight: isSelected
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
-                                ),
-                                backgroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? Colors.transparent
-                                        : Colors.grey.withValues(alpha: 0.2),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
+                        children: [
+                          'Immobiliari',
+                          'Compte Bancari',
+                          'Efectiu',
+                          'Altres',
+                        ].map((type) {
+                          final isSelected = _assetType == type;
+                          return ChoiceChip(
+                            label: Text(type),
+                            selected: isSelected,
+                            onSelected: (v) =>
+                                setState(() => _assetType = type),
+                            selectedColor: Colors.green.withValues(
+                              alpha: 0.2,
+                            ),
+                            labelStyle: TextStyle(
+                              color: isSelected
+                                  ? Colors.green[900]
+                                  : AppTheme.anthracite,
+                              fontWeight: isSelected
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                            ),
+                            backgroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? Colors.transparent
+                                    : Colors.grey.withValues(alpha: 0.2),
+                              ),
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ],
                     if (_selectedType == WealthType.goal) ...[
@@ -716,8 +717,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       backgroundColor: _selectedType == WealthType.asset
                           ? Colors.green
                           : _selectedType == WealthType.debt
-                          ? AppTheme.anthracite
-                          : AppTheme.copper,
+                              ? AppTheme.anthracite
+                              : AppTheme.copper,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
