@@ -31,7 +31,7 @@ class GroupRepository {
     return docRef.id;
   }
 
-  Future<void> joinGroup(String inviteCode, String userId) async {
+  Future<String> joinGroup(String inviteCode, String userId) async {
     // Find group by invite code
     final query = await _firestore
         .collection('groups')
@@ -45,7 +45,7 @@ class GroupRepository {
 
     final docRef = query.docs.first.reference;
 
-    return _firestore.runTransaction((transaction) async {
+    await _firestore.runTransaction((transaction) async {
       final snapshot = await transaction.get(docRef);
       if (!snapshot.exists) {
         throw Exception('Group not found');
@@ -59,6 +59,8 @@ class GroupRepository {
         transaction.update(docRef, {'memberIds': currentMembers});
       }
     });
+
+    return docRef.id;
   }
 
   Future<HouseholdGroup?> getGroup(String groupId) async {

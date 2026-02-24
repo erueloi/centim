@@ -26,13 +26,22 @@ service cloud.firestore {
 
     // GROUPS:
     match /groups/{groupId} {
-      // Allow create if authenticated (and presumably setting themselves as owner/member)
       allow create: if isAuthenticated();
       
-      // Allow read/update if user is a member or owner
-      allow read, update: if isAuthenticated() && (request.auth.uid in resource.data.memberIds || request.auth.uid == resource.data.ownerId);
-      
-      // Allow list queries only if filtering by memberIds (cannot enforce easily in rules without query constraints, rely on app logic + read rules)
+      // Allow any authenticated user to read groups (so they can query by inviteCode)
+      allow read: if isAuthenticated();
+
+      // Allow update if user is a member/owner OR if they are joining the group
+      allow update: if isAuthenticated() && (
+        request.auth.uid in resource.data.memberIds || 
+        request.auth.uid == resource.data.ownerId ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds']) &&
+          request.resource.data.memberIds.hasAll(resource.data.memberIds) &&
+          request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1 &&
+          request.auth.uid in request.resource.data.memberIds
+        )
+      );
     }
 
     // TRANSACTIONS

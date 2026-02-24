@@ -5,6 +5,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../domain/models/category.dart';
 
 import '../providers/category_notifier.dart';
+import '../providers/transaction_notifier.dart';
 import '../providers/group_providers.dart';
 import '../providers/savings_goal_provider.dart';
 import '../providers/debt_provider.dart';
@@ -272,6 +273,23 @@ class _SubCategoryEditorSheetState
   @override
   Widget build(BuildContext context) {
     final membersAsync = ref.watch(groupMembersProvider);
+    final transactionsAsync = ref.watch(transactionNotifierProvider);
+
+    double calculatedAverage = 0.0;
+    if (widget.subCategory != null) {
+      transactionsAsync.whenData((transactions) {
+        final now = DateTime.now();
+        final threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
+
+        final relevant = transactions.where((t) =>
+            t.subCategoryId == widget.subCategory!.id &&
+            !t.isIncome &&
+            t.date.isAfter(threeMonthsAgo));
+
+        final sum = relevant.fold<double>(0, (prev, t) => prev + t.amount);
+        calculatedAverage = sum / 3.0;
+      });
+    }
 
     return Container(
       padding: EdgeInsets.only(
@@ -469,10 +487,51 @@ class _SubCategoryEditorSheetState
                       hintText: '0',
                       hintStyle: TextStyle(color: Colors.grey),
                     ),
+                    onChanged: (value) => setState(() {}),
                   ),
                 ),
               ],
             ),
+            if (widget.subCategory != null && calculatedAverage > 0) ...[
+              const SizedBox(height: 12),
+              Column(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _amountController.text =
+                            calculatedAverage.toStringAsFixed(0);
+                      });
+                    },
+                    icon: const Icon(Icons.auto_awesome,
+                        size: 16, color: Colors.purple),
+                    label: Text(
+                        'Mitjana: ${calculatedAverage.toStringAsFixed(0)} €',
+                        style: const TextStyle(
+                            color: Colors.purple, fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.purple),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20)),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  if ((double.tryParse(_amountController.text) ?? 0) <
+                          calculatedAverage * 0.75 &&
+                      (double.tryParse(_amountController.text) ?? 0) > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Text(
+                        'Compte, la teva mitjana és bastant superior',
+                        style: TextStyle(
+                            color: Colors.orange.shade800,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 32),
 
             // --- Block 3: Behavior ---

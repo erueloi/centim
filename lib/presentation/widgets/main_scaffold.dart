@@ -142,7 +142,7 @@ class MainScaffold extends ConsumerWidget {
           NavigationDestination(
             icon: Icon(Icons.analytics_outlined),
             selectedIcon: Icon(Icons.analytics, color: AppTheme.anthracite),
-            label: 'Detall estat',
+            label: 'Detall',
           ),
           NavigationDestination(
             icon: Icon(Icons.list_alt_outlined),

@@ -23,6 +23,7 @@ class DashboardDonutChart extends ConsumerStatefulWidget {
 
 class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
   int touchedIndex = -1;
+  int hoveredIndex = -1;
 
   @override
   Widget build(BuildContext context) {
@@ -70,10 +71,12 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                 ? Colors.red
                 : AppTheme.anthracite;
 
-            if (touchedIndex != -1 && touchedIndex < sortedEntries.length) {
-              // S'ha tocat una categoria particular
-              final catId = sortedEntries[touchedIndex].key;
-              final amount = sortedEntries[touchedIndex].value;
+            int activeIndex = touchedIndex != -1 ? touchedIndex : hoveredIndex;
+
+            if (activeIndex != -1 && activeIndex < sortedEntries.length) {
+              // S'ha tocat o passat per sobre d'una categoria particular
+              final catId = sortedEntries[activeIndex].key;
+              final amount = sortedEntries[activeIndex].value;
               final originalCat = categories.cast<Category?>().firstWhere(
                     (c) => c?.id == catId,
                     orElse: () => null,
@@ -92,7 +95,7 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                     ? Color(originalCat.color!)
                     : AppTheme.anthracite;
               }
-            } else if (touchedIndex == sortedEntries.length &&
+            } else if (activeIndex == sortedEntries.length &&
                 widget.summary.monthlyIncome > widget.summary.monthlyExpenses) {
               // S'ha tocat la franja lliure restant grisa
               centerTitle = 'Disponible';
@@ -115,7 +118,7 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
               final color =
                   rawColor != null ? Color(rawColor) : Colors.grey.shade400;
 
-              final isTouched = i == touchedIndex;
+              final isTouched = i == activeIndex;
               final radius = isTouched ? 42.0 : 30.0;
 
               // Percentatge sobre la despesa total per etiquetar-la
@@ -155,7 +158,7 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
             if (widget.summary.monthlyIncome > widget.summary.monthlyExpenses) {
               final remaining =
                   widget.summary.monthlyIncome - widget.summary.monthlyExpenses;
-              final isTouched = touchedIndex == sortedEntries.length;
+              final isTouched = activeIndex == sortedEntries.length;
               sections.add(
                 PieChartSectionData(
                   color: Colors.grey[200]!,
@@ -192,53 +195,79 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                                 const Duration(milliseconds: 500),
                             touchCallback:
                                 (FlTouchEvent event, pieTouchResponse) {
-                              // Long press: navegar a Moviments filtrats
-                              if (event is FlLongPressEnd) {
-                                if (touchedIndex >= 0 &&
-                                    touchedIndex < sortedEntries.length) {
-                                  final catId = sortedEntries[touchedIndex].key;
-                                  final originalCat =
-                                      categories.cast<Category?>().firstWhere(
-                                            (c) => c?.id == catId,
-                                            orElse: () => null,
-                                          );
-                                  if (originalCat != null) {
-                                    ref
-                                        .read(transactionFilterNotifierProvider
-                                            .notifier)
-                                        .clearAll();
-                                    ref
-                                        .read(transactionFilterNotifierProvider
-                                            .notifier)
-                                        .setCategory(
-                                          originalCat.id,
-                                          originalCat.name,
-                                        );
-                                    ref
-                                        .read(selectedIndexProvider.notifier)
-                                        .state = 2;
+                              if (!event.isInterestedForInteractions ||
+                                  pieTouchResponse == null ||
+                                  pieTouchResponse.touchedSection == null) {
+                                // Només des-eleccionem el hover si sortim o no tenim interacció
+                                setState(() {
+                                  hoveredIndex = -1;
+                                  if (event is FlTapUpEvent) {
+                                    touchedIndex = -1;
                                   }
-                                }
+                                });
                                 return;
                               }
 
-                              // Tap normal: seleccionar segment
-                              setState(() {
-                                if (!event.isInterestedForInteractions ||
-                                    pieTouchResponse == null ||
-                                    pieTouchResponse.touchedSection == null) {
-                                  touchedIndex = -1;
-                                  return;
-                                }
-                                final sectionIndex = pieTouchResponse
-                                    .touchedSection!.touchedSectionIndex;
+                              final sectionIndex = pieTouchResponse
+                                  .touchedSection!.touchedSectionIndex;
+
+                              if (event is FlPointerHoverEvent) {
+                                setState(() {
+                                  hoveredIndex = sectionIndex >= 0 &&
+                                          sectionIndex < sections.length
+                                      ? sectionIndex
+                                      : -1;
+                                });
+                                return;
+                              }
+
+                              if (event is FlTapUpEvent) {
                                 if (sectionIndex < 0 ||
                                     sectionIndex >= sections.length) {
-                                  touchedIndex = -1;
+                                  setState(() {
+                                    touchedIndex = -1;
+                                  });
                                   return;
                                 }
-                                touchedIndex = sectionIndex;
-                              });
+
+                                // Si toquem el mateix fragment que ja està engrandit, naveguem a la categoria
+                                if (touchedIndex == sectionIndex ||
+                                    hoveredIndex == sectionIndex) {
+                                  if (sectionIndex >= 0 &&
+                                      sectionIndex < sortedEntries.length) {
+                                    final catId =
+                                        sortedEntries[sectionIndex].key;
+                                    final originalCat =
+                                        categories.cast<Category?>().firstWhere(
+                                              (c) => c?.id == catId,
+                                              orElse: () => null,
+                                            );
+                                    if (originalCat != null) {
+                                      ref
+                                          .read(
+                                              transactionFilterNotifierProvider
+                                                  .notifier)
+                                          .clearAll();
+                                      ref
+                                          .read(
+                                              transactionFilterNotifierProvider
+                                                  .notifier)
+                                          .setCategory(
+                                            originalCat.id,
+                                            originalCat.name,
+                                          );
+                                      ref
+                                          .read(selectedIndexProvider.notifier)
+                                          .state = 2; // Pestanya Moviments
+                                    }
+                                  }
+                                } else {
+                                  // Primer toc: Seleccionem i engrandim
+                                  setState(() {
+                                    touchedIndex = sectionIndex;
+                                  });
+                                }
+                              }
                             },
                           ),
                           borderData: FlBorderData(show: false),

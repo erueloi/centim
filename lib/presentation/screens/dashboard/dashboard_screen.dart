@@ -11,6 +11,7 @@ import '../../widgets/watchlist_section.dart';
 
 import '../../providers/billing_cycle_provider.dart';
 import '../settings/billing_cycles_settings_screen.dart';
+import '../settings/user_profile_screen.dart';
 
 import '../../../domain/services/version_check_service.dart';
 
@@ -134,64 +135,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         automaticallyImplyLeading: false,
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'force_close') {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('He cobrat avui?'),
-                    content: const Text(
-                      'Això tancarà el cicle actual i en començarà un de nou immediatament.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('Cancel·lar'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _closeCycleAndCelebrate();
-                        },
-                        child: const Text('Sí, tancar mes'),
-                      ),
-                    ],
-                  ),
-                );
-              } else if (value == 'settings') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const BillingCyclesSettingsScreen(),
-                  ),
-                );
-              }
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Configuració de Cicles',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BillingCyclesSettingsScreen(),
+                ),
+              );
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'force_close',
-                child: Row(
-                  children: [
-                    Icon(Icons.monetization_on, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('💰 He cobrat avui'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    Icon(Icons.settings),
-                    SizedBox(width: 8),
-                    Text('Configuració de Cicles'),
-                  ],
-                ),
-              ),
-            ],
           ),
+          IconButton(
+            icon: const Icon(Icons.person),
+            tooltip: 'Perfil',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserProfileScreen(),
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Stack(

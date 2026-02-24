@@ -54,8 +54,9 @@ class _SetupGroupScreenState extends ConsumerState<SetupGroupScreen> {
       final user = authRepo.currentUser;
       if (user == null) return;
 
-      await groupRepo.joinGroup(_codeController.text, user.uid);
-      await authRepo.updateCurrentGroupId(_codeController.text);
+      final resolvedGroupId =
+          await groupRepo.joinGroup(_codeController.text, user.uid);
+      await authRepo.updateCurrentGroupId(resolvedGroupId);
 
       // Navigate to Home
     } catch (e) {
