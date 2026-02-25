@@ -28,6 +28,8 @@ mixin _$TransactionFilter {
   String? get payer => throw _privateConstructorUsedError;
   double? get minAmount => throw _privateConstructorUsedError;
   double? get maxAmount => throw _privateConstructorUsedError;
+  DateTime? get dateFrom => throw _privateConstructorUsedError;
+  DateTime? get dateTo => throw _privateConstructorUsedError;
 
   /// Create a copy of TransactionFilter
   /// with the given fields replaced by the non-null parameter values.
@@ -51,7 +53,9 @@ abstract class $TransactionFilterCopyWith<$Res> {
       bool? isIncome,
       String? payer,
       double? minAmount,
-      double? maxAmount});
+      double? maxAmount,
+      DateTime? dateFrom,
+      DateTime? dateTo});
 }
 
 /// @nodoc
@@ -78,6 +82,8 @@ class _$TransactionFilterCopyWithImpl<$Res, $Val extends TransactionFilter>
     Object? payer = freezed,
     Object? minAmount = freezed,
     Object? maxAmount = freezed,
+    Object? dateFrom = freezed,
+    Object? dateTo = freezed,
   }) {
     return _then(_value.copyWith(
       categoryIds: null == categoryIds
@@ -116,6 +122,14 @@ class _$TransactionFilterCopyWithImpl<$Res, $Val extends TransactionFilter>
           ? _value.maxAmount
           : maxAmount // ignore: cast_nullable_to_non_nullable
               as double?,
+      dateFrom: freezed == dateFrom
+          ? _value.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      dateTo: freezed == dateTo
+          ? _value.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ) as $Val);
   }
 }
@@ -137,7 +151,9 @@ abstract class _$$TransactionFilterImplCopyWith<$Res>
       bool? isIncome,
       String? payer,
       double? minAmount,
-      double? maxAmount});
+      double? maxAmount,
+      DateTime? dateFrom,
+      DateTime? dateTo});
 }
 
 /// @nodoc
@@ -162,6 +178,8 @@ class __$$TransactionFilterImplCopyWithImpl<$Res>
     Object? payer = freezed,
     Object? minAmount = freezed,
     Object? maxAmount = freezed,
+    Object? dateFrom = freezed,
+    Object? dateTo = freezed,
   }) {
     return _then(_$TransactionFilterImpl(
       categoryIds: null == categoryIds
@@ -200,6 +218,14 @@ class __$$TransactionFilterImplCopyWithImpl<$Res>
           ? _value.maxAmount
           : maxAmount // ignore: cast_nullable_to_non_nullable
               as double?,
+      dateFrom: freezed == dateFrom
+          ? _value.dateFrom
+          : dateFrom // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      dateTo: freezed == dateTo
+          ? _value.dateTo
+          : dateTo // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
@@ -216,7 +242,9 @@ class _$TransactionFilterImpl implements _TransactionFilter {
       this.isIncome,
       this.payer,
       this.minAmount,
-      this.maxAmount})
+      this.maxAmount,
+      this.dateFrom,
+      this.dateTo})
       : _categoryIds = categoryIds,
         _categoryNames = categoryNames,
         _subCategoryIds = subCategoryIds,
@@ -272,10 +300,14 @@ class _$TransactionFilterImpl implements _TransactionFilter {
   final double? minAmount;
   @override
   final double? maxAmount;
+  @override
+  final DateTime? dateFrom;
+  @override
+  final DateTime? dateTo;
 
   @override
   String toString() {
-    return 'TransactionFilter(categoryIds: $categoryIds, categoryNames: $categoryNames, subCategoryIds: $subCategoryIds, subCategoryNames: $subCategoryNames, searchQuery: $searchQuery, isIncome: $isIncome, payer: $payer, minAmount: $minAmount, maxAmount: $maxAmount)';
+    return 'TransactionFilter(categoryIds: $categoryIds, categoryNames: $categoryNames, subCategoryIds: $subCategoryIds, subCategoryNames: $subCategoryNames, searchQuery: $searchQuery, isIncome: $isIncome, payer: $payer, minAmount: $minAmount, maxAmount: $maxAmount, dateFrom: $dateFrom, dateTo: $dateTo)';
   }
 
   @override
@@ -299,7 +331,10 @@ class _$TransactionFilterImpl implements _TransactionFilter {
             (identical(other.minAmount, minAmount) ||
                 other.minAmount == minAmount) &&
             (identical(other.maxAmount, maxAmount) ||
-                other.maxAmount == maxAmount));
+                other.maxAmount == maxAmount) &&
+            (identical(other.dateFrom, dateFrom) ||
+                other.dateFrom == dateFrom) &&
+            (identical(other.dateTo, dateTo) || other.dateTo == dateTo));
   }
 
   @override
@@ -313,7 +348,9 @@ class _$TransactionFilterImpl implements _TransactionFilter {
       isIncome,
       payer,
       minAmount,
-      maxAmount);
+      maxAmount,
+      dateFrom,
+      dateTo);
 
   /// Create a copy of TransactionFilter
   /// with the given fields replaced by the non-null parameter values.
@@ -335,7 +372,9 @@ abstract class _TransactionFilter implements TransactionFilter {
       final bool? isIncome,
       final String? payer,
       final double? minAmount,
-      final double? maxAmount}) = _$TransactionFilterImpl;
+      final double? maxAmount,
+      final DateTime? dateFrom,
+      final DateTime? dateTo}) = _$TransactionFilterImpl;
 
   @override
   List<String> get categoryIds;
@@ -355,6 +394,10 @@ abstract class _TransactionFilter implements TransactionFilter {
   double? get minAmount;
   @override
   double? get maxAmount;
+  @override
+  DateTime? get dateFrom;
+  @override
+  DateTime? get dateTo;
 
   /// Create a copy of TransactionFilter
   /// with the given fields replaced by the non-null parameter values.

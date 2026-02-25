@@ -44,6 +44,7 @@ class _SubCategoryEditorSheetState
   String? _linkedSavingsGoalId;
   String? _linkedDebtId;
   bool _isLinkedToSavings = false;
+  double _fallbackBudget = 0.0; // Pressupost del cicle anterior (fallback)
 
   @override
   void initState() {
@@ -67,6 +68,34 @@ class _SubCategoryEditorSheetState
     // Load existing month-specific override if editing a specific cycle
     if (widget.selectedCycle != null && widget.subCategory != null) {
       _loadMonthOverride();
+    }
+
+    // Precarregar el pressupost del cicle anterior (per fallback de la vareta)
+    if (widget.subCategory != null) {
+      _loadPreviousBudget();
+    }
+  }
+
+  Future<void> _loadPreviousBudget() async {
+    final groupId = ref.read(currentGroupIdProvider).valueOrNull;
+    if (groupId == null) return;
+
+    final prevMonth =
+        DateTime(DateTime.now().year, DateTime.now().month - 1, 1);
+    final repo = ref.read(budgetEntryRepositoryProvider);
+    try {
+      final entries = await repo
+          .watchEntriesForMonth(groupId, prevMonth.year, prevMonth.month)
+          .first;
+      final match =
+          entries.where((e) => e.subCategoryId == widget.subCategory!.id);
+      if (match.isNotEmpty && match.first.amount > 0 && mounted) {
+        setState(() {
+          _fallbackBudget = match.first.amount;
+        });
+      }
+    } catch (_) {
+      // Sense pressupost anterior disponible
     }
   }
 
@@ -279,16 +308,41 @@ class _SubCategoryEditorSheetState
     if (widget.subCategory != null) {
       transactionsAsync.whenData((transactions) {
         final now = DateTime.now();
-        final threeMonthsAgo = DateTime(now.year, now.month - 3, now.day);
 
-        final relevant = transactions.where((t) =>
-            t.subCategoryId == widget.subCategory!.id &&
-            !t.isIncome &&
-            t.date.isAfter(threeMonthsAgo));
+        // Recollim la despesa dels últims 3 mesos naturals (cicles tancats)
+        final monthlySpending = <double>[];
+        for (int i = 1; i <= 3; i++) {
+          final monthStart = DateTime(now.year, now.month - i, 1);
+          final monthEnd = DateTime(now.year, now.month - i + 1, 0, 23, 59, 59);
 
-        final sum = relevant.fold<double>(0, (prev, t) => prev + t.amount);
-        calculatedAverage = sum / 3.0;
+          final monthSum = transactions
+              .where((t) =>
+                  t.subCategoryId == widget.subCategory!.id &&
+                  !t.isIncome &&
+                  !t.date.isBefore(monthStart) &&
+                  !t.date.isAfter(monthEnd))
+              .fold<double>(0, (prev, t) => prev + t.amount);
+
+          monthlySpending.add(monthSum);
+        }
+
+        // Filtre: ignora mesos amb despesa 0
+        final nonZeroMonths = monthlySpending.where((s) => s > 0).toList();
+
+        if (nonZeroMonths.isNotEmpty) {
+          // Divisor dinàmic: només divideix pels mesos amb dades
+          final sum = nonZeroMonths.fold<double>(0, (a, b) => a + b);
+          calculatedAverage = sum / nonZeroMonths.length;
+        } else {
+          // Fallback: utilitza el pressupost del cicle anterior
+          calculatedAverage = _fallbackBudget;
+        }
       });
+      // Si les transaccions encara no s'han carregat, fallback
+      if (calculatedAverage == 0.0) {
+        calculatedAverage = _fallbackBudget;
+      }
+      // Cas zero: si no hi ha ni historial ni pressupost previ, queda 0.0
     }
 
     return Container(

@@ -324,23 +324,28 @@ class _DebtCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (debt.endDate != null)
-                  Row(
+                Expanded(
+                  child: Row(
                     children: [
                       Icon(
                         Icons.event_available,
                         size: 16,
                         color: Colors.grey[500],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Lliure el: ${_formatDate(debt.endDate!)}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          debt.endDate != null
+                              ? 'Lliure el: ${_formatDate(debt.endDate!)} (${debt.remainingTimeText})'
+                              : debt.remainingTimeText,
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
-                  )
-                else
-                  const SizedBox(),
+                  ),
+                ),
                 TextButton.icon(
                   onPressed: () {
                     showDialog(

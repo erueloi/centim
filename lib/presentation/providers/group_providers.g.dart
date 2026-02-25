@@ -23,7 +23,7 @@ final currentGroupProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef CurrentGroupRef = AutoDisposeFutureProviderRef<HouseholdGroup?>;
-String _$groupMembersHash() => r'bcecd75dacfff26410c157c8e50b24e4c3673252';
+String _$groupMembersHash() => r'1b330f44dc8683d34ff8597ace6f05023ba970fe';
 
 /// See also [groupMembers].
 @ProviderFor(groupMembers)

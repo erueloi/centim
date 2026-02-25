@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,11 +31,28 @@ Future<List<UserProfile>> groupMembers(Ref ref) async {
         .where(FieldPath.documentId, whereIn: group.memberIds.take(10).toList())
         .get();
 
-    return snapshot.docs
-        .map((doc) => UserProfile.fromJson(doc.data()))
-        .toList();
-  } catch (e) {
-    // Fallback? Or return empty.
+    final users = <UserProfile>[];
+    for (var doc in snapshot.docs) {
+      try {
+        final data = Map<String, dynamic>.from(doc.data());
+        data['uid'] ??= doc
+            .id; // Assegurar el camp UID per si no el guardava dins l'objecte
+        data['email'] ??=
+            'usuari@centim.cat'; // Prevenir que el required hi falte
+        users.add(UserProfile.fromJson(data));
+      } catch (e) {
+        // En cas que l'objecte the Firestore estigui corrupte i falli el serialitzador forcem almenys que el registre existeixi
+        debugPrint('Error parsejant usuari ${doc.id}: $e');
+        users.add(UserProfile(
+          uid: doc.id,
+          email: 'usuari_desconegut_${doc.id.substring(0, 4)}@centim.cat',
+        ));
+      }
+    }
+    return users;
+  } catch (e, stackTrace) {
+    debugPrint('ERROR CRÍTIC carregant membres del grup: $e');
+    debugPrint('StackTrace: $stackTrace');
     return [];
   }
 }

@@ -195,22 +195,11 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                                 const Duration(milliseconds: 500),
                             touchCallback:
                                 (FlTouchEvent event, pieTouchResponse) {
-                              if (!event.isInterestedForInteractions ||
-                                  pieTouchResponse == null ||
-                                  pieTouchResponse.touchedSection == null) {
-                                // Només des-eleccionem el hover si sortim o no tenim interacció
-                                setState(() {
-                                  hoveredIndex = -1;
-                                  if (event is FlTapUpEvent) {
-                                    touchedIndex = -1;
-                                  }
-                                });
-                                return;
-                              }
-
                               final sectionIndex = pieTouchResponse
-                                  .touchedSection!.touchedSectionIndex;
+                                      ?.touchedSection?.touchedSectionIndex ??
+                                  -1;
 
+                              // [Web/Ratolí] Passar per sobre de forma temporal
                               if (event is FlPointerHoverEvent) {
                                 setState(() {
                                   hoveredIndex = sectionIndex >= 0 &&
@@ -221,18 +210,19 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                                 return;
                               }
 
+                              // [Tàctil/Clic] Acabar de prémer: Navega o Selecciona (Fixa)
                               if (event is FlTapUpEvent) {
                                 if (sectionIndex < 0 ||
                                     sectionIndex >= sections.length) {
+                                  // Tocat fora del gràfic: Desseleccionar
                                   setState(() {
                                     touchedIndex = -1;
                                   });
                                   return;
                                 }
 
-                                // Si toquem el mateix fragment que ja està engrandit, naveguem a la categoria
-                                if (touchedIndex == sectionIndex ||
-                                    hoveredIndex == sectionIndex) {
+                                // Si la zona on hem aixecat ja era la fixada, naveguem (doble toc)
+                                if (touchedIndex == sectionIndex) {
                                   if (sectionIndex >= 0 &&
                                       sectionIndex < sortedEntries.length) {
                                     final catId =
@@ -262,11 +252,27 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                                     }
                                   }
                                 } else {
-                                  // Primer toc: Seleccionem i engrandim
+                                  // Primer toc: Seleccionar permanentment i fixar fins i tot on Exit
                                   setState(() {
                                     touchedIndex = sectionIndex;
                                   });
                                 }
+                                return;
+                              }
+
+                              // [Tàctil/Clic] Feedback visual immediat mentre premem/arrosseguem
+                              if (event.isInterestedForInteractions) {
+                                if (sectionIndex >= 0 &&
+                                    sectionIndex < sections.length) {
+                                  setState(() {
+                                    hoveredIndex = sectionIndex;
+                                  });
+                                }
+                              } else {
+                                // Finalitza qualsevol toc secundari temporal (ex. aixecar perd l'interaction)
+                                setState(() {
+                                  hoveredIndex = -1;
+                                });
                               }
                             },
                           ),

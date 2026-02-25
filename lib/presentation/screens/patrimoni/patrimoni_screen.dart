@@ -13,6 +13,7 @@ import '../../sheets/add_savings_goal_sheet.dart';
 import '../../providers/financial_summary_provider.dart';
 import '../../../../domain/models/financial_summary.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../debt/widgets/amortization_dialog.dart';
 
 enum PatrimoniView { assets, debts, goals }
 
@@ -20,11 +21,18 @@ final patrimoniViewProvider = StateProvider<PatrimoniView>(
   (ref) => PatrimoniView.assets,
 );
 
-class PatrimoniScreen extends ConsumerWidget {
+class PatrimoniScreen extends ConsumerStatefulWidget {
   const PatrimoniScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PatrimoniScreen> createState() => _PatrimoniScreenState();
+}
+
+class _PatrimoniScreenState extends ConsumerState<PatrimoniScreen> {
+  bool _isChartExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
     final view = ref.watch(patrimoniViewProvider);
     final currencyFormat = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
     final summaryAsync = ref.watch(financialSummaryNotifierProvider);
@@ -80,20 +88,86 @@ class PatrimoniScreen extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // Net Worth Header a sobre del contingut
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: summaryAsync.when(
-              data: (summary) => _NetWorthHeader(
-                summary: summary,
-                currencyFormat: currencyFormat,
+          // Net Worth Header col·lapsable
+          summaryAsync.when(
+            data: (summary) => GestureDetector(
+              onTap: () => setState(() => _isChartExpanded = !_isChartExpanded),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                padding: EdgeInsets.all(_isChartExpanded ? 16 : 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  children: [
+                    // Fila compacta (sempre visible)
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.account_balance_wallet,
+                          color: AppTheme.copper,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Patrimoni Net',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          currencyFormat.format(summary.totalNetWorth),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.anthracite,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        AnimatedRotation(
+                          turns: _isChartExpanded ? 0.5 : 0,
+                          duration: const Duration(milliseconds: 300),
+                          child: Icon(
+                            Icons.expand_more,
+                            color: Colors.grey[400],
+                            size: 20,
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Gràfic expandible
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: _NetWorthHeader(
+                          summary: summary,
+                          currencyFormat: currencyFormat,
+                        ),
+                      ),
+                      crossFadeState: _isChartExpanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 300),
+                    ),
+                  ],
+                ),
               ),
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              error: (e, stack) => Center(
-                child: Text('Error carregant patrimoni: $e'),
-              ),
+            ),
+            loading: () => const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, stack) => Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(child: Text('Error carregant patrimoni: $e')),
             ),
           ),
           // Contingut de la pestanya seleccionada
@@ -707,6 +781,59 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                                       const SizedBox(), // Spacer
                                   ],
                                 ),
+
+                                const SizedBox(height: 12),
+                                // Temps restant
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.event_available,
+                                      size: 16,
+                                      color: Colors.grey[500],
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        debt.endDate != null
+                                            ? 'Lliure el: ${_formatDate(debt.endDate!)} (${debt.remainingTimeText})'
+                                            : debt.remainingTimeText,
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600]),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Botó Simular Amortització
+                                if (debt.monthlyInstallment > 0 &&
+                                    debt.interestRate > 0) ...[
+                                  const SizedBox(height: 8),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton.icon(
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) =>
+                                              AmortizationDialog(
+                                            debt: debt,
+                                            onApply: (_) {},
+                                          ),
+                                        );
+                                      },
+                                      icon:
+                                          const Icon(Icons.calculate, size: 16),
+                                      label: const Text('Simular Amortització'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: AppTheme.copper,
+                                        textStyle:
+                                            const TextStyle(fontSize: 12),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -720,6 +847,24 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, s) => Center(child: Text('Error: $e')),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    const months = [
+      'Gen',
+      'Febr',
+      'Març',
+      'Abr',
+      'Maig',
+      'Juny',
+      'Jul',
+      'Ago',
+      'Set',
+      'Oct',
+      'Nov',
+      'Des',
+    ];
+    return '${months[date.month - 1]} ${date.year}';
   }
 } // End of _DebtsView
 

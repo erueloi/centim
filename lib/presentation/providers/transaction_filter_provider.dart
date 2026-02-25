@@ -87,6 +87,10 @@ class TransactionFilterNotifier extends _$TransactionFilterNotifier {
     state = state.copyWith(minAmount: min, maxAmount: max);
   }
 
+  void setDateRange(DateTime? from, DateTime? to) {
+    state = state.copyWith(dateFrom: from, dateTo: to);
+  }
+
   void clearCategory() {
     state = state.copyWith(
       categoryIds: [],
@@ -116,6 +120,10 @@ class TransactionFilterNotifier extends _$TransactionFilterNotifier {
     state = state.copyWith(minAmount: null, maxAmount: null);
   }
 
+  void clearDateRange() {
+    state = state.copyWith(dateFrom: null, dateTo: null);
+  }
+
   void clearAll() {
     state = const TransactionFilter();
   }
@@ -127,5 +135,7 @@ class TransactionFilterNotifier extends _$TransactionFilterNotifier {
       state.isIncome != null ||
       state.payer != null ||
       state.minAmount != null ||
-      state.maxAmount != null;
+      state.maxAmount != null ||
+      state.dateFrom != null ||
+      state.dateTo != null;
 }

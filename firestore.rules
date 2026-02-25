@@ -19,9 +19,12 @@ service cloud.firestore {
 
     // --- RULES ---
 
-    // USERS: Users can only read/write their own profile
+    // USERS: Users can read/write their own profile.
+    // Also, any authenticated user can read other users' profiles
+    // (needed for group member listing / payer selectors).
     match /users/{userId} {
-      allow read, write: if isUser(userId);
+      allow read: if isAuthenticated();
+      allow write: if isUser(userId);
     }
 
     // GROUPS:

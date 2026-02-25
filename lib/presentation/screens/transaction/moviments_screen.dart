@@ -465,6 +465,13 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                       icon: Icons.euro,
                       onRemove: () => filterNotifier.clearAmountRange(),
                     ),
+                  if (filter.dateFrom != null || filter.dateTo != null)
+                    _FilterChip(
+                      label:
+                          '${filter.dateFrom != null ? '${filter.dateFrom!.day}/${filter.dateFrom!.month}' : '...'} → ${filter.dateTo != null ? '${filter.dateTo!.day}/${filter.dateTo!.month}' : '...'}',
+                      icon: Icons.date_range,
+                      onRemove: () => filterNotifier.clearDateRange(),
+                    ),
                   const SizedBox(width: 4),
                   ActionChip(
                     label: const Text(
@@ -548,6 +555,18 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
               if (filter.maxAmount != null) {
                 cycleTransactions = cycleTransactions
                     .where((t) => t.amount <= filter.maxAmount!)
+                    .toList();
+              }
+              if (filter.dateFrom != null) {
+                cycleTransactions = cycleTransactions
+                    .where((t) => !t.date.isBefore(filter.dateFrom!))
+                    .toList();
+              }
+              if (filter.dateTo != null) {
+                final endOfDay = DateTime(filter.dateTo!.year,
+                    filter.dateTo!.month, filter.dateTo!.day, 23, 59, 59);
+                cycleTransactions = cycleTransactions
+                    .where((t) => !t.date.isAfter(endOfDay))
                     .toList();
               }
 
@@ -923,6 +942,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
   Map<String, String> _selectedSubCategoryNames = {};
   bool? _selectedType;
   String? _selectedPayer;
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
   final _minController = TextEditingController();
   final _maxController = TextEditingController();
 
@@ -936,6 +957,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     _selectedSubCategoryNames = Map.from(filter.subCategoryNames);
     _selectedType = filter.isIncome;
     _selectedPayer = filter.payer;
+    _dateFrom = filter.dateFrom;
+    _dateTo = filter.dateTo;
     _minController.text = filter.minAmount?.toStringAsFixed(0) ?? '';
     _maxController.text = filter.maxAmount?.toStringAsFixed(0) ?? '';
   }
@@ -971,6 +994,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     final min = double.tryParse(_minController.text);
     final max = double.tryParse(_maxController.text);
     notifier.setAmountRange(min, max);
+    notifier.setDateRange(_dateFrom, _dateTo);
 
     Navigator.pop(context);
   }
@@ -1293,6 +1317,82 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                       ),
                       filled: true,
                       fillColor: Colors.grey[50],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Date range filter
+            Text(
+              'Rang de dates',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[700],
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: InputChip(
+                    avatar: const Icon(Icons.calendar_today, size: 16),
+                    label: Text(
+                      _dateFrom != null
+                          ? '${_dateFrom!.day}/${_dateFrom!.month}/${_dateFrom!.year}'
+                          : 'Des de...',
+                    ),
+                    selected: _dateFrom != null,
+                    onPressed: () async {
+                      final d = await showDatePicker(
+                        context: context,
+                        initialDate: _dateFrom ??
+                            DateTime.now().subtract(const Duration(days: 30)),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (d != null) setState(() => _dateFrom = d);
+                    },
+                    onDeleted: _dateFrom != null
+                        ? () => setState(() => _dateFrom = null)
+                        : null,
+                    backgroundColor: Colors.grey[50],
+                    selectedColor: AppTheme.copper.withValues(alpha: 0.15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey[300]!),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: InputChip(
+                    avatar: const Icon(Icons.event, size: 16),
+                    label: Text(
+                      _dateTo != null
+                          ? '${_dateTo!.day}/${_dateTo!.month}/${_dateTo!.year}'
+                          : 'Fins a...',
+                    ),
+                    selected: _dateTo != null,
+                    onPressed: () async {
+                      final d = await showDatePicker(
+                        context: context,
+                        initialDate: _dateTo ?? DateTime.now(),
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime(2100),
+                      );
+                      if (d != null) setState(() => _dateTo = d);
+                    },
+                    onDeleted: _dateTo != null
+                        ? () => setState(() => _dateTo = null)
+                        : null,
+                    backgroundColor: Colors.grey[50],
+                    selectedColor: AppTheme.copper.withValues(alpha: 0.15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey[300]!),
                     ),
                   ),
                 ),

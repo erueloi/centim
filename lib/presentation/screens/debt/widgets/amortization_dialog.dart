@@ -101,6 +101,112 @@ class _AmortizationDialogState extends State<AmortizationDialog> {
     }
   }
 
+  Widget _buildAmortizationTable() {
+    final monthlyRate = widget.debt.interestRate / 100 / 12;
+    final balance = widget.debt.currentBalance - _extraPayment;
+    final pmt = widget.debt.monthlyInstallment;
+
+    final rows = <DataRow>[];
+    double remainingBalance = balance > 0 ? balance : 0;
+    int month = 0;
+    double totalInterest = 0;
+    double totalPrincipal = 0;
+
+    while (remainingBalance > 0.01 && month < 1000) {
+      month++;
+      final interest = remainingBalance * monthlyRate;
+      double principal = pmt - interest;
+
+      // Última quota pot ser menor
+      if (principal > remainingBalance) {
+        principal = remainingBalance;
+      }
+
+      remainingBalance -= principal;
+      if (remainingBalance < 0) remainingBalance = 0;
+
+      totalInterest += interest;
+      totalPrincipal += principal;
+
+      rows.add(DataRow(
+        cells: [
+          DataCell(Text('$month', style: const TextStyle(fontSize: 12))),
+          DataCell(Text(
+            (principal + interest).toStringAsFixed(2),
+            style: const TextStyle(fontSize: 12),
+          )),
+          DataCell(Text(
+            principal.toStringAsFixed(2),
+            style: const TextStyle(fontSize: 12, color: Colors.green),
+          )),
+          DataCell(Text(
+            interest.toStringAsFixed(2),
+            style: const TextStyle(fontSize: 12, color: Colors.red),
+          )),
+          DataCell(Text(
+            remainingBalance.toStringAsFixed(2),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          )),
+        ],
+      ));
+    }
+
+    // Fila de totals
+    rows.add(DataRow(
+      color: WidgetStateProperty.all(Colors.grey[100]),
+      cells: [
+        const DataCell(Text('Total',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+        DataCell(Text(
+          (totalPrincipal + totalInterest).toStringAsFixed(2),
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+        )),
+        DataCell(Text(
+          totalPrincipal.toStringAsFixed(2),
+          style: const TextStyle(
+              fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green),
+        )),
+        DataCell(Text(
+          totalInterest.toStringAsFixed(2),
+          style: const TextStyle(
+              fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red),
+        )),
+        const DataCell(Text('0.00',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold))),
+      ],
+    ));
+
+    return DataTable(
+      columnSpacing: 16,
+      horizontalMargin: 8,
+      headingRowHeight: 36,
+      dataRowMinHeight: 30,
+      dataRowMaxHeight: 36,
+      columns: const [
+        DataColumn(
+            label: Text('Mes',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+        DataColumn(
+            label: Text('Quota',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+            numeric: true),
+        DataColumn(
+            label: Text('Capital',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+            numeric: true),
+        DataColumn(
+            label: Text('Interès',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+            numeric: true),
+        DataColumn(
+            label: Text('Saldo',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+            numeric: true),
+      ],
+      rows: rows,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final monthsSaved = (_originalMonths - _newMonths).clamp(0, 1000);
@@ -194,6 +300,31 @@ class _AmortizationDialogState extends State<AmortizationDialog> {
                   ],
                 ),
               ),
+
+            // Quadre d'amortització complet
+            if (widget.debt.monthlyInstallment > 0 &&
+                widget.debt.interestRate > 0 &&
+                widget.debt.currentBalance > 0) ...[
+              const SizedBox(height: 16),
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                leading:
+                    const Icon(Icons.table_chart, color: AppTheme.anthracite),
+                title: const Text(
+                  'Quadre d\'amortització',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _buildAmortizationTable(),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

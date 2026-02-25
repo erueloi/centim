@@ -213,7 +213,7 @@ class __$$DebtAccountImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$DebtAccountImpl implements _DebtAccount {
+class _$DebtAccountImpl extends _DebtAccount {
   const _$DebtAccountImpl(
       {required this.id,
       required this.name,
@@ -223,7 +223,8 @@ class _$DebtAccountImpl implements _DebtAccount {
       required this.interestRate,
       required this.monthlyInstallment,
       this.endDate,
-      this.linkedExpenseCategoryId});
+      this.linkedExpenseCategoryId})
+      : super._();
 
   factory _$DebtAccountImpl.fromJson(Map<String, dynamic> json) =>
       _$$DebtAccountImplFromJson(json);
@@ -312,7 +313,7 @@ class _$DebtAccountImpl implements _DebtAccount {
   }
 }
 
-abstract class _DebtAccount implements DebtAccount {
+abstract class _DebtAccount extends DebtAccount {
   const factory _DebtAccount(
       {required final String id,
       required final String name,
@@ -323,6 +324,7 @@ abstract class _DebtAccount implements DebtAccount {
       required final double monthlyInstallment,
       final DateTime? endDate,
       final String? linkedExpenseCategoryId}) = _$DebtAccountImpl;
+  const _DebtAccount._() : super._();
 
   factory _DebtAccount.fromJson(Map<String, dynamic> json) =
       _$DebtAccountImpl.fromJson;

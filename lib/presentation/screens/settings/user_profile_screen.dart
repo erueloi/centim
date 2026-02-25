@@ -1,13 +1,88 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../data/providers/repository_providers.dart';
 
-class UserProfileScreen extends ConsumerWidget {
+class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
+  final _nameController = TextEditingController();
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
     final user = ref.read(authRepositoryProvider).currentUser;
+    if (user != null) {
+      _nameController.text = user.displayName ?? '';
+
+      // Intentar carregar the Firestore el nom real the la base de dades si difereix
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get()
+          .then((doc) {
+        if (doc.exists && mounted) {
+          final data = doc.data() as Map<String, dynamic>;
+          if (data['name'] != null) {
+            setState(() {
+              _nameController.text = data['name'];
+            });
+          }
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateName() async {
+    final user = ref.read(authRepositoryProvider).currentUser;
+    if (user == null) return;
+
+    final newName = _nameController.text.trim();
+    if (newName.isEmpty) return;
+
+    setState(() => _isSaving = true);
+    try {
+      // 1. Update the Firestore User Profile
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'name': newName,
+        'email': user.email,
+        'uid': user.uid,
+      }, SetOptions(merge: true));
+
+      // 2. Opcionalment update al FirebaseAuth
+      await user.updateDisplayName(newName);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nom actualitzat correctament.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al desar: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = ref.watch(authRepositoryProvider).currentUser;
 
     return Scaffold(
       appBar: AppBar(
@@ -26,19 +101,68 @@ class UserProfileScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               if (user?.email != null) ...[
                 Text(
-                  user?.displayName ?? user!.email!,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+                  user?.email ?? '',
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
                 ),
-                if (user?.displayName != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    user!.email!,
-                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                  ),
-                ],
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
               ],
+
+              // Edició de nom
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Com et dius?',
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        hintText: 'Introdueix el teu nom...',
+                        prefixIcon: const Icon(Icons.badge_outlined),
+                        suffixIcon: IconButton(
+                          icon: _isSaving
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.save, color: Colors.purple),
+                          onPressed: _isSaving ? null : _updateName,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey[300]!),
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Aquest nom el veuran la resta the membres del grup al assignar pagadors.',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 48),
               OutlinedButton.icon(
                 onPressed: () async {
                   await ref.read(authRepositoryProvider).signOut();

@@ -14,5 +14,7 @@ class TransactionFilter with _$TransactionFilter {
     String? payer,
     double? minAmount,
     double? maxAmount,
+    DateTime? dateFrom,
+    DateTime? dateTo,
   }) = _TransactionFilter;
 }

@@ -1,5 +1,14 @@
 ﻿# Release Notes
 
+## v1.2.2
+Inici: Donut obre formatges per Android.
+Bugfix: Carregar usuaris pagadors.
+Perfil: Edició nom.
+Moviments: filtre per dates.
+Pressupost: Gràfic a dalt.
+Deute: Quadre amortització.
+Revisió de la vareta màgica.
+Deutes: Visualització temps de venciment.
 ## v1.2.1
 Inici: Pantalla de usuario.
 Donut que es pugui veure correctament.
@@ -38,6 +47,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
