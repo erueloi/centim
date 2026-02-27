@@ -13,12 +13,14 @@ import '../../providers/transfer_provider.dart';
 import '../../providers/fixed_expenses_provider.dart';
 import '../../providers/auth_providers.dart';
 import '../../sheets/add_transaction_sheet.dart';
+import '../../sheets/add_transfer_sheet.dart';
 import '../../widgets/recurrent_expense_card.dart';
 import '../../widgets/cycle_selector.dart';
 import '../../providers/billing_cycle_provider.dart';
 import '../../providers/transaction_filter_provider.dart';
 import '../../providers/category_notifier.dart';
 import '../../providers/group_providers.dart';
+import '../../widgets/confirm_fixed_expense_dialog.dart';
 
 import '../../../domain/services/import_service.dart';
 import '../import/import_transactions_screen.dart';
@@ -503,14 +505,26 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
 
               // Filter by active cycle
               var cycleTransactions = transactions.where((t) {
-                return t.date.isAfter(
-                      activeCycle.startDate.subtract(
-                        const Duration(seconds: 1),
-                      ),
-                    ) &&
-                    t.date.isBefore(
-                      activeCycle.endDate.add(const Duration(seconds: 1)),
-                    );
+                final tDay =
+                    DateTime(t.date.year, t.date.month, t.date.day, 12, 0, 0);
+                final startDay = DateTime(
+                    activeCycle.startDate.year,
+                    activeCycle.startDate.month,
+                    activeCycle.startDate.day,
+                    12,
+                    0,
+                    0);
+                final endDay = DateTime(
+                    activeCycle.endDate.year,
+                    activeCycle.endDate.month,
+                    activeCycle.endDate.day,
+                    12,
+                    0,
+                    0);
+
+                return (tDay.isAtSameMomentAs(startDay) ||
+                        tDay.isAfter(startDay)) &&
+                    tDay.isBefore(endDay);
               }).toList();
 
               // Apply filters
@@ -578,14 +592,26 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
 
               final cycleTransfers = showTransfers
                   ? transfers.where((t) {
-                      return t.date.isAfter(
-                            activeCycle.startDate.subtract(
-                              const Duration(seconds: 1),
-                            ),
-                          ) &&
-                          t.date.isBefore(
-                            activeCycle.endDate.add(const Duration(seconds: 1)),
-                          );
+                      final tDay = DateTime(
+                          t.date.year, t.date.month, t.date.day, 12, 0, 0);
+                      final startDay = DateTime(
+                          activeCycle.startDate.year,
+                          activeCycle.startDate.month,
+                          activeCycle.startDate.day,
+                          12,
+                          0,
+                          0);
+                      final endDay = DateTime(
+                          activeCycle.endDate.year,
+                          activeCycle.endDate.month,
+                          activeCycle.endDate.day,
+                          12,
+                          0,
+                          0);
+
+                      return (tDay.isAtSameMomentAs(startDay) ||
+                              tDay.isAfter(startDay)) &&
+                          tDay.isBefore(endDay);
                     }).toList()
                   : <Transfer>[];
 
@@ -736,43 +762,115 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                         // --- Transfer tile ---
                         if (item.transfer != null) {
                           final transfer = item.transfer!;
-                          return Card(
-                            elevation: 0,
-                            margin: const EdgeInsets.only(bottom: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(
-                                color: Colors.grey.withValues(alpha: 0.2),
+                          return Dismissible(
+                            key: Key(transfer.id),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              color: Colors.red,
+                              child: const Icon(
+                                Icons.delete,
+                                color: Colors.white,
                               ),
                             ),
-                            child: ListTile(
-                              leading: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.blueGrey.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
+                            confirmDismiss: (direction) async {
+                              return await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Eliminar traspàs'),
+                                  content: const Text(
+                                    'Estàs segur que vols eliminar aquest traspàs? Els saldos es restauraran automàticament.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('Cancel·lar'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Eliminar'),
+                                    ),
+                                  ],
                                 ),
-                                child: Icon(
-                                  Icons.swap_horiz,
-                                  color: Colors.blueGrey[600],
-                                  size: 20,
+                              );
+                            },
+                            onDismissed: (direction) async {
+                              try {
+                                await ref
+                                    .read(transferNotifierProvider.notifier)
+                                    .deleteTransfer(transfer.id);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content:
+                                          Text('Traspàs eliminat correctament'),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                        content: Text('Error esborrant: $e')),
+                                  );
+                                }
+                              }
+                            },
+                            child: Card(
+                              elevation: 0,
+                              margin: const EdgeInsets.only(bottom: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: Colors.grey.withValues(alpha: 0.2),
                                 ),
                               ),
-                              title: Text(
-                                '${transfer.sourceAssetName} → ${transfer.destinationName}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                              child: ListTile(
+                                onTap: () {
+                                  showModalBottomSheet(
+                                    context: context,
+                                    isScrollControlled: true,
+                                    useSafeArea: true,
+                                    backgroundColor: Colors.transparent,
+                                    builder: (context) => AddTransferSheet(
+                                      transferToEdit: transfer,
+                                    ),
+                                  );
+                                },
+                                leading: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        Colors.blueGrey.withValues(alpha: 0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.swap_horiz,
+                                    color: Colors.blueGrey[600],
+                                    size: 20,
+                                  ),
                                 ),
-                              ),
-                              subtitle: Text(
-                                '${dateFormat.format(transfer.date)}${transfer.note != null ? ' • ${transfer.note}' : ''}',
-                              ),
-                              trailing: Text(
-                                currencyFormat.format(transfer.amount),
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.blueGrey[700],
+                                title: Text(
+                                  '${transfer.sourceAssetName} → ${transfer.destinationName}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${dateFormat.format(transfer.date)}${transfer.note != null ? ' • ${transfer.note}' : ''}',
+                                ),
+                                trailing: Text(
+                                  currencyFormat.format(transfer.amount),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                    color: Colors.blueGrey[700],
+                                  ),
                                 ),
                               ),
                             ),
@@ -1488,15 +1586,16 @@ class _RecurringExpensesView extends ConsumerWidget {
           categoryIcon: item.category.icon,
           isIncome: isIncome,
           confirmDismiss: (direction) async {
-            final selectedDate = await showDatePicker(
+            final result = await showDialog<ConfirmFixedExpenseResult>(
               context: context,
-              initialDate: DateTime.now(),
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-              helpText: 'Seleciona la data del pagament',
+              builder: (ctx) => ConfirmFixedExpenseDialog(
+                expenseName: item.subCategory.name,
+                amount: item.subCategory.monthlyBudget,
+                isIncome: isIncome,
+              ),
             );
 
-            if (selectedDate == null) return false;
+            if (result == null) return false;
 
             // Proceed with payment
             final groupId = await ref.read(currentGroupIdProvider.future);
@@ -1505,13 +1604,14 @@ class _RecurringExpensesView extends ConsumerWidget {
 
             final transaction = Transaction(
               groupId: groupId,
-              date: selectedDate,
+              date: result.date,
               amount: item.subCategory.monthlyBudget,
               concept: 'Pagament ${item.subCategory.name}',
               categoryId: item.category.id,
               subCategoryId: item.subCategory.id,
               categoryName: item.category.name,
               subCategoryName: item.subCategory.name,
+              accountId: result.accountId,
               payer: userProfile.uid,
               isIncome: item.category.type == TransactionType.income,
             );
@@ -1524,7 +1624,7 @@ class _RecurringExpensesView extends ConsumerWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Pagament registrat el ${DateFormat('dd/MM', 'ca_ES').format(selectedDate)}: ${item.subCategory.name}',
+                    'Pagament registrat el ${DateFormat('dd/MM', 'ca_ES').format(result.date)}: ${item.subCategory.name}',
                   ),
                 ),
               );

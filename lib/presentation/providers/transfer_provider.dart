@@ -88,6 +88,78 @@ class TransferNotifier extends _$TransferNotifier {
     }
   }
 
+  Future<void> updateTransfer(Transfer newTransfer) async {
+    final groupId = await ref.read(currentGroupIdProvider.future);
+    if (groupId == null) return;
+
+    final transfers = await future;
+    final matchingTransfers = transfers.where((t) => t.id == newTransfer.id);
+    if (matchingTransfers.isEmpty) return;
+    final oldTransfer = matchingTransfers.first;
+
+    // 1. Reverse old source
+    try {
+      final assets = await ref.read(assetNotifierProvider.future);
+      final source =
+          assets.firstWhere((a) => a.id == oldTransfer.sourceAssetId);
+      await ref.read(assetNotifierProvider.notifier).updateAsset(
+            source.copyWith(amount: source.amount + oldTransfer.amount),
+          );
+    } catch (_) {}
+
+    // 2. Reverse old destination
+    try {
+      if (oldTransfer.destinationType == TransferDestinationType.asset) {
+        final assets = await ref.read(assetNotifierProvider.future);
+        final dest =
+            assets.firstWhere((a) => a.id == oldTransfer.destinationId);
+        await ref.read(assetNotifierProvider.notifier).updateAsset(
+            dest.copyWith(amount: dest.amount - oldTransfer.amount));
+      } else {
+        final debts = await ref.read(debtNotifierProvider.future);
+        final dest = debts.firstWhere((d) => d.id == oldTransfer.destinationId);
+        await ref.read(debtNotifierProvider.notifier).updateDebt(
+              dest.copyWith(
+                currentBalance: dest.currentBalance + oldTransfer.amount,
+              ),
+            );
+      }
+    } catch (_) {}
+
+    // 3. Update transfer record
+    final repo = ref.read(transferRepositoryProvider);
+    await repo.updateTransfer(groupId, newTransfer);
+
+    // 4. Apply new source
+    try {
+      final assets = await ref.read(assetNotifierProvider.future);
+      final source =
+          assets.firstWhere((a) => a.id == newTransfer.sourceAssetId);
+      await ref.read(assetNotifierProvider.notifier).updateAsset(
+            source.copyWith(amount: source.amount - newTransfer.amount),
+          );
+    } catch (_) {}
+
+    // 5. Apply new destination
+    try {
+      if (newTransfer.destinationType == TransferDestinationType.asset) {
+        final assets = await ref.read(assetNotifierProvider.future);
+        final dest =
+            assets.firstWhere((a) => a.id == newTransfer.destinationId);
+        await ref.read(assetNotifierProvider.notifier).updateAsset(
+            dest.copyWith(amount: dest.amount + newTransfer.amount));
+      } else {
+        final debts = await ref.read(debtNotifierProvider.future);
+        final dest = debts.firstWhere((d) => d.id == newTransfer.destinationId);
+        await ref.read(debtNotifierProvider.notifier).updateDebt(
+              dest.copyWith(
+                currentBalance: dest.currentBalance - newTransfer.amount,
+              ),
+            );
+      }
+    } catch (_) {}
+  }
+
   Future<void> deleteTransfer(String transferId) async {
     final groupId = await ref.read(currentGroupIdProvider.future);
     if (groupId == null) return;

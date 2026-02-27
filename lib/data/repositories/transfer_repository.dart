@@ -25,6 +25,15 @@ class TransferRepository {
         .set(transfer.toJson());
   }
 
+  Future<void> updateTransfer(String groupId, Transfer transfer) async {
+    await _firestore
+        .collection('groups')
+        .doc(groupId)
+        .collection('transfers')
+        .doc(transfer.id)
+        .update(transfer.toJson());
+  }
+
   Future<void> deleteTransfer(String groupId, String transferId) async {
     await _firestore
         .collection('groups')

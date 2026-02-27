@@ -298,6 +298,11 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
     DateTime endDate =
         existingCycle?.endDate ?? DateTime.now().add(const Duration(days: 30));
 
+    // Normalize initial dates for the picker
+    startDate =
+        DateTime(startDate.year, startDate.month, startDate.day, 12, 0, 0);
+    endDate = DateTime(endDate.year, endDate.month, endDate.day, 12, 0, 0);
+
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -357,7 +362,8 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
                             lastDate: DateTime(2100),
                           );
                           if (picked != null) {
-                            setState(() => startDate = picked);
+                            setState(() => startDate = DateTime(picked.year,
+                                picked.month, picked.day, 12, 0, 0));
                           }
                         },
                         child: InputDecorator(
@@ -381,7 +387,8 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
                             lastDate: DateTime(2100),
                           );
                           if (picked != null) {
-                            setState(() => endDate = picked);
+                            setState(() => endDate = DateTime(picked.year,
+                                picked.month, picked.day, 12, 0, 0));
                           }
                         },
                         child: InputDecorator(
@@ -405,21 +412,12 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
                         ref.read(currentGroupIdProvider).valueOrNull;
                     if (groupId == null) return;
 
-                    final adjustedEndDate = DateTime(
-                      endDate.year,
-                      endDate.month,
-                      endDate.day,
-                      23,
-                      59,
-                      59,
-                    );
-
                     final cycle = BillingCycle(
                       id: existingCycle?.id ?? '',
                       groupId: groupId,
                       name: nameController.text,
                       startDate: startDate,
-                      endDate: adjustedEndDate,
+                      endDate: endDate,
                     );
 
                     if (isEditing) {

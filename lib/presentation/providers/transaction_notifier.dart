@@ -2,15 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../../domain/models/transaction.dart';
-import '../../domain/models/asset.dart';
-import '../../domain/models/transfer.dart';
 import '../../data/providers/repository_providers.dart';
 
 import '../../domain/models/savings_goal.dart';
 import 'auth_providers.dart';
 import 'savings_goal_provider.dart';
 import 'category_notifier.dart';
-import 'transfer_provider.dart';
 import 'asset_provider.dart';
 import 'debt_provider.dart';
 
@@ -105,36 +102,22 @@ class TransactionNotifier extends _$TransactionNotifier {
       }
     }
 
-    // 3. Linked Debt (Auto-Transfer to reduce debt)
+    // 3. Linked Debt (Directly reduce debt balance)
     if (linkedDebtId != null) {
       try {
-        // Find the first liquid asset to use as source
-        final assets = await ref.read(assetNotifierProvider.future);
-        final liquidAssets = assets
-            .where(
-              (a) =>
-                  a.type == AssetType.bankAccount || a.type == AssetType.cash,
-            )
-            .toList();
+        final debts = await ref.read(debtNotifierProvider.future);
+        final debt = debts.firstWhere((d) => d.id == linkedDebtId);
 
-        if (liquidAssets.isNotEmpty) {
-          final source = liquidAssets.first;
-          final debts = await ref.read(debtNotifierProvider.future);
-          final debt = debts.firstWhere((d) => d.id == linkedDebtId);
+        // Expense reduces debt. Income increases debt.
+        // Usually it's an expense (debt payment), so we subtract from currentBalance
+        final delta =
+            transaction.isIncome ? transaction.amount : -transaction.amount;
 
-          await ref.read(transferNotifierProvider.notifier).addTransfer(
-                amount: transaction.amount,
-                sourceAssetId: source.id,
-                sourceAssetName: source.name,
-                destinationType: TransferDestinationType.debt,
-                destinationId: linkedDebtId,
-                destinationName: debt.name,
-                date: transaction.date,
-                note: 'Auto: ${transaction.concept}',
-              );
-        }
+        await ref.read(debtNotifierProvider.notifier).updateDebt(
+              debt.copyWith(currentBalance: debt.currentBalance + delta),
+            );
       } catch (e) {
-        debugPrint('Error creating auto-transfer for linked debt: $e');
+        debugPrint('Error updating linked debt balance: $e');
       }
     }
 
@@ -267,24 +250,21 @@ class TransactionNotifier extends _$TransactionNotifier {
       }
     }
 
-    // 2b. Reverse linked debt transfer
+    // 2b. Reverse linked debt balance effect
     if (linkedDebtId != null) {
       try {
-        final transfers = await ref.read(transferNotifierProvider.future);
-        // Find the auto-generated transfer by matching note pattern and amount
-        final autoTransfer = transfers.where(
-          (t) =>
-              t.note == 'Auto: ${transaction.concept}' &&
-              t.amount == transaction.amount &&
-              t.destinationId == linkedDebtId,
-        );
-        if (autoTransfer.isNotEmpty) {
-          await ref
-              .read(transferNotifierProvider.notifier)
-              .deleteTransfer(autoTransfer.first.id);
-        }
+        final debts = await ref.read(debtNotifierProvider.future);
+        final debt = debts.firstWhere((d) => d.id == linkedDebtId);
+
+        // Reverse: if it was an expense (payment), we subtracted it, so now we add it back.
+        final delta =
+            transaction.isIncome ? -transaction.amount : transaction.amount;
+
+        await ref.read(debtNotifierProvider.notifier).updateDebt(
+              debt.copyWith(currentBalance: debt.currentBalance + delta),
+            );
       } catch (e) {
-        debugPrint('Error reversing linked debt transfer: $e');
+        debugPrint('Error reversing linked debt balance: $e');
       }
     }
 

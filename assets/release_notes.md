@@ -1,5 +1,9 @@
 ﻿# Release Notes
 
+## v1.2.3
+Bugfix amb el deute i les transferencies automatiques.
+Moviments fixes: Indicar compte corrent al pagar.
+Moviments i general: Mostrar correctament els moviments dins dels cicles de facturació.
 ## v1.2.2
 Inici: Donut obre formatges per Android.
 Bugfix: Carregar usuaris pagadors.
@@ -47,6 +51,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

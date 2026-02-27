@@ -18,16 +18,15 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
     // Use Active Cycle instead of Natural Month
     final cycle = ref.watch(activeCycleProvider);
 
-    // Logic: t.date >= cycle.startDate && t.date <= cycle.endDate
-    // (Note: cycle.endDate is inclusive 23:59:59 in my implementation)
-    // Actually, the provider logic was: date >= startDate && date < nextStartDate
-    // My BillingCycle model has explicit startDate and endDate.
-    // Let's use them.
     final currentMonthTransactions = transactions.where((t) {
-      return t.date.isAfter(
-            cycle.startDate.subtract(const Duration(seconds: 1)),
-          ) &&
-          t.date.isBefore(cycle.endDate.add(const Duration(seconds: 1)));
+      final tDay = DateTime(t.date.year, t.date.month, t.date.day, 12, 0, 0);
+      final startDay = DateTime(cycle.startDate.year, cycle.startDate.month,
+          cycle.startDate.day, 12, 0, 0);
+      final endDay = DateTime(
+          cycle.endDate.year, cycle.endDate.month, cycle.endDate.day, 12, 0, 0);
+
+      return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
+          tDay.isBefore(endDay);
     }).toList();
 
     // 1. Assets & Liabilities

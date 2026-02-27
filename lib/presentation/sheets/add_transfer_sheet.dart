@@ -4,11 +4,17 @@ import '../../core/theme/app_theme.dart';
 import '../../domain/models/asset.dart';
 import '../../domain/models/transfer.dart';
 import '../providers/asset_provider.dart';
+import '../providers/auth_providers.dart';
 import '../providers/debt_provider.dart';
 import '../providers/transfer_provider.dart';
 
 class AddTransferSheet extends ConsumerStatefulWidget {
-  const AddTransferSheet({super.key});
+  final Transfer? transferToEdit;
+
+  const AddTransferSheet({
+    super.key,
+    this.transferToEdit,
+  });
 
   @override
   ConsumerState<AddTransferSheet> createState() => _AddTransferSheetState();
@@ -23,6 +29,20 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
   String? _destinationId;
   TransferDestinationType _destinationType = TransferDestinationType.asset;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.transferToEdit != null) {
+      final t = widget.transferToEdit!;
+      _amountController.text = t.amount.toString();
+      _noteController.text = t.note ?? '';
+      _selectedDate = t.date;
+      _sourceAssetId = t.sourceAssetId;
+      _destinationId = t.destinationId;
+      _destinationType = t.destinationType;
+    }
+  }
 
   @override
   void dispose() {
@@ -58,16 +78,35 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
         destName = dest.name;
       }
 
-      await ref.read(transferNotifierProvider.notifier).addTransfer(
-            amount: amount,
-            sourceAssetId: _sourceAssetId!,
-            sourceAssetName: source.name,
-            destinationType: _destinationType,
-            destinationId: _destinationId!,
-            destinationName: destName,
-            date: _selectedDate,
-            note: _noteController.text.isNotEmpty ? _noteController.text : null,
-          );
+      if (widget.transferToEdit == null) {
+        await ref.read(transferNotifierProvider.notifier).addTransfer(
+              amount: amount,
+              sourceAssetId: _sourceAssetId!,
+              sourceAssetName: source.name,
+              destinationType: _destinationType,
+              destinationId: _destinationId!,
+              destinationName: destName,
+              date: _selectedDate,
+              note:
+                  _noteController.text.isNotEmpty ? _noteController.text : null,
+            );
+      } else {
+        final groupId = await ref.read(currentGroupIdProvider.future);
+        final editedTransfer = widget.transferToEdit!.copyWith(
+          groupId: groupId ?? widget.transferToEdit!.groupId,
+          date: _selectedDate,
+          amount: amount,
+          sourceAssetId: _sourceAssetId!,
+          sourceAssetName: source.name,
+          destinationType: _destinationType,
+          destinationId: _destinationId!,
+          destinationName: destName,
+          note: _noteController.text.isNotEmpty ? _noteController.text : null,
+        );
+        await ref
+            .read(transferNotifierProvider.notifier)
+            .updateTransfer(editedTransfer);
+      }
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
@@ -107,7 +146,9 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
               // Header
               Center(
                 child: Text(
-                  'Nova Transferència',
+                  widget.transferToEdit == null
+                      ? 'Nova Transferència'
+                      : 'Editar Transferència',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.anthracite,
@@ -411,9 +452,12 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                           ),
                         )
                       : const Icon(Icons.swap_horiz),
-                  label: const Text(
-                    'Fer Transferència',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  label: Text(
+                    widget.transferToEdit == null
+                        ? 'Fer Transferència'
+                        : 'Desar Canvis',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueGrey[700],

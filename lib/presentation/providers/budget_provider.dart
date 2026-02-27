@@ -132,10 +132,14 @@ List<BudgetStatus> _calculateBudgetStatus(
 ) {
   final currentCycleTransactions = transactions.where((t) {
     // Assuming Transaction model has date
-    return t.date.isAfter(
-          cycle.startDate.subtract(const Duration(seconds: 1)),
-        ) &&
-        t.date.isBefore(cycle.endDate.add(const Duration(seconds: 1)));
+    final tDay = DateTime(t.date.year, t.date.month, t.date.day, 12, 0, 0);
+    final startDay = DateTime(cycle.startDate.year, cycle.startDate.month,
+        cycle.startDate.day, 12, 0, 0);
+    final endDay = DateTime(
+        cycle.endDate.year, cycle.endDate.month, cycle.endDate.day, 12, 0, 0);
+
+    return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
+        tDay.isBefore(endDay);
   }).toList();
 
   return categories.map((category) {

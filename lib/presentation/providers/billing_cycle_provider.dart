@@ -92,18 +92,13 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
       final daysInStartMonth = DateTime(startYear, startMonth + 1, 0).day;
       final startDay =
           anchorDay > daysInStartMonth ? daysInStartMonth : anchorDay;
-      final newStartDate = DateTime(startYear, startMonth, startDay);
+      final newStartDate = DateTime(startYear, startMonth, startDay, 12, 0, 0);
 
-      // End Date: Target Month, Anchor Day - 1 second (so it ends day before next cycle starts)
-      // Actually, to be consistent with "Next Start Date" logic:
-      // Next Start Date would be (targetYear, targetMonth, anchorDay).
-      // So End Date is (targetYear, targetMonth, anchorDay) - 1 second.
-
+      // End Date: Target Month, Anchor Day, exact noon.
       final daysInTargetMonth = DateTime(targetYear, targetMonth + 1, 0).day;
       final endDay =
           anchorDay > daysInTargetMonth ? daysInTargetMonth : anchorDay;
-      final nextCycleStart = DateTime(targetYear, targetMonth, endDay);
-      final newEndDate = nextCycleStart.subtract(const Duration(seconds: 1));
+      final newEndDate = DateTime(targetYear, targetMonth, endDay, 12, 0, 0);
 
       final updatedCycle = cycle.copyWith(
         startDate: newStartDate,
@@ -151,14 +146,13 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
 
       final daysInStartMonth = DateTime(startYear, startMonth + 1, 0).day;
       final sDay = anchorDay > daysInStartMonth ? daysInStartMonth : anchorDay;
-      final startDate = DateTime(startYear, startMonth, sDay);
+      final startDate = DateTime(startYear, startMonth, sDay, 12, 0, 0);
 
       // Calculate End Date
       final daysInTargetMonth = DateTime(targetYear, targetMonth + 1, 0).day;
       final eDay =
           anchorDay > daysInTargetMonth ? daysInTargetMonth : anchorDay;
-      final nextStart = DateTime(targetYear, targetMonth, eDay);
-      final endDate = nextStart.subtract(const Duration(seconds: 1));
+      final endDate = DateTime(targetYear, targetMonth, eDay, 12, 0, 0);
 
       await repo.addBillingCycle(
         BillingCycle(
@@ -183,8 +177,9 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
     final cycles = await repo.watchBillingCycles(groupId).first;
     final now = DateTime.now();
 
-    // 1. Close current cycle
-    final closingCycle = activeCycle.copyWith(endDate: now);
+    // 1. Close current cycle using exact date and 12:00:00
+    final nowNormalized = DateTime(now.year, now.month, now.day, 12, 0, 0);
+    final closingCycle = activeCycle.copyWith(endDate: nowNormalized);
     await repo.updateBillingCycle(closingCycle);
 
     // 2. Determine Next Cycle
@@ -209,9 +204,9 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
     }
 
     if (nextCycle != null) {
-      // Update existing next cycle to start NOW
+      // Update existing next cycle to start NOW (normalized)
       final updatedNext = nextCycle.copyWith(
-        startDate: now.add(const Duration(seconds: 1)),
+        startDate: nowNormalized,
       );
       await repo.updateBillingCycle(updatedNext);
     } else {
@@ -230,14 +225,16 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
 
       final name = '${_getMonthName(targetMonth)} $targetYear';
 
-      // End date for new cycle -> +30 days approx or same day next month
-      final newEndDate = now.add(const Duration(days: 30));
+      // End date for new cycle -> +30 days approx
+      final nextMonthTarget = nowNormalized.add(const Duration(days: 30));
+      final newEndDate = DateTime(nextMonthTarget.year, nextMonthTarget.month,
+          nextMonthTarget.day, 12, 0, 0);
 
       final newCycle = BillingCycle(
         id: '',
         groupId: groupId,
         name: name,
-        startDate: now.add(const Duration(seconds: 1)),
+        startDate: nowNormalized,
         endDate: newEndDate,
       );
 
@@ -288,8 +285,15 @@ BillingCycle currentCycle(Ref ref) {
   }
 
   // 3. Fallback: Natural Month
-  final startOfMonth = DateTime(now.year, now.month, 1);
-  final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+  final startOfMonth = DateTime(now.year, now.month, 1, 12, 0, 0);
+
+  var nextMonth = now.month + 1;
+  var nextYear = now.year;
+  if (nextMonth > 12) {
+    nextMonth = 1;
+    nextYear++;
+  }
+  final endOfMonth = DateTime(nextYear, nextMonth, 1, 12, 0, 0);
 
   return BillingCycle(
     id: 'virtual_natural_month',

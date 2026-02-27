@@ -31,8 +31,14 @@ List<FixedExpenseItem> fixedExpenses(Ref ref) {
 
   // 3. Filter transactions for the current cycle
   final thisMonthTransactions = transactions.where((t) {
-    return t.date.isAfter(startOfCycle.subtract(const Duration(seconds: 1))) &&
-        t.date.isBefore(endOfCycle.add(const Duration(seconds: 1)));
+    final tDay = DateTime(t.date.year, t.date.month, t.date.day, 12, 0, 0);
+    final startDay = DateTime(
+        startOfCycle.year, startOfCycle.month, startOfCycle.day, 12, 0, 0);
+    final endDay =
+        DateTime(endOfCycle.year, endOfCycle.month, endOfCycle.day, 12, 0, 0);
+
+    return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
+        tDay.isBefore(endDay);
   }).toList();
 
   // 4. Filter out subcategories that have already been paid
