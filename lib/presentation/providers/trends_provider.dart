@@ -37,15 +37,29 @@ class MonthlyTrendData {
   });
 }
 
+class SubcategoryTrendData {
+  final String name;
+  final double totalAmount;
+  final double percentage; // percentage within parent category
+
+  SubcategoryTrendData({
+    required this.name,
+    required this.totalAmount,
+    required this.percentage,
+  });
+}
+
 class CategoryTrendData {
   final Category category;
   final double totalAmount;
   final double percentage;
+  final List<SubcategoryTrendData> subcategories;
 
   CategoryTrendData({
     required this.category,
     required this.totalAmount,
     required this.percentage,
+    this.subcategories = const [],
   });
 }
 
@@ -175,11 +189,33 @@ class TrendsNotifier extends _$TrendsNotifier {
             type: TransactionType.expense,
           ),
         );
+
+        // Compute subcategory breakdown for this category
+        final subcatTotals = <String, double>{};
+        for (var t in recentTransactions) {
+          if (!t.isIncome && t.categoryId == entry.key) {
+            final subName = t.subCategoryName.isNotEmpty
+                ? t.subCategoryName
+                : 'Sense subcategoria';
+            subcatTotals[subName] = (subcatTotals[subName] ?? 0) + t.amount;
+          }
+        }
+        final sortedSubcats = subcatTotals.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+        final subcategories = sortedSubcats
+            .map((s) => SubcategoryTrendData(
+                  name: s.key,
+                  totalAmount: s.value,
+                  percentage: entry.value > 0 ? s.value / entry.value : 0,
+                ))
+            .toList();
+
         topCategories.add(
           CategoryTrendData(
             category: category,
             totalAmount: entry.value,
             percentage: totalExpenses > 0 ? entry.value / totalExpenses : 0,
+            subcategories: subcategories,
           ),
         );
       } else {

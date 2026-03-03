@@ -4,6 +4,7 @@ import 'transaction_notifier.dart';
 import 'debt_provider.dart';
 import 'group_providers.dart';
 import 'billing_cycle_provider.dart';
+import 'category_notifier.dart';
 
 part 'financial_summary_provider.g.dart';
 
@@ -14,9 +15,20 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
     final transactions = await ref.watch(transactionNotifierProvider.future);
     final debts = await ref.watch(debtNotifierProvider.future);
     final group = await ref.watch(currentGroupProvider.future);
+    final categories = await ref.watch(categoryNotifierProvider.future);
 
     // Use Active Cycle instead of Natural Month
     final cycle = ref.watch(activeCycleProvider);
+
+    // Build set of subcategory IDs linked to savings goals
+    final linkedSavingsSubIds = <String>{};
+    for (var cat in categories) {
+      for (var sub in cat.subcategories) {
+        if (sub.linkedSavingsGoalId != null) {
+          linkedSavingsSubIds.add(sub.id);
+        }
+      }
+    }
 
     final currentMonthTransactions = transactions.where((t) {
       final tDay = DateTime(t.date.year, t.date.month, t.date.day, 12, 0, 0);
@@ -44,6 +56,16 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
     // 2. Cash Flow
     final monthlyIncome = currentMonthTransactions
         .where((t) => t.isIncome)
+        .fold(0.0, (sum, t) => sum + t.amount);
+
+    // Income from savings withdrawals:
+    // - savingsGoalId != null (from AddTransactionSheet toggle or SavingsGoalDetail withdraw)
+    // - OR subcategory is linked to a savings goal and it's income (auto-withdrawal)
+    final savingsWithdrawalIncome = currentMonthTransactions
+        .where((t) =>
+            t.isIncome &&
+            (t.savingsGoalId != null ||
+                linkedSavingsSubIds.contains(t.subCategoryId)))
         .fold(0.0, (sum, t) => sum + t.amount);
 
     final monthlyDebtInstallments = debts.fold(
@@ -85,6 +107,7 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
       totalLiabilities: totalLiabilities,
       equityRatio: equityRatio,
       monthlyIncome: monthlyIncome,
+      savingsWithdrawalIncome: savingsWithdrawalIncome,
       monthlyExpenses: monthlyExpenses,
       availableToSpend: availableToSpend,
       savingsPercentage: totalForBudget > 0 ? savings / totalForBudget : 0.0,

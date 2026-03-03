@@ -4,6 +4,7 @@ import '../../domain/models/transaction.dart';
 import '../../data/providers/repository_providers.dart';
 
 import 'auth_providers.dart';
+import 'category_notifier.dart';
 
 part 'savings_goal_provider.g.dart';
 
@@ -135,10 +136,32 @@ class SavingsGoalNotifier extends _$SavingsGoalNotifier {
     );
     await repo.updateSavingsGoal(updatedGoal);
 
-    // 2. Create Transaction to balance the main budget
+    // 2. Find real category/subcategory linked to this goal
+    final categories = await ref.read(categoryNotifierProvider.future);
+    String categoryId = 'savings_category_id';
+    String subCategoryId = 'adjustment_sub';
+    String categoryName = 'Estalvi';
+    String subCategoryName = 'Ajust';
+
+    for (var cat in categories) {
+      for (var sub in cat.subcategories) {
+        if (sub.linkedSavingsGoalId == goalId) {
+          categoryId = cat.id;
+          subCategoryId = sub.id;
+          categoryName = cat.name;
+          subCategoryName = sub.name;
+          break;
+        }
+      }
+    }
+
+    // 3. Use real payer name
+    final userProfile = ref.read(userProfileProvider).valueOrNull;
+    final payer =
+        userProfile?.name ?? userProfile?.email.split('@').first ?? 'User';
+
+    // 4. Create Transaction to balance the main budget
     final transactionRepo = ref.read(transactionRepositoryProvider);
-    const categoryId = 'savings_category_id'; // Placeholder
-    const categoryName = 'Estalvi';
 
     final transaction = Transaction(
       id: null,
@@ -147,10 +170,10 @@ class SavingsGoalNotifier extends _$SavingsGoalNotifier {
       amount: difference.abs(),
       concept: 'Ajust de saldo a ${goal.name}',
       categoryId: categoryId,
-      subCategoryId: 'adjustment_sub',
+      subCategoryId: subCategoryId,
       categoryName: categoryName,
-      subCategoryName: 'Ajust',
-      payer: 'User',
+      subCategoryName: subCategoryName,
+      payer: payer,
       // If positive adjustment (added to goal), it's an expense from main budget
       // If negative adjustment (removed from goal), it's an income to main budget
       isIncome: !isPositiveAdjustment,

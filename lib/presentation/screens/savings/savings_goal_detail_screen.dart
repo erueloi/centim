@@ -4,9 +4,12 @@ import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../../domain/models/asset.dart';
 import '../../../../domain/models/savings_goal.dart';
 import '../../../../domain/models/transaction.dart';
 import '../../sheets/add_savings_goal_sheet.dart';
+import '../../providers/asset_provider.dart';
+import '../../providers/category_notifier.dart';
 import '../../providers/transaction_notifier.dart';
 import '../../providers/savings_goal_provider.dart';
 import '../../providers/auth_providers.dart';
@@ -88,47 +91,118 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _withdraw(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController();
-    final amount = await showDialog<double>(
+    final assetsAsync = await ref.read(assetNotifierProvider.future);
+    final categories = await ref.read(categoryNotifierProvider.future);
+    final userProfile = ref.read(userProfileProvider).valueOrNull;
+
+    // Find bank/cash accounts
+    final accounts = assetsAsync
+        .where(
+            (a) => a.type == AssetType.bankAccount || a.type == AssetType.cash)
+        .toList();
+
+    // Find the category/subcategory linked to this savings goal
+    String resolvedCategoryId = 'income_savings';
+    String resolvedSubCategoryId = 'withdrawal';
+    String resolvedCategoryName = 'Estalvi';
+    String resolvedSubCategoryName = 'Retirada';
+
+    for (var cat in categories) {
+      for (var sub in cat.subcategories) {
+        if (sub.linkedSavingsGoalId == goal.id) {
+          resolvedCategoryId = cat.id;
+          resolvedSubCategoryId = sub.id;
+          resolvedCategoryName = cat.name;
+          resolvedSubCategoryName = sub.name;
+          break;
+        }
+      }
+    }
+
+    final payer =
+        userProfile?.name ?? userProfile?.email.split('@').first ?? 'User';
+
+    final amountController = TextEditingController();
+    String? selectedAccountId = accounts.isNotEmpty ? accounts.first.id : null;
+
+    if (!context.mounted) return;
+
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Retirar estalvis'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Aquests fons es mouran a la teva cartera principal com a ingrés.',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Retirar estalvis'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Aquests fons es mouran a la teva cartera principal com a ingrés.',
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: amountController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Import a retirar (€)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              if (accounts.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedAccountId,
+                  decoration: const InputDecoration(
+                    labelText: 'Compte destí',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.account_balance),
+                  ),
+                  items: [
+                    ...accounts.map((a) => DropdownMenuItem(
+                          value: a.id,
+                          child: Text(a.name),
+                        )),
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Sense especificar'),
+                    ),
+                  ],
+                  onChanged: (val) {
+                    setDialogState(() {
+                      selectedAccountId = val;
+                    });
+                  },
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel·lar'),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Import a retirar (€)',
-                border: OutlineInputBorder(),
-              ),
+            FilledButton(
+              onPressed: () {
+                final val =
+                    double.tryParse(amountController.text.replaceAll(',', '.'));
+                if (val != null && val > 0) {
+                  Navigator.pop(context, {
+                    'amount': val,
+                    'accountId': selectedAccountId,
+                  });
+                }
+              },
+              child: const Text('Retirar'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel·lar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final val = double.tryParse(controller.text.replaceAll(',', '.'));
-              if (val != null && val > 0) Navigator.pop(context, val);
-            },
-            child: const Text('Retirar'),
-          ),
-        ],
       ),
     );
 
-    if (amount == null) return;
+    if (result == null) return;
+    final amount = result['amount'] as double;
+    final accountId = result['accountId'] as String?;
 
     // Check if enough funds
     if (amount > goal.currentAmount) {
@@ -148,13 +222,14 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
       date: DateTime.now(),
       amount: amount,
       concept: 'Retirada de ${goal.name}',
-      categoryId: 'income_savings', // Placeholder or generic 'Other'
-      subCategoryId: 'withdrawal',
-      categoryName: 'Estalvi',
-      subCategoryName: 'Retirada',
-      payer: 'User',
-      isIncome: true, // It's an income for the main budget
-      savingsGoalId: goal.id, // Linked to this goal (will trigger reduction)
+      categoryId: resolvedCategoryId,
+      subCategoryId: resolvedSubCategoryId,
+      categoryName: resolvedCategoryName,
+      subCategoryName: resolvedSubCategoryName,
+      payer: payer,
+      isIncome: true,
+      savingsGoalId: goal.id,
+      accountId: accountId,
     );
 
     await ref

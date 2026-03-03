@@ -90,11 +90,11 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                 centerTitle = originalCat.name;
                 centerAmount = amount;
 
-                final perIncome = widget.summary.monthlyIncome > 0
-                    ? ((amount / widget.summary.monthlyIncome) * 100)
+                final perExpense = widget.summary.monthlyExpenses > 0
+                    ? ((amount / widget.summary.monthlyExpenses) * 100)
                         .toStringAsFixed(1)
                     : '--';
-                centerSubtitle = '$perIncome% dels Ingressos';
+                centerSubtitle = '$perExpense% de la Despesa';
                 centerColor = originalCat.color != null
                     ? Color(originalCat.color!)
                     : AppTheme.anthracite;
@@ -393,13 +393,28 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          currencyFormat.format(widget.summary.monthlyIncome),
+                          currencyFormat.format(widget.summary.monthlyIncome -
+                              widget.summary.savingsWithdrawalIncome),
                           style: TextStyle(
                               color: Colors.green.shade800,
                               fontSize: 18,
                               fontWeight: FontWeight.bold),
                         ),
                       ),
+                      if (widget.summary.savingsWithdrawalIncome > 0) ...[
+                        const SizedBox(height: 2),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '(+${currencyFormat.format(widget.summary.savingsWithdrawalIncome)} retirades)',
+                            style: TextStyle(
+                                color: Colors.green.shade500,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

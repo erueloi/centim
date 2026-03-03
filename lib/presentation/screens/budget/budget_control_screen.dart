@@ -257,6 +257,18 @@ class _BudgetCard extends ConsumerWidget {
                 ),
               ],
             ),
+            if (status.isOverBudget && status.total > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '+${(status.spent - status.total).toStringAsFixed(2).replaceAll('.', ',')}€ sobrepassat',
+                  style: const TextStyle(
+                    color: Colors.red,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
           ],
         ),
         children: [
@@ -568,6 +580,24 @@ class _CategoryTrendsCharts extends ConsumerWidget {
                 t.isIncome == isIncome)
             .toList();
 
+        // Cumulative spent for previous cycle (full month, for overlay on burn rate)
+        prevCycleTx.sort((a, b) => a.date.compareTo(b.date));
+        final prevTotalDays =
+            prevCycleEnd.difference(prevCycleStart).inDays + 1;
+        final prevDailySpent = <int, double>{};
+        var prevCumulativeSpent = 0.0;
+        for (int i = 0; i < prevTotalDays && i < totalDays; i++) {
+          final prevDate = prevCycleStart.add(Duration(days: i));
+          final spentThatDay = prevCycleTx
+              .where((t) =>
+                  t.date.year == prevDate.year &&
+                  t.date.month == prevDate.month &&
+                  t.date.day == prevDate.day)
+              .fold(0.0, (sum, t) => sum + t.amount);
+          prevCumulativeSpent += spentThatDay;
+          prevDailySpent[i] = prevCumulativeSpent;
+        }
+
         final totalCurrentStr =
             currentCycleTx.fold(0.0, (sum, t) => sum + t.amount);
         final totalPrevStr = prevCycleTx.fold(0.0, (sum, t) => sum + t.amount);
@@ -589,7 +619,7 @@ class _CategoryTrendsCharts extends ConsumerWidget {
             SizedBox(
               height: 140,
               child: _buildBurnRateChart(
-                  dailySpent, totalDays, totalBudget, isIncome),
+                  dailySpent, prevDailySpent, totalDays, totalBudget, isIncome),
             ),
 
             const SizedBox(height: 24),
@@ -620,17 +650,33 @@ class _CategoryTrendsCharts extends ConsumerWidget {
     );
   }
 
-  Widget _buildBurnRateChart(Map<int, double> dailySpent, int totalDays,
-      double totalBudget, bool isIncome) {
-    if (totalBudget == 0 && dailySpent.isEmpty) return const SizedBox();
+  Widget _buildBurnRateChart(
+      Map<int, double> dailySpent,
+      Map<int, double> prevDailySpent,
+      int totalDays,
+      double totalBudget,
+      bool isIncome) {
+    if (totalBudget == 0 && dailySpent.isEmpty && prevDailySpent.isEmpty) {
+      return const SizedBox();
+    }
 
     final maxY = [
       totalBudget,
       if (dailySpent.isNotEmpty)
         dailySpent.values.reduce((a, b) => a > b ? a : b),
+      if (prevDailySpent.isNotEmpty)
+        prevDailySpent.values.reduce((a, b) => a > b ? a : b),
     ].reduce((a, b) => a > b ? a : b);
 
     final finalMaxY = (maxY * 1.2).ceilToDouble(); // Add some padding
+
+    // Determine bar indices for tooltip labeling
+    // Order: [0] ideal (if budget>0), [1] prev month (if data), [2] actual (if data)
+    int nextBarIndex = 0;
+    final int idealBarIndex = totalBudget > 0 ? nextBarIndex++ : -1;
+    final int prevBarIndex = prevDailySpent.isNotEmpty ? nextBarIndex++ : -1;
+    // ignore: unused_local_variable
+    final int actualBarIndex = dailySpent.isNotEmpty ? nextBarIndex++ : -1;
 
     return LineChart(
       LineChartData(
@@ -704,6 +750,20 @@ class _CategoryTrendsCharts extends ConsumerWidget {
               dashArray: [5, 5],
             ),
 
+          // Previous Month Line (grey, dashed)
+          if (prevDailySpent.isNotEmpty)
+            LineChartBarData(
+              spots: prevDailySpent.entries
+                  .map((e) => FlSpot(e.key.toDouble(), e.value))
+                  .toList(),
+              isCurved: true,
+              color: Colors.grey[350],
+              barWidth: 2,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              dashArray: [6, 4],
+            ),
+
           // Actual Spent Line
           if (dailySpent.isNotEmpty)
             LineChartBarData(
@@ -727,9 +787,14 @@ class _CategoryTrendsCharts extends ConsumerWidget {
             tooltipRoundedRadius: 8,
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
-                final isIdeal = spot.barIndex == 0 && totalBudget > 0;
+                String label = '';
+                if (spot.barIndex == idealBarIndex) {
+                  label = 'Ideal: ';
+                } else if (spot.barIndex == prevBarIndex) {
+                  label = 'Ant.: ';
+                }
                 return LineTooltipItem(
-                  '${isIdeal ? "Ideal: " : ""}${spot.y.toStringAsFixed(0)}€',
+                  '$label${spot.y.toStringAsFixed(0)}€',
                   const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,

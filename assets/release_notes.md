@@ -1,5 +1,12 @@
 ﻿# Release Notes
 
+## v1.2.4
+Inici: Donut amb text correcte.
+Mostrar bé lo que son ingressos i retirades de la guardiola.
+Detall: € sobrepassats per categoria.
+Línia mes anterior.
+Tendència: Subcategories al gràfic.
+Patrimoni: Retirada de fons corregit.
 ## v1.2.3
 Bugfix amb el deute i les transferencies automatiques.
 Moviments fixes: Indicar compte corrent al pagar.
@@ -51,6 +58,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

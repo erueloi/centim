@@ -22,6 +22,8 @@ mixin _$FinancialSummary {
   double get equityRatio =>
       throw _privateConstructorUsedError; // (Assets - Liabilities) / Assets
   double get monthlyIncome => throw _privateConstructorUsedError;
+  double get savingsWithdrawalIncome =>
+      throw _privateConstructorUsedError; // Income from savings withdrawals
   double get monthlyExpenses => throw _privateConstructorUsedError;
   double get availableToSpend => throw _privateConstructorUsedError;
   double get savingsPercentage => throw _privateConstructorUsedError;
@@ -47,6 +49,7 @@ abstract class $FinancialSummaryCopyWith<$Res> {
       double totalLiabilities,
       double equityRatio,
       double monthlyIncome,
+      double savingsWithdrawalIncome,
       double monthlyExpenses,
       double availableToSpend,
       double savingsPercentage,
@@ -74,6 +77,7 @@ class _$FinancialSummaryCopyWithImpl<$Res, $Val extends FinancialSummary>
     Object? totalLiabilities = null,
     Object? equityRatio = null,
     Object? monthlyIncome = null,
+    Object? savingsWithdrawalIncome = null,
     Object? monthlyExpenses = null,
     Object? availableToSpend = null,
     Object? savingsPercentage = null,
@@ -100,6 +104,10 @@ class _$FinancialSummaryCopyWithImpl<$Res, $Val extends FinancialSummary>
       monthlyIncome: null == monthlyIncome
           ? _value.monthlyIncome
           : monthlyIncome // ignore: cast_nullable_to_non_nullable
+              as double,
+      savingsWithdrawalIncome: null == savingsWithdrawalIncome
+          ? _value.savingsWithdrawalIncome
+          : savingsWithdrawalIncome // ignore: cast_nullable_to_non_nullable
               as double,
       monthlyExpenses: null == monthlyExpenses
           ? _value.monthlyExpenses
@@ -139,6 +147,7 @@ abstract class _$$FinancialSummaryImplCopyWith<$Res>
       double totalLiabilities,
       double equityRatio,
       double monthlyIncome,
+      double savingsWithdrawalIncome,
       double monthlyExpenses,
       double availableToSpend,
       double savingsPercentage,
@@ -164,6 +173,7 @@ class __$$FinancialSummaryImplCopyWithImpl<$Res>
     Object? totalLiabilities = null,
     Object? equityRatio = null,
     Object? monthlyIncome = null,
+    Object? savingsWithdrawalIncome = null,
     Object? monthlyExpenses = null,
     Object? availableToSpend = null,
     Object? savingsPercentage = null,
@@ -190,6 +200,10 @@ class __$$FinancialSummaryImplCopyWithImpl<$Res>
       monthlyIncome: null == monthlyIncome
           ? _value.monthlyIncome
           : monthlyIncome // ignore: cast_nullable_to_non_nullable
+              as double,
+      savingsWithdrawalIncome: null == savingsWithdrawalIncome
+          ? _value.savingsWithdrawalIncome
+          : savingsWithdrawalIncome // ignore: cast_nullable_to_non_nullable
               as double,
       monthlyExpenses: null == monthlyExpenses
           ? _value.monthlyExpenses
@@ -224,6 +238,7 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
       required this.totalLiabilities,
       required this.equityRatio,
       required this.monthlyIncome,
+      required this.savingsWithdrawalIncome,
       required this.monthlyExpenses,
       required this.availableToSpend,
       required this.savingsPercentage,
@@ -242,6 +257,9 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
   @override
   final double monthlyIncome;
   @override
+  final double savingsWithdrawalIncome;
+// Income from savings withdrawals
+  @override
   final double monthlyExpenses;
   @override
   final double availableToSpend;
@@ -254,7 +272,7 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
 
   @override
   String toString() {
-    return 'FinancialSummary(totalNetWorth: $totalNetWorth, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, equityRatio: $equityRatio, monthlyIncome: $monthlyIncome, monthlyExpenses: $monthlyExpenses, availableToSpend: $availableToSpend, savingsPercentage: $savingsPercentage, debtPercentage: $debtPercentage, livingExpensesPercentage: $livingExpensesPercentage)';
+    return 'FinancialSummary(totalNetWorth: $totalNetWorth, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, equityRatio: $equityRatio, monthlyIncome: $monthlyIncome, savingsWithdrawalIncome: $savingsWithdrawalIncome, monthlyExpenses: $monthlyExpenses, availableToSpend: $availableToSpend, savingsPercentage: $savingsPercentage, debtPercentage: $debtPercentage, livingExpensesPercentage: $livingExpensesPercentage)';
   }
 
   @override
@@ -272,6 +290,9 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
                 other.equityRatio == equityRatio) &&
             (identical(other.monthlyIncome, monthlyIncome) ||
                 other.monthlyIncome == monthlyIncome) &&
+            (identical(
+                    other.savingsWithdrawalIncome, savingsWithdrawalIncome) ||
+                other.savingsWithdrawalIncome == savingsWithdrawalIncome) &&
             (identical(other.monthlyExpenses, monthlyExpenses) ||
                 other.monthlyExpenses == monthlyExpenses) &&
             (identical(other.availableToSpend, availableToSpend) ||
@@ -293,6 +314,7 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
       totalLiabilities,
       equityRatio,
       monthlyIncome,
+      savingsWithdrawalIncome,
       monthlyExpenses,
       availableToSpend,
       savingsPercentage,
@@ -316,6 +338,7 @@ abstract class _FinancialSummary implements FinancialSummary {
       required final double totalLiabilities,
       required final double equityRatio,
       required final double monthlyIncome,
+      required final double savingsWithdrawalIncome,
       required final double monthlyExpenses,
       required final double availableToSpend,
       required final double savingsPercentage,
@@ -332,6 +355,8 @@ abstract class _FinancialSummary implements FinancialSummary {
   double get equityRatio; // (Assets - Liabilities) / Assets
   @override
   double get monthlyIncome;
+  @override
+  double get savingsWithdrawalIncome; // Income from savings withdrawals
   @override
   double get monthlyExpenses;
   @override

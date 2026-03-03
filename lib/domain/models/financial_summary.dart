@@ -10,6 +10,7 @@ class FinancialSummary with _$FinancialSummary {
     required double totalLiabilities,
     required double equityRatio, // (Assets - Liabilities) / Assets
     required double monthlyIncome,
+    required double savingsWithdrawalIncome, // Income from savings withdrawals
     required double monthlyExpenses,
     required double availableToSpend,
     required double savingsPercentage,

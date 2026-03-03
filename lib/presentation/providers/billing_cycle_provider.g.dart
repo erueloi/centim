@@ -6,7 +6,7 @@ part of 'billing_cycle_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$currentCycleHash() => r'1916768d41a10f62c2e6c2bcde822ed9034aacc3';
+String _$currentCycleHash() => r'ac2c3ee0dc8a2a179d4dc9ab533e65928dd6ebf2';
 
 /// See also [currentCycle].
 @ProviderFor(currentCycle)
@@ -39,7 +39,7 @@ final activeCycleProvider = AutoDisposeProvider<BillingCycle>.internal(
 // ignore: unused_element
 typedef ActiveCycleRef = AutoDisposeProviderRef<BillingCycle>;
 String _$billingCycleNotifierHash() =>
-    r'2c353ecde51cfaacba2c1800b5aac10ba6fc6bef';
+    r'af38f5fd4f558d1237f0aa7a52d03efbcf407691';
 
 /// See also [BillingCycleNotifier].
 @ProviderFor(BillingCycleNotifier)

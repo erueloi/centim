@@ -422,83 +422,125 @@ class _CategoryPieChartState extends ConsumerState<_CategoryPieChart> {
           ),
         ),
         const SizedBox(width: 16),
-        // Legend
+        // Legend with subcategories
         Expanded(
           flex: 2,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: widget.categories.asMap().entries.map((entry) {
-              final i = entry.key;
-              final c = entry.value;
-              final isTouched = i == touchedIndex;
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: widget.categories.asMap().entries.expand((entry) {
+                final i = entry.key;
+                final c = entry.value;
+                final isTouched = i == touchedIndex;
 
-              Color color = Colors.grey;
-              if (c.category.color != null) {
-                color = Color(c.category.color!);
-              } else if (c.category.id == 'others') {
-                color = Colors.grey.shade400;
-              } else {
-                color = Colors.primaries[
-                    c.category.name.hashCode % Colors.primaries.length];
-              }
+                Color color = Colors.grey;
+                if (c.category.color != null) {
+                  color = Color(c.category.color!);
+                } else if (c.category.id == 'others') {
+                  color = Colors.grey.shade400;
+                } else {
+                  color = Colors.primaries[
+                      c.category.name.hashCode % Colors.primaries.length];
+                }
 
-              return InkWell(
-                onTap: () {
-                  // Obre immediatament al primer clic sobre la llegenda
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (context) => DraggableScrollableSheet(
-                      initialChildSize: 0.7,
-                      minChildSize: 0.5,
-                      maxChildSize: 0.95,
-                      builder: (_, controller) => CategoryDrillDownSheet(
-                        category: c.category,
-                        startDate: widget.startDate,
-                        endDate: widget.endDate,
-                        totalAmount: c.totalAmount,
+                return [
+                  InkWell(
+                    onTap: () {
+                      // Obre immediatament al primer clic sobre la llegenda
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => DraggableScrollableSheet(
+                          initialChildSize: 0.7,
+                          minChildSize: 0.5,
+                          maxChildSize: 0.95,
+                          builder: (_, controller) => CategoryDrillDownSheet(
+                            category: c.category,
+                            startDate: widget.startDate,
+                            endDate: widget.endDate,
+                            totalAmount: c.totalAmount,
+                          ),
+                        ),
+                      );
+                      setState(() {
+                        touchedIndex = i;
+                      });
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 6, horizontal: 4),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: isTouched ? 16 : 12,
+                            height: isTouched ? 16 : 12,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: isTouched
+                                  ? Border.all(color: Colors.black, width: 2)
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              c.category.name,
+                              style: TextStyle(
+                                fontSize: isTouched ? 14 : 12,
+                                fontWeight: isTouched
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                  setState(() {
-                    touchedIndex = i;
-                  });
-                },
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: isTouched ? 16 : 12,
-                        height: isTouched ? 16 : 12,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isTouched
-                              ? Border.all(color: Colors.black, width: 2)
-                              : null,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          c.category.name,
-                          style: TextStyle(
-                            fontSize: isTouched ? 14 : 12,
-                            fontWeight:
-                                isTouched ? FontWeight.bold : FontWeight.normal,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
                   ),
-                ),
-              );
-            }).toList(),
+                  // Subcategories (shown when touched)
+                  if (isTouched && c.subcategories.isNotEmpty)
+                    ...c.subcategories.map((sub) => Padding(
+                          padding: const EdgeInsets.only(
+                              left: 24, right: 4, top: 2, bottom: 2),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.5),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  sub.name,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey[700],
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Text(
+                                '${sub.totalAmount.toStringAsFixed(0)}€',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        )),
+                ];
+              }).toList(),
+            ),
           ),
         ),
       ],
