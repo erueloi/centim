@@ -1,5 +1,7 @@
 ﻿# Release Notes
 
+## v1.2.6
+Sense canvis: Rellançat a Github.
 ## v1.2.5
 IA: Hem afegit un Coach a la pantalla principal.
 Nova Agenda mensual de resum dels cicles i analisis dels problemes que han passat.
@@ -61,6 +63,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

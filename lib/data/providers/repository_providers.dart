@@ -10,7 +10,7 @@ import '../repositories/budget_entry_repository.dart';
 import '../repositories/asset_repository.dart';
 import '../../domain/repositories/billing_cycle_repository.dart';
 import '../repositories/firestore_billing_cycle_repository.dart';
-import '../repositories/Firestore_savings_goal_repository.dart';
+import '../repositories/firestore_savings_goal_repository.dart';
 import '../repositories/transfer_repository.dart';
 import '../repositories/cycle_report_repository.dart';
 
