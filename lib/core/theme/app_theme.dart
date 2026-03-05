@@ -4,6 +4,7 @@ class AppTheme {
   // Colors
   static const Color anthracite = Color(0xFF4D4D4D); // Primary Dark Grey
   static const Color copper = Color(0xFFD4A373); // Copper Accent
+  static const Color sand = Color(0xFFE3D5CA); // Sand Accent
   static const Color background = Color(0xFFF9F9F9); // Light Grey Background
 
   static ThemeData get theme {

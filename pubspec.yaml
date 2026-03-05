@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # Read more about iOS versioning at
 
 
-version: 1.2.4
+version: 1.2.5
 
 environment:
   sdk: '>=3.0.0 <4.0.0' # Reverted to ^3.0.0
@@ -54,6 +54,9 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   csv: ^7.1.0
   file_picker: ^8.0.0 # Reverted to ^8.0.0
+  google_generative_ai: ^0.4.7
+  flutter_dotenv: ^6.0.0
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -85,12 +88,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
-
-  # An image asset can refer to one or more resolution-specific "variants", see
-  # https://flutter.dev/to/resolution-aware-images
-
-  # For details regarding adding assets from package dependencies, see
-  # https://flutter.dev/to/asset-from-package
+    - .env
 
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
@@ -111,6 +109,7 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
 
 
 

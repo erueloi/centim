@@ -7,12 +7,20 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:centim/l10n/app_localizations.dart';
 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('.env file not found. AI features might not work.');
+  }
+
   runApp(const ProviderScope(child: MyApp()));
 }
 

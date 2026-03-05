@@ -87,6 +87,11 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && isGroupMember(groupId);
     }
 
+    // CYCLE REPORTS (subcollection under groups)
+    match /groups/{groupId}/cycle_reports/{cycleId} {
+      allow read, write: if isAuthenticated() && isGroupMember(groupId);
+    }
+
 
     // BILLING CYCLES
     match /billing_cycles/{cycleId} {

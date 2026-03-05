@@ -8,10 +8,12 @@ import '../../widgets/financial_health_indicator.dart';
 import '../../widgets/dashboard_quick_actions.dart';
 import '../../widgets/dashboard_donut_chart.dart';
 import '../../widgets/watchlist_section.dart';
+import '../../widgets/ai_insight_card.dart';
 
 import '../../providers/billing_cycle_provider.dart';
 import '../settings/billing_cycles_settings_screen.dart';
 import '../settings/user_profile_screen.dart';
+import 'cycle_reports_agenda_screen.dart';
 
 import '../../../domain/services/version_check_service.dart';
 
@@ -136,6 +138,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Historial de Cicles',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const CycleReportsAgendaScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Configuració de Cicles',
             onPressed: () {
@@ -211,6 +225,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 4),
+                            const AiInsightCard(),
                             DashboardDonutChart(summary: summary),
                             const SizedBox(height: 12),
                             const WatchlistSection(),

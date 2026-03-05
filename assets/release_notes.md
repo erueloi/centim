@@ -1,5 +1,8 @@
 ﻿# Release Notes
 
+## v1.2.5
+IA: Hem afegit un Coach a la pantalla principal.
+Nova Agenda mensual de resum dels cicles i analisis dels problemes que han passat.
 ## v1.2.4
 Inici: Donut amb text correcte.
 Mostrar bé lo que son ingressos i retirades de la guardiola.
@@ -58,6 +61,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
