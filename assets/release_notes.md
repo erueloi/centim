@@ -1,5 +1,7 @@
 ﻿# Release Notes
 
+## v1.2.7
+Fix case sensitivity in imports
 ## v1.2.6
 Sense canvis: Rellançat a Github.
 ## v1.2.5
@@ -63,6 +65,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
