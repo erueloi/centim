@@ -103,10 +103,12 @@ class CycleReportView extends ConsumerWidget {
           children: [
             _buildAiVerdict(report.aiVerdict, ref),
             const SizedBox(height: 24),
-            _buildMetricsRow(
+            _buildMetricsGrid(
               income: report.totalIncome,
               expense: report.totalExpense,
               savingsPercent: report.savingsPercentage,
+              zeroExpenseDays: report.zeroExpenseDays,
+              totalDays: report.totalDays,
             ),
             const SizedBox(height: 24),
             const Text(
@@ -147,6 +149,14 @@ class CycleReportView extends ConsumerWidget {
                 ),
               ],
             ),
+            if (report.unexpectedExpenses.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              _buildUnexpectedList(
+                context: context,
+                ref: ref,
+                items: report.unexpectedExpenses,
+              ),
+            ],
             const SizedBox(height: 48),
           ],
         ),
@@ -201,26 +211,83 @@ class CycleReportView extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricsRow({
+  Widget _buildMetricsGrid({
     required double income,
     required double expense,
     required double savingsPercent,
+    required int zeroExpenseDays,
+    required int totalDays,
   }) {
-    return Row(
+    final bool hasFireStreak = zeroExpenseDays >= 5;
+
+    return Column(
       children: [
-        Expanded(
-          child: _buildMetricCard("Ingressat", income, Colors.green),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricCard("Ingressat", income, Colors.green),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildMetricCard("Gastat", expense, Colors.red),
+            ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildMetricCard("Gastat", expense, Colors.red),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildMetricCard("Estalvi", savingsPercent, AppTheme.copper,
-              isPercent: true),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildMetricCard(
+                  "Estalvi", savingsPercent, AppTheme.copper,
+                  isPercent: true),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child:
+                  _buildZeroDaysCard(zeroExpenseDays, totalDays, hasFireStreak),
+            ),
+          ],
         ),
       ],
+    );
+  }
+
+  Widget _buildZeroDaysCard(int zeroDays, int totalDays, bool hasFire) {
+    return Card(
+      elevation: 0,
+      color: hasFire
+          ? Colors.orange.withValues(alpha: 0.1)
+          : Colors.blueGrey.withValues(alpha: 0.1),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        child: Column(
+          children: [
+            Text(
+              "Dies a zero",
+              style: TextStyle(
+                  color: hasFire
+                      ? Colors.deepOrange.withValues(alpha: 0.8)
+                      : Colors.blueGrey.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (hasFire) const Text("🔥 ", style: TextStyle(fontSize: 16)),
+                Text(
+                  "$zeroDays/$totalDays",
+                  style: TextStyle(
+                      color: hasFire ? Colors.deepOrange : Colors.blueGrey,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -434,6 +501,92 @@ class CycleReportView extends ConsumerWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: color,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+
+  Widget _buildUnexpectedList({
+    required BuildContext context,
+    required WidgetRef ref,
+    required List<dynamic> items,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
+            SizedBox(width: 8),
+            Text("⚠️ Imprevistos purs",
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          "Despeses en categories sense pressupost assignat.",
+          style: TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+        const SizedBox(height: 12),
+        ...items.map((item) {
+          final amount = item['despesa'];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4.0),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () async {
+                // Navigation logic (same as deviations)
+                final categories =
+                    await ref.read(categoryNotifierProvider.future);
+                try {
+                  final cat =
+                      categories.firstWhere((c) => c.name == item['categoria']);
+                  ref
+                      .read(transactionFilterNotifierProvider.notifier)
+                      .clearAll();
+                  ref
+                      .read(transactionFilterNotifierProvider.notifier)
+                      .setCategory(cat.id, cat.name);
+                  // Not using cycle dates here since it's a generic unexpected item tap,
+                  // or we can just navigate to transactions. Let's just navigate to transactions tab smoothly:
+                  ref.read(selectedIndexProvider.notifier).state = 2;
+                  if (context.mounted) {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
+                } catch (e) {
+                  // Ignore
+                }
+              },
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item['categoria'],
+                        style: const TextStyle(
+                          fontSize: 13,
+                          decoration: TextDecoration.underline,
+                          decorationStyle: TextDecorationStyle.dotted,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      "${amount.toStringAsFixed(2)}€",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange,
                         fontSize: 13,
                       ),
                     ),

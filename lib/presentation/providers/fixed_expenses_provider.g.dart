@@ -6,7 +6,7 @@ part of 'fixed_expenses_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$fixedExpensesHash() => r'7c8ab304bc3e98bb0765f209a085ce4b775ebbe9';
+String _$fixedExpensesHash() => r'cd891ab1397dd1164dde5bc0b48d23c67f7aea82';
 
 /// See also [fixedExpenses].
 @ProviderFor(fixedExpenses)

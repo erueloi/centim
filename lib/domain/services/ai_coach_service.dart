@@ -12,6 +12,8 @@ class AiCoachService {
     required BillingCycle activeCycle,
     required Map<String, double> categoryExpenses,
     required Map<String, double> categoryBudgets,
+    required int zeroExpenseDays,
+    required List<Map<String, dynamic>> unexpectedExpenses,
     bool isHistorical = false,
   }) async {
     final apiKey = dotenv.env['GEMINI_API_KEY'];
@@ -40,6 +42,8 @@ Regles de to:
 
 Exemple de sortida desitjada:
 "Eloi, portem mig mes i ja t'has polit el 80% del pressupost de Supermercat... toca menjar arròs la resta de setmana! 🍚 Per sort, la Masia avança a bon ritme. Vigila amb les despeses formiga o no arribarem a l'objectiu d'estalvi!"
+
+A més del teu resum analític, la teva última frase ha de ser SEMPRE un objectiu concret, exigent i accionable per al mes següent, començant per "🎯 Objectiu pel cicle vinent:". Fes que aquest objectiu ataqui directament el pitjor hàbit de despesa o la desviació més gran que hagis detectat en aquest cicle.
 '''),
     );
 
@@ -48,6 +52,8 @@ Exemple de sortida desitjada:
       activeCycle: activeCycle,
       categoryExpenses: categoryExpenses,
       categoryBudgets: categoryBudgets,
+      zeroExpenseDays: zeroExpenseDays,
+      unexpectedExpenses: unexpectedExpenses,
       isHistorical: isHistorical,
     );
 
@@ -62,6 +68,8 @@ Exemple de sortida desitjada:
     required BillingCycle activeCycle,
     required Map<String, double> categoryExpenses,
     required Map<String, double> categoryBudgets,
+    required int zeroExpenseDays,
+    required List<Map<String, dynamic>> unexpectedExpenses,
     required bool isHistorical,
   }) {
     // Calculate month elapsed percentage
@@ -140,7 +148,9 @@ Exemple de sortida desitjada:
   "estat_estalvi": ${savingsStatus.toString()},
   "masia_o_obres_moviments": $masiaMoviments,
   "masia_cost_actual": $masiaCost,
-  "dies_restants_cicle": ${safeTotalDays - elapsedDays}
+  "dies_restants_cicle": ${safeTotalDays - elapsedDays},
+  "dies_a_zero_despeses": $zeroExpenseDays,
+  "compres_imprevistes_sense_pressupost": ${unexpectedExpenses.toString()}
 }
 ''';
   }

@@ -20,9 +20,13 @@ class CycleReport with _$CycleReport {
     required double savingsPercentage,
 
     // Deviations (Category Name to Deviation Amount)
-    // Only keeping the top 3 as map or list of maps. Let's use List of Maps for clearer parsing in UI.
     @Default([]) List<Map<String, dynamic>> topOverspent,
     @Default([]) List<Map<String, dynamic>> topSaved,
+
+    // Advanced Metrics
+    @Default(0) int zeroExpenseDays,
+    @Default(0) int totalDays,
+    @Default([]) List<Map<String, dynamic>> unexpectedExpenses,
   }) = _CycleReport;
 
   factory CycleReport.fromJson(Map<String, dynamic> json) =>

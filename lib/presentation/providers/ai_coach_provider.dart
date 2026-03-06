@@ -106,12 +106,42 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
       final userProfile = _ref.read(userProfileProvider).valueOrNull;
       final userName = userProfile?.name ?? 'Usuari';
 
+      // Zero Expense Days
+      final totalDays =
+          activeCycle.endDate.difference(activeCycle.startDate).inDays + 1;
+      final expenseDays = <String>{};
+      for (final tx in currentMonthTransactions) {
+        if (!tx.isIncome && tx.amount > 0) {
+          final dayKey = '${tx.date.year}-${tx.date.month}-${tx.date.day}';
+          expenseDays.add(dayKey);
+        }
+      }
+      final zeroExpenseDays =
+          (totalDays - expenseDays.length).clamp(0, totalDays);
+
+      // Unexpected Expenses
+      final unexpectedExpenses = <Map<String, dynamic>>[];
+      for (final cat in categoryExpenses.keys) {
+        final spent = categoryExpenses[cat] ?? 0.0;
+        final budget = categoryBudgets[cat] ?? 0.0;
+        if (spent > 0 && budget == 0.0) {
+          unexpectedExpenses.add({
+            'categoria': cat,
+            'despesa': spent,
+            'pressupost': budget,
+            'desviacio': spent
+          });
+        }
+      }
+
       final insight = await service.getInsight(
         userName: userName,
         summary: summary,
         activeCycle: activeCycle,
         categoryExpenses: categoryExpenses,
         categoryBudgets: categoryBudgets,
+        zeroExpenseDays: zeroExpenseDays,
+        unexpectedExpenses: unexpectedExpenses,
       );
 
       if (mounted) {

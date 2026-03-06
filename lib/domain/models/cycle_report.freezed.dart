@@ -29,10 +29,14 @@ mixin _$CycleReport {
   double get totalExpense => throw _privateConstructorUsedError;
   double get savingsPercentage =>
       throw _privateConstructorUsedError; // Deviations (Category Name to Deviation Amount)
-// Only keeping the top 3 as map or list of maps. Let's use List of Maps for clearer parsing in UI.
   List<Map<String, dynamic>> get topOverspent =>
       throw _privateConstructorUsedError;
-  List<Map<String, dynamic>> get topSaved => throw _privateConstructorUsedError;
+  List<Map<String, dynamic>> get topSaved =>
+      throw _privateConstructorUsedError; // Advanced Metrics
+  int get zeroExpenseDays => throw _privateConstructorUsedError;
+  int get totalDays => throw _privateConstructorUsedError;
+  List<Map<String, dynamic>> get unexpectedExpenses =>
+      throw _privateConstructorUsedError;
 
   /// Serializes this CycleReport to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -60,7 +64,10 @@ abstract class $CycleReportCopyWith<$Res> {
       double totalExpense,
       double savingsPercentage,
       List<Map<String, dynamic>> topOverspent,
-      List<Map<String, dynamic>> topSaved});
+      List<Map<String, dynamic>> topSaved,
+      int zeroExpenseDays,
+      int totalDays,
+      List<Map<String, dynamic>> unexpectedExpenses});
 }
 
 /// @nodoc
@@ -88,6 +95,9 @@ class _$CycleReportCopyWithImpl<$Res, $Val extends CycleReport>
     Object? savingsPercentage = null,
     Object? topOverspent = null,
     Object? topSaved = null,
+    Object? zeroExpenseDays = null,
+    Object? totalDays = null,
+    Object? unexpectedExpenses = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -130,6 +140,18 @@ class _$CycleReportCopyWithImpl<$Res, $Val extends CycleReport>
           ? _value.topSaved
           : topSaved // ignore: cast_nullable_to_non_nullable
               as List<Map<String, dynamic>>,
+      zeroExpenseDays: null == zeroExpenseDays
+          ? _value.zeroExpenseDays
+          : zeroExpenseDays // ignore: cast_nullable_to_non_nullable
+              as int,
+      totalDays: null == totalDays
+          ? _value.totalDays
+          : totalDays // ignore: cast_nullable_to_non_nullable
+              as int,
+      unexpectedExpenses: null == unexpectedExpenses
+          ? _value.unexpectedExpenses
+          : unexpectedExpenses // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, dynamic>>,
     ) as $Val);
   }
 }
@@ -152,7 +174,10 @@ abstract class _$$CycleReportImplCopyWith<$Res>
       double totalExpense,
       double savingsPercentage,
       List<Map<String, dynamic>> topOverspent,
-      List<Map<String, dynamic>> topSaved});
+      List<Map<String, dynamic>> topSaved,
+      int zeroExpenseDays,
+      int totalDays,
+      List<Map<String, dynamic>> unexpectedExpenses});
 }
 
 /// @nodoc
@@ -178,6 +203,9 @@ class __$$CycleReportImplCopyWithImpl<$Res>
     Object? savingsPercentage = null,
     Object? topOverspent = null,
     Object? topSaved = null,
+    Object? zeroExpenseDays = null,
+    Object? totalDays = null,
+    Object? unexpectedExpenses = null,
   }) {
     return _then(_$CycleReportImpl(
       id: null == id
@@ -220,6 +248,18 @@ class __$$CycleReportImplCopyWithImpl<$Res>
           ? _value._topSaved
           : topSaved // ignore: cast_nullable_to_non_nullable
               as List<Map<String, dynamic>>,
+      zeroExpenseDays: null == zeroExpenseDays
+          ? _value.zeroExpenseDays
+          : zeroExpenseDays // ignore: cast_nullable_to_non_nullable
+              as int,
+      totalDays: null == totalDays
+          ? _value.totalDays
+          : totalDays // ignore: cast_nullable_to_non_nullable
+              as int,
+      unexpectedExpenses: null == unexpectedExpenses
+          ? _value._unexpectedExpenses
+          : unexpectedExpenses // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, dynamic>>,
     ));
   }
 }
@@ -237,9 +277,13 @@ class _$CycleReportImpl implements _CycleReport {
       required this.totalExpense,
       required this.savingsPercentage,
       final List<Map<String, dynamic>> topOverspent = const [],
-      final List<Map<String, dynamic>> topSaved = const []})
+      final List<Map<String, dynamic>> topSaved = const [],
+      this.zeroExpenseDays = 0,
+      this.totalDays = 0,
+      final List<Map<String, dynamic>> unexpectedExpenses = const []})
       : _topOverspent = topOverspent,
-        _topSaved = topSaved;
+        _topSaved = topSaved,
+        _unexpectedExpenses = unexpectedExpenses;
 
   factory _$CycleReportImpl.fromJson(Map<String, dynamic> json) =>
       _$$CycleReportImplFromJson(json);
@@ -263,10 +307,8 @@ class _$CycleReportImpl implements _CycleReport {
   @override
   final double savingsPercentage;
 // Deviations (Category Name to Deviation Amount)
-// Only keeping the top 3 as map or list of maps. Let's use List of Maps for clearer parsing in UI.
   final List<Map<String, dynamic>> _topOverspent;
 // Deviations (Category Name to Deviation Amount)
-// Only keeping the top 3 as map or list of maps. Let's use List of Maps for clearer parsing in UI.
   @override
   @JsonKey()
   List<Map<String, dynamic>> get topOverspent {
@@ -284,9 +326,26 @@ class _$CycleReportImpl implements _CycleReport {
     return EqualUnmodifiableListView(_topSaved);
   }
 
+// Advanced Metrics
+  @override
+  @JsonKey()
+  final int zeroExpenseDays;
+  @override
+  @JsonKey()
+  final int totalDays;
+  final List<Map<String, dynamic>> _unexpectedExpenses;
+  @override
+  @JsonKey()
+  List<Map<String, dynamic>> get unexpectedExpenses {
+    if (_unexpectedExpenses is EqualUnmodifiableListView)
+      return _unexpectedExpenses;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_unexpectedExpenses);
+  }
+
   @override
   String toString() {
-    return 'CycleReport(id: $id, groupId: $groupId, cycleId: $cycleId, generatedAt: $generatedAt, aiVerdict: $aiVerdict, totalIncome: $totalIncome, totalExpense: $totalExpense, savingsPercentage: $savingsPercentage, topOverspent: $topOverspent, topSaved: $topSaved)';
+    return 'CycleReport(id: $id, groupId: $groupId, cycleId: $cycleId, generatedAt: $generatedAt, aiVerdict: $aiVerdict, totalIncome: $totalIncome, totalExpense: $totalExpense, savingsPercentage: $savingsPercentage, topOverspent: $topOverspent, topSaved: $topSaved, zeroExpenseDays: $zeroExpenseDays, totalDays: $totalDays, unexpectedExpenses: $unexpectedExpenses)';
   }
 
   @override
@@ -309,7 +368,13 @@ class _$CycleReportImpl implements _CycleReport {
                 other.savingsPercentage == savingsPercentage) &&
             const DeepCollectionEquality()
                 .equals(other._topOverspent, _topOverspent) &&
-            const DeepCollectionEquality().equals(other._topSaved, _topSaved));
+            const DeepCollectionEquality().equals(other._topSaved, _topSaved) &&
+            (identical(other.zeroExpenseDays, zeroExpenseDays) ||
+                other.zeroExpenseDays == zeroExpenseDays) &&
+            (identical(other.totalDays, totalDays) ||
+                other.totalDays == totalDays) &&
+            const DeepCollectionEquality()
+                .equals(other._unexpectedExpenses, _unexpectedExpenses));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -325,7 +390,10 @@ class _$CycleReportImpl implements _CycleReport {
       totalExpense,
       savingsPercentage,
       const DeepCollectionEquality().hash(_topOverspent),
-      const DeepCollectionEquality().hash(_topSaved));
+      const DeepCollectionEquality().hash(_topSaved),
+      zeroExpenseDays,
+      totalDays,
+      const DeepCollectionEquality().hash(_unexpectedExpenses));
 
   /// Create a copy of CycleReport
   /// with the given fields replaced by the non-null parameter values.
@@ -354,7 +422,10 @@ abstract class _CycleReport implements CycleReport {
       required final double totalExpense,
       required final double savingsPercentage,
       final List<Map<String, dynamic>> topOverspent,
-      final List<Map<String, dynamic>> topSaved}) = _$CycleReportImpl;
+      final List<Map<String, dynamic>> topSaved,
+      final int zeroExpenseDays,
+      final int totalDays,
+      final List<Map<String, dynamic>> unexpectedExpenses}) = _$CycleReportImpl;
 
   factory _CycleReport.fromJson(Map<String, dynamic> json) =
       _$CycleReportImpl.fromJson;
@@ -376,11 +447,16 @@ abstract class _CycleReport implements CycleReport {
   @override
   double
       get savingsPercentage; // Deviations (Category Name to Deviation Amount)
-// Only keeping the top 3 as map or list of maps. Let's use List of Maps for clearer parsing in UI.
   @override
   List<Map<String, dynamic>> get topOverspent;
   @override
-  List<Map<String, dynamic>> get topSaved;
+  List<Map<String, dynamic>> get topSaved; // Advanced Metrics
+  @override
+  int get zeroExpenseDays;
+  @override
+  int get totalDays;
+  @override
+  List<Map<String, dynamic>> get unexpectedExpenses;
 
   /// Create a copy of CycleReport
   /// with the given fields replaced by the non-null parameter values.

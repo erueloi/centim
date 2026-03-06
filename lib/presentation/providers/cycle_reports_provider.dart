@@ -84,6 +84,17 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         if (savingsPercentage < 0) savingsPercentage = 0;
       }
 
+      // Zero Expense Days
+      final totalDays = cycle.endDate.difference(cycle.startDate).inDays + 1;
+      final expenseDays = <String>{};
+      for (final tx in cycleTx) {
+        if (!tx.isIncome && tx.amount > 0) {
+          final dayKey = '${tx.date.year}-${tx.date.month}-${tx.date.day}';
+          expenseDays.add(dayKey);
+        }
+      }
+      final zeroExpenseDays = totalDays - expenseDays.length;
+
       // Deviations
       final deviations = <String, double>{};
       for (final cat in categoryExpenses.keys) {
@@ -119,6 +130,21 @@ class CycleReportNotifier extends _$CycleReportNotifier {
               })
           .toList();
 
+      // Unexpected Expenses (Imprevistos purs)
+      final unexpectedExpenses = <Map<String, dynamic>>[];
+      for (final cat in categoryExpenses.keys) {
+        final spent = categoryExpenses[cat] ?? 0.0;
+        final budget = categoryBudgets[cat] ?? 0.0;
+        if (spent > 0 && budget == 0.0) {
+          unexpectedExpenses.add({
+            'categoria': cat,
+            'despesa': spent,
+            'pressupost': budget,
+            'desviacio': spent
+          });
+        }
+      }
+
       // 4. Generate AI Insight (Simulating FinancialSummary for the AI context)
       final dummySummary = FinancialSummary(
         totalNetWorth: 0.0,
@@ -144,6 +170,8 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         activeCycle: cycle,
         categoryExpenses: categoryExpenses,
         categoryBudgets: categoryBudgets,
+        zeroExpenseDays: zeroExpenseDays,
+        unexpectedExpenses: unexpectedExpenses,
         isHistorical: true,
       );
 
@@ -159,6 +187,9 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         savingsPercentage: savingsPercentage,
         topOverspent: topOverspent,
         topSaved: topSaved,
+        zeroExpenseDays: zeroExpenseDays > 0 ? zeroExpenseDays : 0,
+        totalDays: totalDays,
+        unexpectedExpenses: unexpectedExpenses,
       );
 
       final repo = ref.read(cycleReportRepositoryProvider);

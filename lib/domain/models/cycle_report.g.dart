@@ -24,6 +24,12 @@ _$CycleReportImpl _$$CycleReportImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as Map<String, dynamic>)
               .toList() ??
           const [],
+      zeroExpenseDays: (json['zeroExpenseDays'] as num?)?.toInt() ?? 0,
+      totalDays: (json['totalDays'] as num?)?.toInt() ?? 0,
+      unexpectedExpenses: (json['unexpectedExpenses'] as List<dynamic>?)
+              ?.map((e) => e as Map<String, dynamic>)
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$$CycleReportImplToJson(_$CycleReportImpl instance) =>
@@ -38,4 +44,7 @@ Map<String, dynamic> _$$CycleReportImplToJson(_$CycleReportImpl instance) =>
       'savingsPercentage': instance.savingsPercentage,
       'topOverspent': instance.topOverspent,
       'topSaved': instance.topSaved,
+      'zeroExpenseDays': instance.zeroExpenseDays,
+      'totalDays': instance.totalDays,
+      'unexpectedExpenses': instance.unexpectedExpenses,
     };

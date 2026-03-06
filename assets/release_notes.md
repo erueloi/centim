@@ -1,5 +1,7 @@
 ﻿# Release Notes
 
+## v1.2.9
+Informe de cicles: Millorat per a que ens aporti informació on millorar les despeses.
 ## v1.2.8
 AI Coach: Personalització de respostes amb el nom de l'usuari i la pestanya surt replegada per defecte.Informes de cicles: Nou botó per poder tornar a generar els informes sota demanda.
 Informes de cicles: Els moviments de les desviacions ara porten a la pantalla de transaccions i s'ha corregit un error on figuraven els ingressos (Nòmina).
@@ -71,6 +73,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
