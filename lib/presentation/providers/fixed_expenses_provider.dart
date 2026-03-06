@@ -38,7 +38,7 @@ List<FixedExpenseItem> fixedExpenses(Ref ref) {
         DateTime(endOfCycle.year, endOfCycle.month, endOfCycle.day, 12, 0, 0);
 
     return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
-        tDay.isBefore(endDay);
+        !tDay.isAfter(endDay);
   }).toList();
 
   // 4. Filter out subcategories that have already been paid

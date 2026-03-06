@@ -54,7 +54,7 @@ class WatchlistSection extends ConsumerWidget {
 
                       return (tDay.isAtSameMomentAs(startDay) ||
                               tDay.isAfter(startDay)) &&
-                          tDay.isBefore(endDay);
+                          !tDay.isAfter(endDay);
                     }).toList();
 
                     // Calculem despeses per cada subcategoria

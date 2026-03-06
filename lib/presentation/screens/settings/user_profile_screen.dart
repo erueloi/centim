@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:package_info_plus/package_info_plus.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../data/providers/repository_providers.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
@@ -43,6 +46,48 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showReleaseNotes() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final version = '${packageInfo.version}+${packageInfo.buildNumber}';
+      final releaseNotes =
+          await rootBundle.loadString('assets/release_notes.md');
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+            'Versió $version\\nNovetats',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Text(
+                releaseNotes,
+                style: const TextStyle(fontSize: 14, height: 1.4),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Tancar'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error carregant novetats: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _updateName() async {
@@ -163,6 +208,21 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ),
 
               const SizedBox(height: 48),
+
+              OutlinedButton.icon(
+                onPressed: _showReleaseNotes,
+                icon: const Icon(Icons.info_outline, color: AppTheme.copper),
+                label: const Text('Versió i Novetats',
+                    style: TextStyle(color: AppTheme.copper)),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  side: const BorderSide(color: AppTheme.copper),
+                ),
+              ),
+              const SizedBox(height: 16),
               OutlinedButton.icon(
                 onPressed: () async {
                   await ref.read(authRepositoryProvider).signOut();

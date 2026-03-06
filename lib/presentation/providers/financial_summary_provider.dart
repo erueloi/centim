@@ -38,7 +38,7 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
           cycle.endDate.year, cycle.endDate.month, cycle.endDate.day, 12, 0, 0);
 
       return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
-          tDay.isBefore(endDay);
+          !tDay.isAfter(endDay);
     }).toList();
 
     // 1. Assets & Liabilities

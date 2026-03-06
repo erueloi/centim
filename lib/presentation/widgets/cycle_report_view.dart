@@ -4,6 +4,9 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../domain/models/billing_cycle.dart';
 import '../providers/cycle_reports_provider.dart';
 import 'package:fl_chart/fl_chart.dart';
+import '../providers/category_notifier.dart';
+import '../providers/transaction_filter_provider.dart';
+import 'main_scaffold.dart';
 
 class CycleReportView extends ConsumerWidget {
   final BillingCycle cycle;
@@ -19,7 +22,7 @@ class CycleReportView extends ConsumerWidget {
         if (report == null) {
           return _buildEmptyState(context, ref);
         }
-        return _buildReportContent(context, report);
+        return _buildReportContent(context, report, ref);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(child: Text('Error: $e')),
@@ -88,7 +91,8 @@ class CycleReportView extends ConsumerWidget {
     );
   }
 
-  Widget _buildReportContent(BuildContext context, dynamic report) {
+  Widget _buildReportContent(
+      BuildContext context, dynamic report, WidgetRef ref) {
     // report is CycleReport
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -97,7 +101,7 @@ class CycleReportView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildAiVerdict(report.aiVerdict),
+            _buildAiVerdict(report.aiVerdict, ref),
             const SizedBox(height: 24),
             _buildMetricsRow(
               income: report.totalIncome,
@@ -120,6 +124,8 @@ class CycleReportView extends ConsumerWidget {
               children: [
                 Expanded(
                   child: _buildDeviationsList(
+                    context: context,
+                    ref: ref,
                     title: "Desviacions",
                     icon: Icons.trending_up,
                     color: Colors.red,
@@ -130,6 +136,8 @@ class CycleReportView extends ConsumerWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildDeviationsList(
+                    context: context,
+                    ref: ref,
                     title: "Estalvis",
                     icon: Icons.trending_down,
                     color: Colors.green,
@@ -146,7 +154,7 @@ class CycleReportView extends ConsumerWidget {
     );
   }
 
-  Widget _buildAiVerdict(String verdict) {
+  Widget _buildAiVerdict(String verdict, WidgetRef ref) {
     return Card(
       elevation: 0,
       color: AppTheme.sand.withValues(alpha: 0.3),
@@ -156,13 +164,29 @@ class CycleReportView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.smart_toy_rounded, color: AppTheme.copper),
-                SizedBox(width: 8),
-                Text(
-                  "El veredicte de Cèntim",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                const Row(
+                  children: [
+                    Icon(Icons.smart_toy_rounded, color: AppTheme.copper),
+                    SizedBox(width: 8),
+                    Text(
+                      "El veredicte de Cèntim",
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.auto_awesome,
+                      color: AppTheme.copper, size: 20),
+                  tooltip: "Tornar a generar l'informe",
+                  onPressed: () {
+                    ref
+                        .read(cycleReportNotifierProvider(cycle.id).notifier)
+                        .generateReportForCycle(cycle);
+                  },
                 ),
               ],
             ),
@@ -220,7 +244,7 @@ class CycleReportView extends ConsumerWidget {
             Text(
               isPercent
                   ? "${value.toStringAsFixed(0)}%"
-                  : "${value.toStringAsFixed(0)}€",
+                  : "${value.toStringAsFixed(2)}€",
               style: TextStyle(
                   color: color, fontWeight: FontWeight.bold, fontSize: 18),
             ),
@@ -319,6 +343,8 @@ class CycleReportView extends ConsumerWidget {
   }
 
   Widget _buildDeviationsList({
+    required BuildContext context,
+    required WidgetRef ref,
     required String title,
     required IconData icon,
     required Color color,
@@ -359,26 +385,61 @@ class CycleReportView extends ConsumerWidget {
         ...items.map((item) {
           final amount = isSavedText ? item['estalvi'] : item['desviacio'];
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    item['categoria'],
-                    style: const TextStyle(fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+            padding: const EdgeInsets.only(bottom: 4.0),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () async {
+                final categories =
+                    await ref.read(categoryNotifierProvider.future);
+                try {
+                  final cat =
+                      categories.firstWhere((c) => c.name == item['categoria']);
+                  ref
+                      .read(transactionFilterNotifierProvider.notifier)
+                      .clearAll();
+                  ref
+                      .read(transactionFilterNotifierProvider.notifier)
+                      .setCategory(cat.id, cat.name);
+                  ref
+                      .read(transactionFilterNotifierProvider.notifier)
+                      .setDateRange(cycle.startDate, cycle.endDate);
+                  ref.read(selectedIndexProvider.notifier).state =
+                      2; // Transactions tab
+                  if (context.mounted) {
+                    Navigator.of(context).popUntil((route) => route.isFirst);
+                  }
+                } catch (e) {
+                  // Ignore if category is not found
+                }
+              },
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item['categoria'],
+                        style: const TextStyle(
+                          fontSize: 13,
+                          decoration: TextDecoration.underline,
+                          decorationStyle: TextDecorationStyle.dotted,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      "${item['despesa']?.toStringAsFixed(2) ?? '0.00'}€ (${isSavedText ? '-' : '+'}${amount.toStringAsFixed(2)}€)",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  "${amount.toStringAsFixed(0)}€",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+              ),
             ),
           );
         }),

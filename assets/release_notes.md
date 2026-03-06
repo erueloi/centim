@@ -1,5 +1,11 @@
 ﻿# Release Notes
 
+## v1.2.8
+AI Coach: Personalització de respostes amb el nom de l'usuari i la pestanya surt replegada per defecte.Informes de cicles: Nou botó per poder tornar a generar els informes sota demanda.
+Informes de cicles: Els moviments de les desviacions ara porten a la pantalla de transaccions i s'ha corregit un error on figuraven els ingressos (Nòmina).
+Informes de cicles: Es mostra l'import total gastat i les desviacions juntes amb 2 decimals (ex: 233.19€ (+153.19€)).
+Opcions: Afegit nou botó 'Versió i Novetats' a la pantalla de perfil per veure què ha canviat a cada versió.
+Bugfix important: S'ha arreglat un problema generalitzat de l'App que amagava els moviments fets durant l'últim dia de facturació del cicle (s'excloïen els moviments).
 ## v1.2.7
 Fix case sensitivity in imports
 ## v1.2.6
@@ -65,6 +71,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

@@ -47,7 +47,7 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
 
               return (tDay.isAtSameMomentAs(startDay) ||
                       tDay.isAfter(startDay)) &&
-                  tDay.isBefore(endDay);
+                  !tDay.isAfter(endDay);
             }).toList();
 
             final expenses = currentMonthTransactions

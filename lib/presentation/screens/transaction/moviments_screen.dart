@@ -524,7 +524,7 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
 
                 return (tDay.isAtSameMomentAs(startDay) ||
                         tDay.isAfter(startDay)) &&
-                    tDay.isBefore(endDay);
+                    !tDay.isAfter(endDay);
               }).toList();
 
               // Apply filters
@@ -611,7 +611,7 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
 
                       return (tDay.isAtSameMomentAs(startDay) ||
                               tDay.isAfter(startDay)) &&
-                          tDay.isBefore(endDay);
+                          !tDay.isAfter(endDay);
                     }).toList()
                   : <Transfer>[];
 

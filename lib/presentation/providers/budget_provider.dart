@@ -139,7 +139,7 @@ List<BudgetStatus> _calculateBudgetStatus(
         cycle.endDate.year, cycle.endDate.month, cycle.endDate.day, 12, 0, 0);
 
     return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
-        tDay.isBefore(endDay);
+        !tDay.isAfter(endDay);
   }).toList();
 
   return categories.map((category) {

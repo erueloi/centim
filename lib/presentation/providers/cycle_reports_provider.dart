@@ -7,6 +7,7 @@ import 'auth_providers.dart';
 import 'transaction_notifier.dart';
 import 'category_notifier.dart';
 import 'ai_coach_provider.dart';
+import '../../domain/models/category.dart';
 
 part 'cycle_reports_provider.g.dart';
 
@@ -38,7 +39,7 @@ class CycleReportNotifier extends _$CycleReportNotifier {
             cycle.endDate.day, 12, 0, 0);
 
         return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
-            tDay.isBefore(endDay);
+            !tDay.isAfter(endDay);
       }).toList();
 
       // 2. Get categories and calculate expenses/budgets
@@ -47,6 +48,7 @@ class CycleReportNotifier extends _$CycleReportNotifier {
       final categoryBudgets = <String, double>{};
 
       for (final cat in categories) {
+        if (cat.type == TransactionType.income) continue;
         double catBudget = 0.0;
         for (final sub in cat.subcategories) {
           catBudget += sub.monthlyBudget;
@@ -132,8 +134,12 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         livingExpensesPercentage: 0.0,
       );
 
+      final userProfile = await ref.read(userProfileProvider.future);
+      final userName = userProfile?.name ?? 'Usuari';
+
       final aiService = ref.read(aiCoachServiceProvider);
       final insight = await aiService.getInsight(
+        userName: userName,
         summary: dummySummary,
         activeCycle: cycle,
         categoryExpenses: categoryExpenses,

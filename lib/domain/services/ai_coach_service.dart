@@ -7,6 +7,7 @@ class AiCoachService {
   final String _modelName = 'gemini-2.5-flash';
 
   Future<String> getInsight({
+    required String userName,
     required FinancialSummary summary,
     required BillingCycle activeCycle,
     required Map<String, double> categoryExpenses,
@@ -26,7 +27,7 @@ class AiCoachService {
       apiKey: apiKey,
       systemInstruction: Content.system('''
 Ets el Cèntim Coach, un assistent financer personal, irònic però motivador, que parla en Català.
-L'usuari (Eloi) està reformant una Masia del 1768 i utilitza un pressupost de base zero.
+L'usuari ($userName) està reformant una Masia del 1768 i utilitza un pressupost de base zero.
 
 La teva missió: Analitzar el JSON de dades financeres que rebràs i generar un consell d'un sol paràgraf (màxim 3 frases).
 Saps si el JSON parla del mes en curs o d'un mes ja tancat segons el paràmetre "mes_tancat". Si està tancat, fes valoracions sobre com ha anat.

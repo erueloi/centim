@@ -4,6 +4,8 @@ import 'financial_summary_provider.dart';
 import 'billing_cycle_provider.dart';
 import 'category_notifier.dart';
 import 'transaction_notifier.dart';
+import 'auth_providers.dart';
+import '../../domain/models/category.dart';
 
 final aiCoachServiceProvider = Provider<AiCoachService>((ref) {
   return AiCoachService();
@@ -16,7 +18,7 @@ class AiCoachState {
   final String? error;
 
   AiCoachState({
-    this.isVisible = true,
+    this.isVisible = false,
     this.isLoading = false,
     this.insight,
     this.error,
@@ -41,9 +43,7 @@ class AiCoachState {
 class AiCoachNotifier extends StateNotifier<AiCoachState> {
   final Ref _ref;
 
-  AiCoachNotifier(this._ref) : super(AiCoachState()) {
-    _fetchInsight();
-  }
+  AiCoachNotifier(this._ref) : super(AiCoachState());
 
   Future<void> _fetchInsight() async {
     state = state.copyWith(isLoading: true, clearError: true);
@@ -71,13 +71,14 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
             activeCycle.endDate.month, activeCycle.endDate.day, 12, 0, 0);
 
         return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
-            tDay.isBefore(endDay);
+            !tDay.isAfter(endDay);
       }).toList();
 
       final categoryExpenses = <String, double>{};
       final categoryBudgets = <String, double>{};
 
       for (final cat in categories) {
+        if (cat.type == TransactionType.income) continue;
         double catBudget = 0.0;
         for (final sub in cat.subcategories) {
           catBudget += sub.monthlyBudget;
@@ -102,7 +103,11 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
 
       final service = _ref.read(aiCoachServiceProvider);
 
+      final userProfile = _ref.read(userProfileProvider).valueOrNull;
+      final userName = userProfile?.name ?? 'Usuari';
+
       final insight = await service.getInsight(
+        userName: userName,
         summary: summary,
         activeCycle: activeCycle,
         categoryExpenses: categoryExpenses,
