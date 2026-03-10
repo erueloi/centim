@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/models/financial_summary.dart';
+import '../../domain/models/category.dart';
 import 'transaction_notifier.dart';
 import 'debt_provider.dart';
 import 'group_providers.dart';
@@ -16,11 +17,8 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
     final debts = await ref.watch(debtNotifierProvider.future);
     final group = await ref.watch(currentGroupProvider.future);
     final categories = await ref.watch(categoryNotifierProvider.future);
-
-    // Use Active Cycle instead of Natural Month
     final cycle = ref.watch(activeCycleProvider);
 
-    // Build set of subcategory IDs linked to savings goals
     final linkedSavingsSubIds = <String>{};
     for (var cat in categories) {
       for (var sub in cat.subcategories) {
@@ -42,25 +40,82 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
     }).toList();
 
     // 1. Assets & Liabilities
-    // If group.totalAssets is 0, we fallback to the user's specific figure for a better initial experience
     final totalAssets =
         (group?.totalAssets ?? 0) > 0 ? group!.totalAssets : 100389.92;
-
-    final totalLiabilities = debts.fold(
-      0.0,
-      (sum, d) => sum + d.currentBalance,
-    );
+    final totalLiabilities =
+        debts.fold(0.0, (sum, d) => sum + d.currentBalance);
     final totalNetWorth = totalAssets - totalLiabilities;
     final equityRatio = totalAssets > 0 ? totalNetWorth / totalAssets : 0.0;
 
-    // 2. Cash Flow
-    final monthlyIncome = currentMonthTransactions
-        .where((t) => t.isIncome)
-        .fold(0.0, (sum, t) => sum + t.amount);
+    // 2. Net Categorical Aggregation
+    final incomesByCategory = <String, double>{};
+    final expensesByCategory = <String, double>{};
 
-    // Income from savings withdrawals:
-    // - savingsGoalId != null (from AddTransactionSheet toggle or SavingsGoalDetail withdraw)
-    // - OR subcategory is linked to a savings goal and it's income (auto-withdrawal)
+    // Internal totals including everything (for availableToSpend)
+    double internalTotalIncome = 0.0;
+    double internalTotalExpense = 0.0;
+
+    double savedThisCycle = 0.0;
+    double withdrawnThisCycle = 0.0;
+
+    for (final t in currentMonthTransactions) {
+      // Calculate internal balance impact
+      if (t.isIncome) {
+        internalTotalIncome += t.amount;
+      } else {
+        internalTotalExpense += t.amount;
+      }
+
+      // EXCLUSION: If it's a savings goal movement, don't include in categorized charts or "External" totals
+      final isSavingsMovement = t.savingsGoalId != null ||
+          linkedSavingsSubIds.contains(t.subCategoryId);
+      if (isSavingsMovement) {
+        if (t.isIncome) {
+          withdrawnThisCycle += t.amount;
+        } else {
+          savedThisCycle += t.amount;
+        }
+        continue;
+      }
+
+      final category = categories.cast<Category?>().firstWhere(
+            (c) => c?.id == t.categoryId,
+            orElse: () => null,
+          );
+
+      if (category == null) continue;
+
+      if (category.type == TransactionType.income) {
+        final current = incomesByCategory[t.categoryId] ?? 0.0;
+        if (t.isIncome) {
+          incomesByCategory[t.categoryId] = current + t.amount;
+        } else {
+          // Devolució d'ingrés
+          incomesByCategory[t.categoryId] = current - t.amount;
+        }
+      } else {
+        // Expense Type Category
+        final current = expensesByCategory[t.categoryId] ?? 0.0;
+        if (!t.isIncome) {
+          // Normal expense
+          expensesByCategory[t.categoryId] = current + t.amount;
+        } else {
+          // Refund
+          expensesByCategory[t.categoryId] = current - t.amount;
+        }
+      }
+    }
+
+    // Filter out <= 0 values to avoid donut chart issues
+    incomesByCategory.removeWhere((key, value) => value <= 0);
+    expensesByCategory.removeWhere((key, value) => value <= 0);
+
+    // 3. Totals (External only for high-level overview)
+    final monthlyIncomeExternal =
+        incomesByCategory.values.fold(0.0, (sum, val) => sum + val);
+    final monthlyExpensesExternal =
+        expensesByCategory.values.fold(0.0, (sum, val) => sum + val);
+
     final savingsWithdrawalIncome = currentMonthTransactions
         .where((t) =>
             t.isIncome &&
@@ -68,52 +123,42 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
                 linkedSavingsSubIds.contains(t.subCategoryId)))
         .fold(0.0, (sum, t) => sum + t.amount);
 
-    final monthlyDebtInstallments = debts.fold(
-      0.0,
-      (sum, d) => sum + d.monthlyInstallment,
-    );
+    // Balance available reflects real cash flow including internal transfers from savings
+    final availableToSpend = internalTotalIncome - internalTotalExpense;
 
-    // Income minus expenses (which usually includes installments if recorded as transactions)
-    // But if they want "Saldo restant un cop deduïts deutes i estalvi programat":
-    // It implies: Income - Fixed Expenses - Savings.
+    // 10/30/60 Metrics (based on categorized expenses)
+    // Savings: transactions in savings categories (external contributions, not internal transfers)
+    final savings = expensesByCategory.entries.where((e) {
+      final cat = categories.firstWhere((c) => c.id == e.key);
+      final name = cat.name.toLowerCase();
+      return name.contains('estalvi') ||
+          name.contains('invers') ||
+          name.contains('saving');
+    }).fold(0.0, (sum, e) => sum + e.value);
 
-    // EXCLUDE expenses paid from savings (savingsGoalId != null)
-    final monthlyExpenses = currentMonthTransactions
-        .where((t) => !t.isIncome && t.savingsGoalId == null)
-        .fold(0.0, (sum, t) => sum + t.amount);
-
-    final availableToSpend = monthlyIncome - monthlyExpenses;
-
-    // 3. 10/30/60 Metrics
-    // Savings: Transactions in categories name containing 'Estalvi' or 'Inversió'
-    final savings = currentMonthTransactions
-        .where(
-          (t) =>
-              !t.isIncome &&
-              (t.categoryName.toLowerCase().contains('estalvi') ||
-                  t.categoryName.toLowerCase().contains('invers') ||
-                  t.categoryName.toLowerCase().contains('saving')),
-        )
-        .fold(0.0, (sum, t) => sum + t.amount);
-
-    final debtsPayment = monthlyDebtInstallments; // Based on debt accounts
-    final otherExpenses = monthlyExpenses - savings;
-
-    final totalForBudget = savings + debtsPayment + otherExpenses;
+    final monthlyDebtInstallments =
+        debts.fold(0.0, (sum, d) => sum + d.monthlyInstallment);
+    final otherExpenses = monthlyExpensesExternal - savings;
+    final totalForBudget = savings + monthlyDebtInstallments + otherExpenses;
 
     return FinancialSummary(
       totalNetWorth: totalNetWorth,
       totalAssets: totalAssets,
       totalLiabilities: totalLiabilities,
       equityRatio: equityRatio,
-      monthlyIncome: monthlyIncome,
+      monthlyIncome: monthlyIncomeExternal,
       savingsWithdrawalIncome: savingsWithdrawalIncome,
-      monthlyExpenses: monthlyExpenses,
+      monthlyExpenses: monthlyExpensesExternal,
       availableToSpend: availableToSpend,
       savingsPercentage: totalForBudget > 0 ? savings / totalForBudget : 0.0,
-      debtPercentage: totalForBudget > 0 ? debtsPayment / totalForBudget : 0.0,
+      debtPercentage:
+          totalForBudget > 0 ? monthlyDebtInstallments / totalForBudget : 0.0,
       livingExpensesPercentage:
           totalForBudget > 0 ? otherExpenses / totalForBudget : 0.0,
+      incomesByCategory: incomesByCategory,
+      expensesByCategory: expensesByCategory,
+      savedThisCycle: savedThisCycle,
+      withdrawnThisCycle: withdrawnThisCycle,
     );
   }
 }

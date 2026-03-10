@@ -186,4 +186,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get incomeLabel => 'Income';
+
+  @override
+  String get panoramicTitle => 'Panoramic View';
+
+  @override
+  String get resetFilters => 'Reset Filters';
+
+  @override
+  String get savingsTotal => 'Savings Summary';
+
+  @override
+  String get savingsAportat => 'Saved';
+
+  @override
+  String get savingsRescatat => 'Withdrawn';
+
+  @override
+  String get savingsNet => 'Net';
 }

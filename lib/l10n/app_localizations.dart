@@ -445,6 +445,42 @@ abstract class AppLocalizations {
   /// In ca, this message translates to:
   /// **'Ingrés'**
   String get incomeLabel;
+
+  /// No description provided for @panoramicTitle.
+  ///
+  /// In ca, this message translates to:
+  /// **'Panoràmica'**
+  String get panoramicTitle;
+
+  /// No description provided for @resetFilters.
+  ///
+  /// In ca, this message translates to:
+  /// **'Neteja filtres'**
+  String get resetFilters;
+
+  /// No description provided for @savingsTotal.
+  ///
+  /// In ca, this message translates to:
+  /// **'Resum d\'Estalvi'**
+  String get savingsTotal;
+
+  /// No description provided for @savingsAportat.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aportat'**
+  String get savingsAportat;
+
+  /// No description provided for @savingsRescatat.
+  ///
+  /// In ca, this message translates to:
+  /// **'Rescatat'**
+  String get savingsRescatat;
+
+  /// No description provided for @savingsNet.
+  ///
+  /// In ca, this message translates to:
+  /// **'Net'**
+  String get savingsNet;
 }
 
 class _AppLocalizationsDelegate

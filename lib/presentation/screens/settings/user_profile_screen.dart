@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/providers/repository_providers.dart';
 
@@ -67,10 +68,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
           content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
-              child: Text(
-                releaseNotes,
-                style: const TextStyle(fontSize: 14, height: 1.4),
-              ),
+              child: MarkdownBody(data: releaseNotes),
             ),
           ),
           actions: [

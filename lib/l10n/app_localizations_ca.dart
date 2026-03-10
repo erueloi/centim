@@ -186,4 +186,22 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get incomeLabel => 'Ingrés';
+
+  @override
+  String get panoramicTitle => 'Panoràmica';
+
+  @override
+  String get resetFilters => 'Neteja filtres';
+
+  @override
+  String get savingsTotal => 'Resum d\'Estalvi';
+
+  @override
+  String get savingsAportat => 'Aportat';
+
+  @override
+  String get savingsRescatat => 'Rescatat';
+
+  @override
+  String get savingsNet => 'Net';
 }

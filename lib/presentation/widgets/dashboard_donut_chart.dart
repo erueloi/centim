@@ -7,7 +7,6 @@ import '../../../../domain/models/financial_summary.dart';
 import '../../../../domain/models/category.dart';
 import '../providers/transaction_notifier.dart';
 import '../providers/category_notifier.dart';
-import '../providers/billing_cycle_provider.dart';
 import '../providers/transaction_filter_provider.dart';
 import '../widgets/main_scaffold.dart';
 
@@ -30,35 +29,12 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
     final currencyFormat = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
     final transactionsAsync = ref.watch(transactionNotifierProvider);
     final categoriesAsync = ref.watch(categoryNotifierProvider);
-    final cycle = ref.watch(activeCycleProvider);
 
     return transactionsAsync.when(
       data: (transactions) {
         return categoriesAsync.when(
           data: (categories) {
-            // Filtrar per mes actiu
-            final currentMonthTransactions = transactions.where((t) {
-              final tDay =
-                  DateTime(t.date.year, t.date.month, t.date.day, 12, 0, 0);
-              final startDay = DateTime(cycle.startDate.year,
-                  cycle.startDate.month, cycle.startDate.day, 12, 0, 0);
-              final endDay = DateTime(cycle.endDate.year, cycle.endDate.month,
-                  cycle.endDate.day, 12, 0, 0);
-
-              return (tDay.isAtSameMomentAs(startDay) ||
-                      tDay.isAfter(startDay)) &&
-                  !tDay.isAfter(endDay);
-            }).toList();
-
-            final expenses = currentMonthTransactions
-                .where((t) => !t.isIncome && t.savingsGoalId == null)
-                .toList();
-
-            final expenseByCategory = <String, double>{};
-            for (var exp in expenses) {
-              expenseByCategory[exp.categoryId] =
-                  (expenseByCategory[exp.categoryId] ?? 0) + exp.amount;
-            }
+            final expenseByCategory = widget.summary.expensesByCategory;
 
             final sortedEntries = expenseByCategory.entries.toList()
               ..sort((a, b) => b.value.compareTo(a.value));
@@ -393,28 +369,13 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          currencyFormat.format(widget.summary.monthlyIncome -
-                              widget.summary.savingsWithdrawalIncome),
+                          currencyFormat.format(widget.summary.monthlyIncome),
                           style: TextStyle(
                               color: Colors.green.shade800,
                               fontSize: 18,
                               fontWeight: FontWeight.bold),
                         ),
                       ),
-                      if (widget.summary.savingsWithdrawalIncome > 0) ...[
-                        const SizedBox(height: 2),
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            '(+${currencyFormat.format(widget.summary.savingsWithdrawalIncome)} retirades)',
-                            style: TextStyle(
-                                color: Colors.green.shade500,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),

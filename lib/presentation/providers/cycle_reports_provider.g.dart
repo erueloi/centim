@@ -7,7 +7,7 @@ part of 'cycle_reports_provider.dart';
 // **************************************************************************
 
 String _$cycleReportNotifierHash() =>
-    r'3a4cc2cbfde053254485226cf1e1f0bf5dc7a051';
+    r'cb4d28522bbf3eb2dcc4776afc5468ee6ce96d62';
 
 /// Copied from Dart SDK
 class _SystemHash {

@@ -61,13 +61,30 @@ class SavingsGoalNotifier extends _$SavingsGoalNotifier {
     );
     await repo.updateSavingsGoal(updatedGoal);
 
-    // 2. Create Expense Transaction
-    final transactionRepo = ref.read(transactionRepositoryProvider);
-    // Ideally we should find the "Estalvi" category ID, but for now we'll use a placeholder or generic
-    // In a real app we'd look up the category by name or use a constant ID
-    const categoryId = 'savings_category_id'; // Placeholder
-    const categoryName = 'Estalvi';
+    // 2. Find real category/subcategory linked to this goal
+    final categories = await ref.read(categoryNotifierProvider.future);
+    String categoryId = 'savings_category_id';
+    String subCategoryId = 'contribution_sub';
+    String categoryName = 'Estalvi';
+    String subCategoryName = 'Aportació';
 
+    for (var cat in categories) {
+      for (var sub in cat.subcategories) {
+        if (sub.linkedSavingsGoalId == goalId) {
+          categoryId = cat.id;
+          subCategoryId = sub.id;
+          categoryName = cat.name;
+          subCategoryName = sub.name;
+          break;
+        }
+      }
+    }
+
+    final userProfile = ref.read(userProfileProvider).valueOrNull;
+    final payer =
+        userProfile?.name ?? userProfile?.email.split('@').first ?? 'User';
+
+    final transactionRepo = ref.read(transactionRepositoryProvider);
     final transaction = Transaction(
       id: null, // Auto-generated
       groupId: groupId,
@@ -75,10 +92,10 @@ class SavingsGoalNotifier extends _$SavingsGoalNotifier {
       amount: amount,
       concept: 'Aportació a ${goal.name}',
       categoryId: categoryId,
-      subCategoryId: 'contribution_sub',
+      subCategoryId: subCategoryId,
       categoryName: categoryName,
-      subCategoryName: 'Aportació',
-      payer: 'User', // Should fetch current user name
+      subCategoryName: subCategoryName,
+      payer: payer,
       isIncome: false,
     );
 

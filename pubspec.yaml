@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # Read more about iOS versioning at
 
 
-version: 1.2.9
+version: 1.2.10
 
 environment:
   sdk: '>=3.0.0 <4.0.0' # Reverted to ^3.0.0
@@ -57,6 +57,7 @@ dependencies:
   google_generative_ai: ^0.4.7
   flutter_dotenv: ^6.0.0
   shimmer: ^3.0.0
+  flutter_markdown: ^0.7.0
 
 dev_dependencies:
   flutter_test:
@@ -88,6 +89,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
+    - assets/release_notes.md
     - .env
 
   # To add custom fonts to your application, add a fonts section here,
@@ -109,20 +111,4 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

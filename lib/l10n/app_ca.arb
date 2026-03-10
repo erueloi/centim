@@ -56,5 +56,11 @@
   "mainCategoryLabel": "Categoria Principal",
   "subCategoryLabel": "Subcategoria",
   "expenseLabel": "Despesa",
-  "incomeLabel": "Ingrés"
+  "incomeLabel": "Ingrés",
+  "panoramicTitle": "Panoràmica",
+  "resetFilters": "Neteja filtres",
+  "savingsTotal": "Resum d'Estalvi",
+  "savingsAportat": "Aportat",
+  "savingsRescatat": "Rescatat",
+  "savingsNet": "Net"
 }

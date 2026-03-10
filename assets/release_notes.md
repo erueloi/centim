@@ -1,5 +1,11 @@
 ﻿# Release Notes
 
+## v1.2.10
+Dashboard Grafics millorats amb nomes despeses i ingressos.
+Informació dels estalvis usats.
+Detall: Heatmap complet de tots els cicles de facturació, organitzat per categories per veure on hi han les fugues.
+IA Coach: Més empatic i assertius.
+Perfil: Correcte visió de les release notes.
 ## v1.2.9
 Informe de cicles: Millorat per a que ens aporti informació on millorar les despeses.
 ## v1.2.8
@@ -73,6 +79,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

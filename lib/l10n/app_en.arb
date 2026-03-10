@@ -56,5 +56,11 @@
   "mainCategoryLabel": "Main Category",
   "subCategoryLabel": "Subcategory",
   "expenseLabel": "Expense",
-  "incomeLabel": "Income"
+  "incomeLabel": "Income",
+  "panoramicTitle": "Panoramic View",
+  "resetFilters": "Reset Filters",
+  "savingsTotal": "Savings Summary",
+  "savingsAportat": "Saved",
+  "savingsRescatat": "Withdrawn",
+  "savingsNet": "Net"
 }

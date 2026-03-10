@@ -16,5 +16,9 @@ class FinancialSummary with _$FinancialSummary {
     required double savingsPercentage,
     required double debtPercentage,
     required double livingExpensesPercentage,
+    @Default(0.0) double savedThisCycle,
+    @Default(0.0) double withdrawnThisCycle,
+    @Default({}) Map<String, double> incomesByCategory,
+    @Default({}) Map<String, double> expensesByCategory,
   }) = _FinancialSummary;
 }

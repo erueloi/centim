@@ -19,6 +19,7 @@ import '../../widgets/cycle_selector.dart';
 import '../../widgets/trends_tab.dart'; // Import TrendsTab
 import '../../providers/transaction_filter_provider.dart';
 import '../../widgets/main_scaffold.dart';
+import '../dashboard/panoramic_heatmap_screen.dart';
 
 class BudgetControlScreen extends ConsumerStatefulWidget {
   final bool isReadOnly;
@@ -50,21 +51,32 @@ class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
               Tab(text: 'Tendències'),
             ],
           ),
-          actions: widget.isReadOnly
-              ? []
-              : [
-                  IconButton(
-                    icon: const Icon(Icons.settings),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ManageCategoriesScreen(),
-                        ),
-                      );
-                    },
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.grid_on_rounded),
+              tooltip: l10n.panoramicTitle,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const PanoramicHeatmapScreen(),
                   ),
-                ],
+                );
+              },
+            ),
+            if (!widget.isReadOnly)
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ManageCategoriesScreen(),
+                    ),
+                  );
+                },
+              ),
+          ],
         ),
         body: TabBarView(
           children: [

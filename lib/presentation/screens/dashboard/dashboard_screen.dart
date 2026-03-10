@@ -7,6 +7,7 @@ import '../../providers/financial_summary_provider.dart';
 import '../../widgets/financial_health_indicator.dart';
 import '../../widgets/dashboard_quick_actions.dart';
 import '../../widgets/dashboard_donut_chart.dart';
+import '../../widgets/dashboard_savings_card.dart';
 import '../../widgets/watchlist_section.dart';
 import '../../widgets/ai_insight_card.dart';
 
@@ -225,9 +226,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 4),
-                            const AiInsightCard(),
                             DashboardDonutChart(summary: summary),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 16),
+                            const DashboardSavingsCard(),
+                            const SizedBox(height: 16),
+                            const AiInsightCard(),
                             const WatchlistSection(),
                             const SizedBox(height: 32),
                             const FinancialHealthIndicator(),

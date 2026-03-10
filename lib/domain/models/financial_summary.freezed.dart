@@ -29,6 +29,12 @@ mixin _$FinancialSummary {
   double get savingsPercentage => throw _privateConstructorUsedError;
   double get debtPercentage => throw _privateConstructorUsedError;
   double get livingExpensesPercentage => throw _privateConstructorUsedError;
+  double get savedThisCycle => throw _privateConstructorUsedError;
+  double get withdrawnThisCycle => throw _privateConstructorUsedError;
+  Map<String, double> get incomesByCategory =>
+      throw _privateConstructorUsedError;
+  Map<String, double> get expensesByCategory =>
+      throw _privateConstructorUsedError;
 
   /// Create a copy of FinancialSummary
   /// with the given fields replaced by the non-null parameter values.
@@ -54,7 +60,11 @@ abstract class $FinancialSummaryCopyWith<$Res> {
       double availableToSpend,
       double savingsPercentage,
       double debtPercentage,
-      double livingExpensesPercentage});
+      double livingExpensesPercentage,
+      double savedThisCycle,
+      double withdrawnThisCycle,
+      Map<String, double> incomesByCategory,
+      Map<String, double> expensesByCategory});
 }
 
 /// @nodoc
@@ -83,6 +93,10 @@ class _$FinancialSummaryCopyWithImpl<$Res, $Val extends FinancialSummary>
     Object? savingsPercentage = null,
     Object? debtPercentage = null,
     Object? livingExpensesPercentage = null,
+    Object? savedThisCycle = null,
+    Object? withdrawnThisCycle = null,
+    Object? incomesByCategory = null,
+    Object? expensesByCategory = null,
   }) {
     return _then(_value.copyWith(
       totalNetWorth: null == totalNetWorth
@@ -129,6 +143,22 @@ class _$FinancialSummaryCopyWithImpl<$Res, $Val extends FinancialSummary>
           ? _value.livingExpensesPercentage
           : livingExpensesPercentage // ignore: cast_nullable_to_non_nullable
               as double,
+      savedThisCycle: null == savedThisCycle
+          ? _value.savedThisCycle
+          : savedThisCycle // ignore: cast_nullable_to_non_nullable
+              as double,
+      withdrawnThisCycle: null == withdrawnThisCycle
+          ? _value.withdrawnThisCycle
+          : withdrawnThisCycle // ignore: cast_nullable_to_non_nullable
+              as double,
+      incomesByCategory: null == incomesByCategory
+          ? _value.incomesByCategory
+          : incomesByCategory // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
+      expensesByCategory: null == expensesByCategory
+          ? _value.expensesByCategory
+          : expensesByCategory // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
     ) as $Val);
   }
 }
@@ -152,7 +182,11 @@ abstract class _$$FinancialSummaryImplCopyWith<$Res>
       double availableToSpend,
       double savingsPercentage,
       double debtPercentage,
-      double livingExpensesPercentage});
+      double livingExpensesPercentage,
+      double savedThisCycle,
+      double withdrawnThisCycle,
+      Map<String, double> incomesByCategory,
+      Map<String, double> expensesByCategory});
 }
 
 /// @nodoc
@@ -179,6 +213,10 @@ class __$$FinancialSummaryImplCopyWithImpl<$Res>
     Object? savingsPercentage = null,
     Object? debtPercentage = null,
     Object? livingExpensesPercentage = null,
+    Object? savedThisCycle = null,
+    Object? withdrawnThisCycle = null,
+    Object? incomesByCategory = null,
+    Object? expensesByCategory = null,
   }) {
     return _then(_$FinancialSummaryImpl(
       totalNetWorth: null == totalNetWorth
@@ -225,6 +263,22 @@ class __$$FinancialSummaryImplCopyWithImpl<$Res>
           ? _value.livingExpensesPercentage
           : livingExpensesPercentage // ignore: cast_nullable_to_non_nullable
               as double,
+      savedThisCycle: null == savedThisCycle
+          ? _value.savedThisCycle
+          : savedThisCycle // ignore: cast_nullable_to_non_nullable
+              as double,
+      withdrawnThisCycle: null == withdrawnThisCycle
+          ? _value.withdrawnThisCycle
+          : withdrawnThisCycle // ignore: cast_nullable_to_non_nullable
+              as double,
+      incomesByCategory: null == incomesByCategory
+          ? _value._incomesByCategory
+          : incomesByCategory // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
+      expensesByCategory: null == expensesByCategory
+          ? _value._expensesByCategory
+          : expensesByCategory // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
     ));
   }
 }
@@ -243,7 +297,13 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
       required this.availableToSpend,
       required this.savingsPercentage,
       required this.debtPercentage,
-      required this.livingExpensesPercentage});
+      required this.livingExpensesPercentage,
+      this.savedThisCycle = 0.0,
+      this.withdrawnThisCycle = 0.0,
+      final Map<String, double> incomesByCategory = const {},
+      final Map<String, double> expensesByCategory = const {}})
+      : _incomesByCategory = incomesByCategory,
+        _expensesByCategory = expensesByCategory;
 
   @override
   final double totalNetWorth;
@@ -269,10 +329,35 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
   final double debtPercentage;
   @override
   final double livingExpensesPercentage;
+  @override
+  @JsonKey()
+  final double savedThisCycle;
+  @override
+  @JsonKey()
+  final double withdrawnThisCycle;
+  final Map<String, double> _incomesByCategory;
+  @override
+  @JsonKey()
+  Map<String, double> get incomesByCategory {
+    if (_incomesByCategory is EqualUnmodifiableMapView)
+      return _incomesByCategory;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_incomesByCategory);
+  }
+
+  final Map<String, double> _expensesByCategory;
+  @override
+  @JsonKey()
+  Map<String, double> get expensesByCategory {
+    if (_expensesByCategory is EqualUnmodifiableMapView)
+      return _expensesByCategory;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_expensesByCategory);
+  }
 
   @override
   String toString() {
-    return 'FinancialSummary(totalNetWorth: $totalNetWorth, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, equityRatio: $equityRatio, monthlyIncome: $monthlyIncome, savingsWithdrawalIncome: $savingsWithdrawalIncome, monthlyExpenses: $monthlyExpenses, availableToSpend: $availableToSpend, savingsPercentage: $savingsPercentage, debtPercentage: $debtPercentage, livingExpensesPercentage: $livingExpensesPercentage)';
+    return 'FinancialSummary(totalNetWorth: $totalNetWorth, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, equityRatio: $equityRatio, monthlyIncome: $monthlyIncome, savingsWithdrawalIncome: $savingsWithdrawalIncome, monthlyExpenses: $monthlyExpenses, availableToSpend: $availableToSpend, savingsPercentage: $savingsPercentage, debtPercentage: $debtPercentage, livingExpensesPercentage: $livingExpensesPercentage, savedThisCycle: $savedThisCycle, withdrawnThisCycle: $withdrawnThisCycle, incomesByCategory: $incomesByCategory, expensesByCategory: $expensesByCategory)';
   }
 
   @override
@@ -303,7 +388,15 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
                 other.debtPercentage == debtPercentage) &&
             (identical(
                     other.livingExpensesPercentage, livingExpensesPercentage) ||
-                other.livingExpensesPercentage == livingExpensesPercentage));
+                other.livingExpensesPercentage == livingExpensesPercentage) &&
+            (identical(other.savedThisCycle, savedThisCycle) ||
+                other.savedThisCycle == savedThisCycle) &&
+            (identical(other.withdrawnThisCycle, withdrawnThisCycle) ||
+                other.withdrawnThisCycle == withdrawnThisCycle) &&
+            const DeepCollectionEquality()
+                .equals(other._incomesByCategory, _incomesByCategory) &&
+            const DeepCollectionEquality()
+                .equals(other._expensesByCategory, _expensesByCategory));
   }
 
   @override
@@ -319,7 +412,11 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
       availableToSpend,
       savingsPercentage,
       debtPercentage,
-      livingExpensesPercentage);
+      livingExpensesPercentage,
+      savedThisCycle,
+      withdrawnThisCycle,
+      const DeepCollectionEquality().hash(_incomesByCategory),
+      const DeepCollectionEquality().hash(_expensesByCategory));
 
   /// Create a copy of FinancialSummary
   /// with the given fields replaced by the non-null parameter values.
@@ -343,7 +440,11 @@ abstract class _FinancialSummary implements FinancialSummary {
       required final double availableToSpend,
       required final double savingsPercentage,
       required final double debtPercentage,
-      required final double livingExpensesPercentage}) = _$FinancialSummaryImpl;
+      required final double livingExpensesPercentage,
+      final double savedThisCycle,
+      final double withdrawnThisCycle,
+      final Map<String, double> incomesByCategory,
+      final Map<String, double> expensesByCategory}) = _$FinancialSummaryImpl;
 
   @override
   double get totalNetWorth;
@@ -367,6 +468,14 @@ abstract class _FinancialSummary implements FinancialSummary {
   double get debtPercentage;
   @override
   double get livingExpensesPercentage;
+  @override
+  double get savedThisCycle;
+  @override
+  double get withdrawnThisCycle;
+  @override
+  Map<String, double> get incomesByCategory;
+  @override
+  Map<String, double> get expensesByCategory;
 
   /// Create a copy of FinancialSummary
   /// with the given fields replaced by the non-null parameter values.
