@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
+import 'package:centim/l10n/app_localizations.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/patrimoni/patrimoni_screen.dart';
 import '../screens/transaction/moviments_screen.dart';
@@ -57,8 +58,8 @@ class MainScaffold extends ConsumerWidget {
                       Icons.add_circle_outline,
                       color: AppTheme.copper,
                     ),
-                    title: const Text('Nou Moviment'),
-                    subtitle: const Text('Despesa o ingrés'),
+                    title: Text(AppLocalizations.of(context)!.newTransaction),
+                    subtitle: Text(AppLocalizations.of(context)!.expenseOrIncome),
                     onTap: () {
                       Navigator.pop(context);
                       showModalBottomSheet(
@@ -75,9 +76,9 @@ class MainScaffold extends ConsumerWidget {
                       Icons.swap_horiz,
                       color: Colors.blueGrey[600],
                     ),
-                    title: const Text('Nova Transferència'),
-                    subtitle: const Text(
-                      'Mou diners entre comptes o paga deutes',
+                    title: Text(AppLocalizations.of(context)!.newTransfer),
+                    subtitle: Text(
+                      AppLocalizations.of(context)!.transferDescription,
                     ),
                     onTap: () {
                       Navigator.pop(context);
@@ -133,34 +134,34 @@ class MainScaffold extends ConsumerWidget {
         onDestinationSelected: (index) {
           ref.read(selectedIndexProvider.notifier).state = index;
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home, color: AppTheme.anthracite),
-            label: 'Inici',
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home, color: AppTheme.anthracite),
+            label: AppLocalizations.of(context)!.navHome,
           ),
           NavigationDestination(
-            icon: Icon(Icons.analytics_outlined),
-            selectedIcon: Icon(Icons.analytics, color: AppTheme.anthracite),
-            label: 'Detall',
+            icon: const Icon(Icons.analytics_outlined),
+            selectedIcon: const Icon(Icons.analytics, color: AppTheme.anthracite),
+            label: AppLocalizations.of(context)!.navDetail,
           ),
           NavigationDestination(
-            icon: Icon(Icons.list_alt_outlined),
-            selectedIcon: Icon(Icons.list_alt, color: AppTheme.anthracite),
-            label: 'Moviments',
+            icon: const Icon(Icons.list_alt_outlined),
+            selectedIcon: const Icon(Icons.list_alt, color: AppTheme.anthracite),
+            label: AppLocalizations.of(context)!.navTransactions,
           ),
           NavigationDestination(
-            icon: Icon(Icons.pie_chart_outline),
-            selectedIcon: Icon(Icons.pie_chart, color: AppTheme.anthracite),
-            label: 'Pressupost',
+            icon: const Icon(Icons.pie_chart_outline),
+            selectedIcon: const Icon(Icons.pie_chart, color: AppTheme.anthracite),
+            label: AppLocalizations.of(context)!.navBudget,
           ),
           NavigationDestination(
-            icon: Icon(Icons.account_balance_outlined),
-            selectedIcon: Icon(
+            icon: const Icon(Icons.account_balance_outlined),
+            selectedIcon: const Icon(
               Icons.account_balance,
               color: AppTheme.anthracite,
             ),
-            label: 'Patrimoni',
+            label: AppLocalizations.of(context)!.navWealth,
           ),
         ],
       ),

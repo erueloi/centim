@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/models/asset.dart';
+import 'package:centim/l10n/app_localizations.dart';
 import '../../providers/debt_provider.dart';
 import '../../providers/asset_provider.dart';
 
@@ -39,24 +40,24 @@ class _PatrimoniScreenState extends ConsumerState<PatrimoniScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Patrimoni'),
+        title: Text(AppLocalizations.of(context)!.navWealth),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: SegmentedButton<PatrimoniView>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: PatrimoniView.assets,
-                  label: Text('ACTIUS'),
+                  label: Text(AppLocalizations.of(context)!.assetsTitle.toUpperCase()),
                 ),
                 ButtonSegment(
                   value: PatrimoniView.debts,
-                  label: Text('DEUTES'),
+                  label: Text(AppLocalizations.of(context)!.liabilitiesTitle.toUpperCase()),
                 ),
                 ButtonSegment(
                   value: PatrimoniView.goals,
-                  label: Text('OBJECTIUS'),
+                  label: Text(AppLocalizations.of(context)!.savingsTitle.toUpperCase()),
                 ),
               ],
               selected: {view},
@@ -114,7 +115,7 @@ class _PatrimoniScreenState extends ConsumerState<PatrimoniScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Patrimoni Net',
+                          AppLocalizations.of(context)!.netWorth,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 13,
@@ -167,7 +168,7 @@ class _PatrimoniScreenState extends ConsumerState<PatrimoniScreen> {
             ),
             error: (e, stack) => Padding(
               padding: const EdgeInsets.all(16),
-              child: Center(child: Text('Error carregant patrimoni: $e')),
+              child: Center(child: Text('${AppLocalizations.of(context)!.errorText('')} $e')),
             ),
           ),
           // Contingut de la pestanya seleccionada
@@ -197,7 +198,7 @@ class _AssetsView extends ConsumerWidget {
     return assetsAsync.when(
       data: (assets) {
         if (assets.isEmpty) {
-          return const Center(child: Text('No hi ha actius registrats.'));
+          return Center(child: Text(AppLocalizations.of(context)!.noAssets));
         }
 
         final totalValue = assets.fold(0.0, (sum, a) => sum + a.amount);
@@ -215,9 +216,9 @@ class _AssetsView extends ConsumerWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Total Actius',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      'Total ${AppLocalizations.of(context)!.assetsTitle}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       currencyFormat.format(totalValue),
@@ -293,15 +294,15 @@ class _AssetsView extends ConsumerWidget {
                                 final confirm = await showDialog<bool>(
                                   context: context,
                                   builder: (context) => AlertDialog(
-                                    title: const Text('Eliminar Actiu?'),
-                                    content: const Text(
-                                      'Aquesta acció no es pot desfer.',
+                                    title: Text('${AppLocalizations.of(context)!.deleteButton} ${AppLocalizations.of(context)!.totalAssetsLabel}?'),
+                                    content: Text(
+                                      AppLocalizations.of(context)!.cannotBeUndone,
                                     ),
                                     actions: [
                                       TextButton(
                                         onPressed: () =>
                                             Navigator.pop(context, false),
-                                        child: const Text('Cancel·lar'),
+                                        child: Text(AppLocalizations.of(context)!.cancelButton),
                                       ),
                                       TextButton(
                                         onPressed: () =>
@@ -309,7 +310,7 @@ class _AssetsView extends ConsumerWidget {
                                         style: TextButton.styleFrom(
                                           foregroundColor: Colors.red,
                                         ),
-                                        child: const Text('Eliminar'),
+                                        child: Text(AppLocalizations.of(context)!.deleteButton),
                                       ),
                                     ],
                                   ),
@@ -322,15 +323,15 @@ class _AssetsView extends ConsumerWidget {
                               }
                             },
                             itemBuilder: (context) => [
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'edit',
-                                child: Text('Editar'),
+                                child: Text(AppLocalizations.of(context)!.editButton),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'delete',
                                 child: Text(
-                                  'Eliminar',
-                                  style: TextStyle(color: Colors.red),
+                                  AppLocalizations.of(context)!.deleteButton,
+                                  style: const TextStyle(color: Colors.red),
                                 ),
                               ),
                             ],
@@ -346,7 +347,7 @@ class _AssetsView extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Center(child: Text('Error: $e')),
+      error: (e, s) => Center(child: Text('${AppLocalizations.of(context)!.errorText('')} $e')),
     );
   }
 }
@@ -388,7 +389,7 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
     return debtsAsync.when(
       data: (debts) {
         if (debts.isEmpty) {
-          return const Center(child: Text('No hi ha deutes registrats.'));
+          return Center(child: Text(AppLocalizations.of(context)!.noDebts));
         }
 
         final filteredDebts = debts.where((d) {
@@ -437,7 +438,7 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                     child: TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
-                        labelText: 'Buscar deutes...',
+                        labelText: AppLocalizations.of(context)!.searchHint,
                         prefixIcon: const Icon(Icons.search),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
@@ -466,7 +467,7 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                   const SizedBox(width: 8),
                   PopupMenuButton<DebtSortOption>(
                     icon: const Icon(Icons.filter_list),
-                    tooltip: 'Ordenar per',
+                    tooltip: AppLocalizations.of(context)!.sortBy,
                     initialValue: _sortOption,
                     onSelected: (option) {
                       setState(() {
@@ -536,9 +537,9 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Total Deutes',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      'Total ${AppLocalizations.of(context)!.liabilitiesTitle}',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
                       widget.currencyFormat.format(totalValue),
@@ -554,8 +555,8 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
             ),
             Expanded(
               child: filteredDebts.isEmpty
-                  ? const Center(
-                      child: Text('Cap deute coincideix amb la cerca.'))
+                  ? Center(
+                      child: Text(AppLocalizations.of(context)!.noResultsFilter))
                   : ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       itemCount: filteredDebts.length,
@@ -647,18 +648,18 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                                                 context: context,
                                                 builder: (context) =>
                                                     AlertDialog(
-                                                  title: const Text(
-                                                      'Eliminar Deute?'),
-                                                  content: const Text(
-                                                    'Aquesta acció no es pot desfer.',
-                                                  ),
+                                                    title: Text(
+                                                        '${AppLocalizations.of(context)!.deleteButton} ${AppLocalizations.of(context)!.totalLiabilitiesLabel}?'),
+                                                   content: Text(
+                                                     AppLocalizations.of(context)!.cannotBeUndone,
+                                                   ),
                                                   actions: [
                                                     TextButton(
                                                       onPressed: () =>
                                                           Navigator.pop(
                                                               context, false),
-                                                      child: const Text(
-                                                          'Cancel·lar'),
+                                                       child: Text(
+                                                           AppLocalizations.of(context)!.cancelButton),
                                                     ),
                                                     TextButton(
                                                       onPressed: () =>
@@ -669,8 +670,8 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                                                         foregroundColor:
                                                             Colors.red,
                                                       ),
-                                                      child: const Text(
-                                                          'Eliminar'),
+                                                       child: Text(
+                                                           AppLocalizations.of(context)!.deleteButton),
                                                     ),
                                                   ],
                                                 ),
@@ -683,12 +684,12 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                                               }
                                             }
                                           },
-                                          itemBuilder: (context) => [
-                                            const PopupMenuItem(
+                                          itemBuilder: (context) => const [
+                                            PopupMenuItem(
                                               value: 'edit',
                                               child: Text('Editar'),
                                             ),
-                                            const PopupMenuItem(
+                                            PopupMenuItem(
                                               value: 'delete',
                                               child: Text(
                                                 'Eliminar',
@@ -731,7 +732,7 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Pendent',
+                                          AppLocalizations.of(context)!.debtPending,
                                           style: TextStyle(
                                             color: Colors.grey[600],
                                             fontSize: 12,
@@ -760,7 +761,7 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                                             CrossAxisAlignment.end,
                                         children: [
                                           Text(
-                                            'Inicial',
+                                              AppLocalizations.of(context)!.debtInitialAmount,
                                             style: TextStyle(
                                               color: Colors.grey[600],
                                               fontSize: 12,
@@ -795,7 +796,7 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                                     Expanded(
                                       child: Text(
                                         debt.endDate != null
-                                            ? 'Lliure el: ${_formatDate(debt.endDate!)} (${debt.remainingTimeText})'
+                                            ? '${AppLocalizations.of(context)!.debtMaturityLabel(_formatDate(debt.endDate!))} (${debt.remainingTimeText})'
                                             : debt.remainingTimeText,
                                         style: TextStyle(
                                             fontSize: 12,
@@ -825,7 +826,7 @@ class _DebtsViewState extends ConsumerState<_DebtsView> {
                                       },
                                       icon:
                                           const Icon(Icons.calculate, size: 16),
-                                      label: const Text('Simular Amortització'),
+                                      label: Text(AppLocalizations.of(context)!.simulateAmortization),
                                       style: TextButton.styleFrom(
                                         foregroundColor: AppTheme.copper,
                                         textStyle:
@@ -923,9 +924,9 @@ class _SavingsGoalsView extends ConsumerWidget {
                   color: Colors.grey,
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'No tens cap objectiu d\'estalvi.',
-                  style: TextStyle(fontSize: 18, color: Colors.grey),
+                Text(
+                  AppLocalizations.of(context)!.noGoals,
+                  style: const TextStyle(fontSize: 18, color: Colors.grey),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton.icon(
@@ -937,7 +938,7 @@ class _SavingsGoalsView extends ConsumerWidget {
                     );
                   },
                   icon: const Icon(Icons.add),
-                  label: const Text('Crear Guardiola'),
+                  label: Text(AppLocalizations.of(context)!.addGoal),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppTheme.copper,
                     foregroundColor: Colors.white,
@@ -964,7 +965,7 @@ class _SavingsGoalsView extends ConsumerWidget {
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, s) => Center(child: Text('Error: $e')),
+      error: (e, s) => Center(child: Text('${AppLocalizations.of(context)!.errorText('')} $e')),
     );
   }
 }
@@ -1014,7 +1015,7 @@ class _NetWorthHeader extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'El meu Patrimoni',
+                    AppLocalizations.of(context)!.netWorth,
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                   ),
                   const SizedBox(height: 4),
@@ -1036,7 +1037,7 @@ class _NetWorthHeader extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             _AssetLiabilityInfo(
-              label: 'Actiu',
+              label: AppLocalizations.of(context)!.totalAssetsLabel,
               amount: summary.totalAssets,
               color: Colors.green[600]!,
               icon: Icons.trending_up,
@@ -1044,7 +1045,7 @@ class _NetWorthHeader extends StatelessWidget {
             ),
             Container(width: 1, height: 40, color: Colors.grey[300]),
             _AssetLiabilityInfo(
-              label: 'Passiu',
+              label: AppLocalizations.of(context)!.totalLiabilitiesLabel,
               amount: summary.totalLiabilities,
               color: Colors.red[600]!,
               icon: Icons.trending_down,

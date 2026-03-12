@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:centim/l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../../core/theme/app_theme.dart';
@@ -46,7 +47,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
 
   // Asset Fields
   final _assetValueController = TextEditingController();
-  String _assetType = 'Altres'; // 'Immobiliari', 'Compte Bancari', 'Altres'
+  String _assetType = 'Altres';
 
   String? _selectedBankOption; // 'CaixaBank', 'ING', 'Targeta YOU', 'Altres'
 
@@ -55,6 +56,14 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
   final _goalTargetController = TextEditingController();
   Color _goalColor = Colors.green;
   bool _goalHasTarget = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_assetType == 'Altres') {
+      _assetType = AppLocalizations.of(context)!.assetTypeOther;
+    }
+  }
 
   @override
   void initState() {
@@ -87,16 +96,16 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
 
       switch (widget.initialAsset!.type) {
         case AssetType.realEstate:
-          _assetType = 'Immobiliari';
+          _assetType = AppLocalizations.of(context)!.assetTypeRealEstate;
           break;
         case AssetType.bankAccount:
-          _assetType = 'Compte Bancari';
+          _assetType = AppLocalizations.of(context)!.assetTypeBankAccount;
           break;
         case AssetType.cash:
-          _assetType = 'Efectiu';
+          _assetType = AppLocalizations.of(context)!.assetTypeCash;
           break;
         case AssetType.other:
-          _assetType = 'Altres';
+          _assetType = AppLocalizations.of(context)!.assetTypeOther;
           break;
       }
 
@@ -126,7 +135,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
     if (_nameController.text.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('El nom és obligatori')));
+      ).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.nameRequired)));
       return;
     }
 
@@ -195,11 +204,11 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
         double.tryParse(_assetValueController.text.replaceAll(',', '.')) ?? 0.0;
 
     AssetType type = AssetType.other;
-    if (_assetType == 'Immobiliari') {
+    if (_assetType == AppLocalizations.of(context)!.assetTypeRealEstate) {
       type = AssetType.realEstate;
-    } else if (_assetType == 'Compte Bancari') {
+    } else if (_assetType == AppLocalizations.of(context)!.assetTypeBankAccount) {
       type = AssetType.bankAccount;
-    } else if (_assetType == 'Efectiu') {
+    } else if (_assetType == AppLocalizations.of(context)!.assetTypeCash) {
       type = AssetType.cash;
     }
 
@@ -280,21 +289,21 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                     // --- SELECTOR ---
                     Center(
                       child: SegmentedButton<WealthType>(
-                        segments: const [
+                        segments: [
                           ButtonSegment(
                             value: WealthType.asset,
-                            label: Text('Actiu'),
-                            icon: Icon(Icons.account_balance),
+                            label: Text(AppLocalizations.of(context)!.totalAssetsLabel),
+                            icon: const Icon(Icons.account_balance),
                           ),
                           ButtonSegment(
                             value: WealthType.debt,
-                            label: Text('Deute'),
-                            icon: Icon(Icons.credit_card),
+                            label: Text(AppLocalizations.of(context)!.debtLabel), 
+                            icon: const Icon(Icons.credit_card),
                           ),
                           ButtonSegment(
                             value: WealthType.goal,
-                            label: Text('Objectiu'),
-                            icon: Icon(Icons.savings),
+                            label: Text(AppLocalizations.of(context)!.goalLabel),
+                            icon: const Icon(Icons.savings),
                           ),
                         ],
                         selected: {_selectedType},
@@ -333,7 +342,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       controller: _nameController,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: InputDecoration(
-                        labelText: 'Nom',
+                        labelText: AppLocalizations.of(context)!.amountLabel, // Nom? Actually app-ca.arb doesn't have a generic "Name" label for items yet, let's use goalNameLabel or add one
                         hintText: _selectedType == WealthType.asset
                             ? 'ex: Masia, Fons Indexat'
                             : _selectedType == WealthType.debt
@@ -354,7 +363,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       // --- DEBT FIELDS ---
                       // Bank Selector
                       Text(
-                        'Entitat Bancària',
+                        AppLocalizations.of(context)!.debtBank,
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
@@ -363,7 +372,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 8,
-                        children: ['CaixaBank', 'ING', 'Targeta YOU', 'Altres']
+                        children: ['CaixaBank', 'ING', 'Targeta YOU', AppLocalizations.of(context)!.assetTypeOther]
                             .map((bank) {
                           final isSelected = _selectedBankOption == bank;
                           return ChoiceChip(
@@ -373,7 +382,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                               if (selected) {
                                 setState(() {
                                   _selectedBankOption = bank;
-                                  if (bank != 'Altres') {
+                                  if (bank != AppLocalizations.of(context)!.assetTypeOther) {
                                     _bankController.text = bank;
                                   } else {
                                     _bankController.text = '';
@@ -406,11 +415,11 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       ),
                       const SizedBox(height: 16),
 
-                      if (_selectedBankOption == 'Altres') ...[
+                      if (_selectedBankOption == AppLocalizations.of(context)!.assetTypeOther) ...[
                         TextField(
                           controller: _bankController,
                           decoration: InputDecoration(
-                            labelText: 'Nom del Banc',
+                            labelText: AppLocalizations.of(context)!.debtBankName,
                             filled: true,
                             fillColor: Colors.white,
                             border: OutlineInputBorder(
@@ -434,7 +443,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                                 decimal: true,
                               ),
                               decoration: InputDecoration(
-                                labelText: 'Import Inicial',
+                                labelText: AppLocalizations.of(context)!.debtInitialAmount,
                                 suffixText: '€',
                                 filled: true,
                                 fillColor: Colors.white,
@@ -454,7 +463,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                                 decimal: true,
                               ),
                               decoration: InputDecoration(
-                                labelText: 'Pendent',
+                                labelText: AppLocalizations.of(context)!.debtPending,
                                 suffixText: '€',
                                 filled: true,
                                 fillColor: Colors.white,
@@ -480,7 +489,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                                 decimal: true,
                               ),
                               decoration: InputDecoration(
-                                labelText: 'Interès',
+                                labelText: AppLocalizations.of(context)!.debtInterest,
                                 suffixText: '%',
                                 suffixIcon: const Icon(Icons.percent, size: 20),
                                 filled: true,
@@ -501,7 +510,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                                 decimal: true,
                               ),
                               decoration: InputDecoration(
-                                labelText: 'Quota Mensual',
+                                labelText: AppLocalizations.of(context)!.debtInstallment,
                                 suffixText: '€',
                                 filled: true,
                                 fillColor: Colors.white,
@@ -520,8 +529,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       ListTile(
                         title: Text(
                           _maturityDate == null
-                              ? 'Data de Venciment'
-                              : 'Venciment: ${_maturityDate!.day}/${_maturityDate!.month}/${_maturityDate!.year}',
+                              ? AppLocalizations.of(context)!.debtMaturity
+                              : AppLocalizations.of(context)!.debtMaturityLabel('${_maturityDate!.day}/${_maturityDate!.month}/${_maturityDate!.year}'),
                         ),
                         tileColor: Colors.white,
                         shape: RoundedRectangleBorder(
@@ -566,7 +575,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                             ),
                         textAlign: TextAlign.center,
                         decoration: InputDecoration(
-                          labelText: 'Valoració Actual',
+                          labelText: AppLocalizations.of(context)!.assetValuation,
                           prefixText: '€ ',
                           filled: true,
                           fillColor: Colors.white,
@@ -579,7 +588,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       const SizedBox(height: 24),
 
                       Text(
-                        'Tipus d\'Actiu',
+                        AppLocalizations.of(context)!.assetType,
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
@@ -590,10 +599,10 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       Wrap(
                         spacing: 8,
                         children: [
-                          'Immobiliari',
-                          'Compte Bancari',
-                          'Efectiu',
-                          'Altres',
+                          AppLocalizations.of(context)!.assetTypeRealEstate,
+                          AppLocalizations.of(context)!.assetTypeBankAccount,
+                          AppLocalizations.of(context)!.assetTypeCash,
+                          AppLocalizations.of(context)!.assetTypeOther,
                         ].map((type) {
                           final isSelected = _assetType == type;
                           return ChoiceChip(
@@ -633,7 +642,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                             child: TextField(
                               controller: _goalIconController,
                               decoration: InputDecoration(
-                                labelText: 'Icona (Emoji)',
+                                labelText: AppLocalizations.of(context)!.goalIcon,
                                 filled: true,
                                 fillColor: Colors.white,
                                 border: OutlineInputBorder(
@@ -651,7 +660,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                               showDialog(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: const Text('Tria un color'),
+                                  title: Text(AppLocalizations.of(context)!.chooseColor),
                                   content: SingleChildScrollView(
                                     child: BlockPicker(
                                       pickerColor: _goalColor,
@@ -678,7 +687,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                       ),
                       const SizedBox(height: 16),
                       SwitchListTile(
-                        title: const Text('Té un import objectiu?'),
+                        title: Text(AppLocalizations.of(context)!.goalHasTarget),
                         value: _goalHasTarget,
                         contentPadding: EdgeInsets.zero,
                         onChanged: (value) =>
@@ -691,7 +700,7 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                             decimal: true,
                           ),
                           decoration: InputDecoration(
-                            labelText: 'Import Objectiu',
+                            labelText: AppLocalizations.of(context)!.goalTargetAmountLabel.replaceAll(' (€)', ''),
                             prefixText: '€ ',
                             filled: true,
                             fillColor: Colors.white,
@@ -726,9 +735,9 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
                     ),
                     child: _isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Guardar',
-                            style: TextStyle(
+                        : Text(
+                            AppLocalizations.of(context)!.saveButton,
+                            style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:centim/l10n/app_localizations.dart';
 import '../../providers/financial_summary_provider.dart';
 import '../../widgets/financial_health_indicator.dart';
 import '../../widgets/dashboard_quick_actions.dart';
@@ -94,7 +95,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Cicle de ${activeCycle.name} tancat. Benvingut al nou mes!',
+            AppLocalizations.of(context)!.cycleClosedMessage(activeCycle.name),
           ),
           backgroundColor: Colors.green,
         ),
@@ -140,7 +141,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
-            tooltip: 'Historial de Cicles',
+            tooltip: AppLocalizations.of(context)!.cycleHistoryTooltip,
             onPressed: () {
               Navigator.push(
                 context,
@@ -152,7 +153,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: 'Configuració de Cicles',
+            tooltip: AppLocalizations.of(context)!.cycleSettingsTooltip,
             onPressed: () {
               Navigator.push(
                 context,
@@ -164,7 +165,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.person),
-            tooltip: 'Perfil',
+            tooltip: AppLocalizations.of(context)!.profileTooltip,
             onPressed: () {
               Navigator.push(
                 context,
@@ -184,9 +185,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               if (_showBanner)
                 MaterialBanner(
                   padding: const EdgeInsets.all(16),
-                  content: const Text(
-                    'S\'acosta final de mes. Has cobrat ja la nòmina?',
-                    style: TextStyle(
+                  content: Text(
+                    AppLocalizations.of(context)!.endOfMonthBanner,
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.anthracite,
                     ),
@@ -203,13 +204,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           _showBanner = false;
                         });
                       },
-                      child: const Text('Encara no'),
+                      child: Text(AppLocalizations.of(context)!.notYet),
                     ),
                     TextButton(
                       onPressed: _closeCycleAndCelebrate,
-                      child: const Text(
-                        'SÍ, INICIAR NOU MES',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      child: Text(
+                        AppLocalizations.of(context)!.startNewMonth,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],

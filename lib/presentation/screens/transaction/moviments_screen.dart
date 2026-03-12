@@ -7,23 +7,23 @@ import '../../../domain/models/asset.dart';
 import '../../../domain/models/transaction.dart';
 import '../../../domain/models/transfer.dart';
 import '../../../domain/models/category.dart';
+import '../../../domain/services/import_service.dart';
+import '../../providers/billing_cycle_provider.dart';
 import '../../providers/asset_provider.dart';
 import '../../providers/transaction_notifier.dart';
 import '../../providers/transfer_provider.dart';
-import '../../providers/fixed_expenses_provider.dart';
+import '../../providers/transaction_filter_provider.dart';
 import '../../providers/auth_providers.dart';
+import '../../providers/category_notifier.dart';
+import '../../providers/fixed_expenses_provider.dart';
+import '../../providers/group_providers.dart';
+import '../../widgets/cycle_selector.dart';
+import '../../widgets/confirm_fixed_expense_dialog.dart';
+import '../import/import_transactions_screen.dart';
 import '../../sheets/add_transaction_sheet.dart';
 import '../../sheets/add_transfer_sheet.dart';
 import '../../widgets/recurrent_expense_card.dart';
-import '../../widgets/cycle_selector.dart';
-import '../../providers/billing_cycle_provider.dart';
-import '../../providers/transaction_filter_provider.dart';
-import '../../providers/category_notifier.dart';
-import '../../providers/group_providers.dart';
-import '../../widgets/confirm_fixed_expense_dialog.dart';
-
-import '../../../domain/services/import_service.dart';
-import '../import/import_transactions_screen.dart';
+import 'package:centim/l10n/app_localizations.dart';
 
 class MovimentsScreen extends ConsumerWidget {
   const MovimentsScreen({super.key});
@@ -34,11 +34,11 @@ class MovimentsScreen extends ConsumerWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Moviments'),
+          title: Text(AppLocalizations.of(context)!.navTransactions),
           actions: [
             IconButton(
               icon: const Icon(Icons.file_upload),
-              tooltip: 'Importar CSV (CaixaBank)',
+              tooltip: AppLocalizations.of(context)!.importCSV,
               onPressed: () async {
                 // Show loading dialog
                 showDialog(
@@ -70,208 +70,39 @@ class MovimentsScreen extends ConsumerWidget {
                   } else {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(
                           content: Text(
-                            'No s\'han trobat moviments o s\'ha cancel·lat la selecció',
+                            AppLocalizations.of(context)!.noMovementsFound,
                           ),
                         ),
                       );
                     }
                   }
                 } catch (e) {
-                  // Close loading if error
+                  // Close loading if it was open
                   if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error important: $e')),
-                    );
-                  }
-                }
-              },
-            ),
-            // --- MIGRATION BUTTON (TEMPORARY) ---
-            IconButton(
-              icon: const Icon(Icons.build_circle_outlined),
-              tooltip: '🛠️ Migrar Moviments Antics',
-              onPressed: () async {
-                final groupId = await ref.read(currentGroupIdProvider.future);
-                if (groupId == null || !context.mounted) return;
-
-                // Query Firestore for transactions without accountId
-                final firestore = FirebaseFirestore.instance;
-                final snapshot = await firestore
-                    .collection('transactions')
-                    .where('groupId', isEqualTo: groupId)
-                    .get();
-
-                // Filter locally: accountId == null or field missing
-                final orphaned = snapshot.docs.where((doc) {
-                  final data = doc.data();
-                  return !data.containsKey('accountId') ||
-                      data['accountId'] == null;
-                }).toList();
-
-                if (!context.mounted) return;
-
-                if (orphaned.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Tots els moviments estan actualitzats ✅'),
-                    ),
-                  );
-                  return;
-                }
-
-                // Show dialog with account selector
-                final assets = await ref.read(assetNotifierProvider.future);
-                final liquidAssets = assets
-                    .where((a) =>
-                        a.type == AssetType.bankAccount ||
-                        a.type == AssetType.cash)
-                    .toList();
-
-                if (liquidAssets.isEmpty) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('No hi ha comptes líquids disponibles'),
-                      ),
-                    );
-                  }
-                  return;
-                }
-
-                String? selectedId;
-                if (!context.mounted) return;
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (ctx) {
-                    return StatefulBuilder(
-                      builder: (ctx, setDialogState) {
-                        return AlertDialog(
-                          title: const Text('Migrar Moviments Antics'),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'S\'han trobat ${orphaned.length} moviments sense compte assignat.\n\nA quin compte els vols vincular?',
-                              ),
-                              const SizedBox(height: 16),
-                              DropdownButtonFormField<String>(
-                                initialValue: selectedId,
-                                decoration: const InputDecoration(
-                                  labelText: 'Compte',
-                                  prefixIcon: Icon(Icons.account_balance),
-                                ),
-                                items: liquidAssets
-                                    .map((a) => DropdownMenuItem(
-                                          value: a.id,
-                                          child: Text(
-                                              '${a.name} (${a.amount.toStringAsFixed(2)} €)'),
-                                        ))
-                                    .toList(),
-                                onChanged: (v) =>
-                                    setDialogState(() => selectedId = v),
-                              ),
-                            ],
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(ctx, false),
-                              child: const Text('Cancel·lar'),
-                            ),
-                            ElevatedButton(
-                              onPressed: selectedId == null
-                                  ? null
-                                  : () => Navigator.pop(ctx, true),
-                              child: const Text('Migrar'),
-                            ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                );
-
-                if (confirmed != true ||
-                    selectedId == null ||
-                    !context.mounted) {
-                  return;
-                }
-
-                // Execute migration with WriteBatch
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) =>
-                      const Center(child: CircularProgressIndicator()),
-                );
-
-                try {
-                  final batch = firestore.batch();
-
-                  double totalIncome = 0;
-                  double totalExpense = 0;
-
-                  for (final doc in orphaned) {
-                    final data = doc.data();
-                    final amount = (data['amount'] as num?)?.toDouble() ?? 0;
-                    final isIncome = data['isIncome'] as bool? ?? false;
-
-                    if (isIncome) {
-                      totalIncome += amount;
-                    } else {
-                      totalExpense += amount;
-                    }
-
-                    batch.update(
-                      firestore.collection('transactions').doc(doc.id),
-                      {'accountId': selectedId},
-                    );
-                  }
-
-                  // Calculate net impact and update asset balance
-                  final netImpact = totalIncome - totalExpense;
-                  final asset =
-                      liquidAssets.firstWhere((a) => a.id == selectedId);
-                  final assetDoc = firestore
-                      .collection('groups')
-                      .doc(groupId)
-                      .collection('assets')
-                      .doc(selectedId);
-                  batch.update(assetDoc, {
-                    'amount': asset.amount + netImpact,
-                  });
-
-                  await batch.commit();
-
-                  if (context.mounted) {
-                    Navigator.pop(context); // close loading
-                    ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Migració completada amb èxit! ${orphaned.length} moviments actualitzats.',
+                          AppLocalizations.of(context)!.errorText(e.toString()),
                         ),
-                        backgroundColor: Colors.green,
                       ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    Navigator.pop(context); // close loading
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error en la migració: $e')),
                     );
                   }
                 }
               },
             ),
+            IconButton(
+              icon: const Icon(Icons.auto_fix_high),
+              tooltip: AppLocalizations.of(context)!.migrateOldMovements,
+              onPressed: () => _showMigrationDialog(context, ref),
+            ),
           ],
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'Tots'),
-              Tab(text: 'Fixes'),
+              Tab(text: AppLocalizations.of(context)!.tabAll),
+              Tab(text: AppLocalizations.of(context)!.tabFixed),
             ],
             indicatorColor: AppTheme.copper,
             labelColor: AppTheme.anthracite,
@@ -290,6 +121,177 @@ class MovimentsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  void _showMigrationDialog(BuildContext context, WidgetRef ref) async {
+    final groupId = await ref.read(currentGroupIdProvider.future);
+    if (groupId == null || !context.mounted) return;
+
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final snapshot = await firestore
+          .collection('transactions')
+          .where('groupId', isEqualTo: groupId)
+          .get();
+
+      final orphaned = snapshot.docs.where((doc) {
+        final data = doc.data();
+        return !data.containsKey('accountId') || data['accountId'] == null;
+      }).toList();
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // Close loading
+
+      if (orphaned.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.allUpdated),
+          ),
+        );
+        return;
+      }
+
+      final assets = await ref.read(assetNotifierProvider.future);
+      final liquidAssets = assets
+          .where((a) =>
+              a.type == AssetType.bankAccount || a.type == AssetType.cash)
+          .toList();
+
+      if (liquidAssets.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(AppLocalizations.of(context)!.noLiquidAccounts),
+            ),
+          );
+        }
+        return;
+      }
+
+      String? selectedId;
+      if (!context.mounted) return;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          return StatefulBuilder(
+            builder: (ctx, setDialogState) {
+              return AlertDialog(
+                title: Text(AppLocalizations.of(context)!.migrateOldMovements),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)!
+                          .foundOrphaned(orphaned.length.toString()),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedId,
+                      decoration: InputDecoration(
+                        labelText:
+                            AppLocalizations.of(context)!.destinationAccount,
+                        prefixIcon: const Icon(Icons.account_balance),
+                      ),
+                      items: liquidAssets
+                          .map((a) => DropdownMenuItem(
+                                value: a.id,
+                                child: Text(
+                                    '${a.name} (${a.amount.toStringAsFixed(2)} €)'),
+                              ))
+                          .toList(),
+                      onChanged: (v) => setDialogState(() => selectedId = v),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: Text(AppLocalizations.of(context)!.cancelButton),
+                  ),
+                  ElevatedButton(
+                    onPressed: selectedId == null
+                        ? null
+                        : () => Navigator.pop(ctx, true),
+                    child: Text(AppLocalizations.of(context)!.migrateButton),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+
+      if (confirmed != true || selectedId == null || !context.mounted) return;
+
+      // Show processing dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(child: CircularProgressIndicator()),
+      );
+
+      final batch = firestore.batch();
+      double totalIncome = 0;
+      double totalExpense = 0;
+
+      for (final doc in orphaned) {
+        final data = doc.data();
+        final amount = (data['amount'] as num?)?.toDouble() ?? 0;
+        final isIncome = data['isIncome'] as bool? ?? false;
+
+        if (isIncome) {
+          totalIncome += amount;
+        } else {
+          totalExpense += amount;
+        }
+
+        batch.update(
+          firestore.collection('transactions').doc(doc.id),
+          {'accountId': selectedId},
+        );
+      }
+
+      final asset = liquidAssets.firstWhere((a) => a.id == selectedId);
+      final netImpact = totalIncome - totalExpense;
+      final assetDoc = firestore
+          .collection('groups')
+          .doc(groupId)
+          .collection('assets')
+          .doc(selectedId);
+
+      batch.update(assetDoc, {'amount': asset.amount + netImpact});
+      await batch.commit();
+
+      if (context.mounted) {
+        Navigator.pop(context); // Close processing
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)!
+                  .migrateSuccess(orphaned.length.toString()),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context); // Close loading/processing
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.errorText(e.toString())),
+          ),
+        );
+      }
+    }
   }
 }
 
@@ -339,7 +341,7 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: 'Buscar moviments...',
+                      hintText: AppLocalizations.of(context)!.searchHint,
                       prefixIcon: const Icon(Icons.search, size: 20),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -441,18 +443,20 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                         onRemove: () => filterNotifier.toggleCategory(id, ''),
                       )),
                   ...filter.subCategoryIds.map((id) => _FilterChip(
-                        label: filter.subCategoryNames[id] ?? 'Subcategoria',
+                        label: filter.subCategoryNames[id] ?? AppLocalizations.of(context)!.subCategories,
                         icon: Icons.label,
                         onRemove: () =>
                             filterNotifier.toggleSubCategory(id, ''),
                       )),
                   if (filter.isIncome != null)
                     _FilterChip(
-                      label: filter.isIncome! ? 'Ingressos' : 'Despeses',
+                      label: filter.isIncome!
+                          ? AppLocalizations.of(context)!.income
+                          : AppLocalizations.of(context)!.expenses,
                       icon: filter.isIncome!
                           ? Icons.arrow_upward
                           : Icons.arrow_downward,
-                      onRemove: () => filterNotifier.clearType(),
+                      onRemove: () => filterNotifier.setType(null),
                     ),
                   if (filter.payer != null)
                     _FilterChip(
@@ -475,20 +479,18 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                       onRemove: () => filterNotifier.clearDateRange(),
                     ),
                   const SizedBox(width: 4),
-                  ActionChip(
-                    label: const Text(
-                      'Netejar tot',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    avatar: const Icon(Icons.clear_all, size: 16),
+                  // Clear all button
+                  TextButton.icon(
                     onPressed: () {
                       filterNotifier.clearAll();
                       _searchController.clear();
                     },
-                    visualDensity: VisualDensity.compact,
-                    side: BorderSide.none,
-                    backgroundColor: Colors.red.shade50,
-                    labelStyle: TextStyle(color: Colors.red.shade700),
+                    icon: const Icon(Icons.delete_sweep, size: 16),
+                    label: Text(AppLocalizations.of(context)!.clear),
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.red,
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
                 ],
               ),
@@ -647,8 +649,8 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                       const SizedBox(height: 12),
                       Text(
                         hasFilters || filter.searchQuery != null
-                            ? 'Cap moviment coincideix amb els filtres'
-                            : 'No hi ha moviments en aquest cicle',
+                            ? AppLocalizations.of(context)!.noResultsFilter
+                            : AppLocalizations.of(context)!.noResultsCycle,
                         style: TextStyle(color: Colors.grey[600]),
                       ),
                     ],
@@ -665,12 +667,24 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                       child: Row(
                         children: [
                           Text(
-                            '${items.length} resultat${items.length == 1 ? '' : 's'}',
+                            AppLocalizations.of(context)!.resultsCount(items.length),
                             style: TextStyle(
+                              color: Colors.grey[600],
                               fontSize: 12,
-                              color: Colors.grey[500],
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.bold,
                             ),
+                          ),
+                          const Spacer(),
+                          _SummaryInHeader(
+                            label: AppLocalizations.of(context)!.income,
+                            amount: totalIncome,
+                            color: Colors.green,
+                          ),
+                          const SizedBox(width: 12),
+                          _SummaryInHeader(
+                            label: AppLocalizations.of(context)!.expenses,
+                            amount: totalExpense,
+                            color: Colors.red,
                           ),
                         ],
                       ),
@@ -700,9 +714,9 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text(
-                                  'Ingressos',
-                                  style: TextStyle(
+                                Text(
+                                  AppLocalizations.of(context)!.income,
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey,
                                     fontWeight: FontWeight.bold,
@@ -729,9 +743,9 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                const Text(
-                                  'Despeses',
-                                  style: TextStyle(
+                                Text(
+                                  AppLocalizations.of(context)!.expenses,
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.grey,
                                     fontWeight: FontWeight.bold,
@@ -778,22 +792,22 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                               return await showDialog<bool>(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
-                                  title: const Text('Eliminar traspàs'),
-                                  content: const Text(
-                                    'Estàs segur que vols eliminar aquest traspàs? Els saldos es restauraran automàticament.',
+                                  title: Text(AppLocalizations.of(context)!.deleteTransferTitle),
+                                  content: Text(
+                                    AppLocalizations.of(context)!.deleteTransferConfirm,
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.pop(ctx, false),
-                                      child: const Text('Cancel·lar'),
+                                      child: Text(AppLocalizations.of(context)!.cancelButton),
                                     ),
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx, true),
                                       style: TextButton.styleFrom(
                                         foregroundColor: Colors.red,
                                       ),
-                                      child: const Text('Eliminar'),
+                                      child: Text(AppLocalizations.of(context)!.deleteButton),
                                     ),
                                   ],
                                 ),
@@ -806,9 +820,9 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                                     .deleteTransfer(transfer.id);
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
+                                    SnackBar(
                                       content:
-                                          Text('Traspàs eliminat correctament'),
+                                          Text(AppLocalizations.of(context)!.transferDeleted),
                                     ),
                                   );
                                 }
@@ -816,7 +830,7 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                        content: Text('Error esborrant: $e')),
+                                        content: Text(AppLocalizations.of(context)!.errorText(e.toString()))),
                                   );
                                 }
                               }
@@ -897,15 +911,13 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                             return await showDialog<bool>(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: const Text('Esborrar moviment?'),
-                                content: const Text(
-                                  'Aquesta acció no es pot desfer.',
-                                ),
+                                title: Text(AppLocalizations.of(context)!.deleteMovementTitle),
+                                content: Text(AppLocalizations.of(context)!.cannotBeUndone),
                                 actions: [
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.pop(context, false),
-                                    child: const Text('Cancel·lar'),
+                                    child: Text(AppLocalizations.of(context)!.cancelButton),
                                   ),
                                   TextButton(
                                     onPressed: () =>
@@ -913,7 +925,7 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors.red,
                                     ),
-                                    child: const Text('Esborrar'),
+                                    child: Text(AppLocalizations.of(context)!.deleteButton),
                                   ),
                                 ],
                               ),
@@ -1116,7 +1128,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
           children: [
             Center(
               child: Text(
-                'Filtres Avançats',
+                AppLocalizations.of(context)!.advancedFilters,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.anthracite,
@@ -1127,7 +1139,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
             // Type filter
             Text(
-              'Tipus',
+              AppLocalizations.of(context)!.type,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[700],
@@ -1136,17 +1148,19 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
             ),
             const SizedBox(height: 8),
             SegmentedButton<bool?>(
-              segments: const [
-                ButtonSegment(value: null, label: Text('Tots')),
+              segments: [
+                ButtonSegment(
+                    value: null,
+                    label: Text(AppLocalizations.of(context)!.all)),
                 ButtonSegment(
                   value: false,
-                  label: Text('Despeses'),
-                  icon: Icon(Icons.arrow_downward, size: 16),
+                  label: Text(AppLocalizations.of(context)!.expenses),
+                  icon: const Icon(Icons.arrow_downward, size: 16),
                 ),
                 ButtonSegment(
                   value: true,
-                  label: Text('Ingressos'),
-                  icon: Icon(Icons.arrow_upward, size: 16),
+                  label: Text(AppLocalizations.of(context)!.income),
+                  icon: const Icon(Icons.arrow_upward, size: 16),
                 ),
               ],
               selected: {_selectedType},
@@ -1172,7 +1186,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
             // Category filter
             Text(
-              'Categories',
+              AppLocalizations.of(context)!.categories,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[700],
@@ -1242,7 +1256,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Subcategories',
+                        AppLocalizations.of(context)!.subCategories,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.grey[700],
@@ -1308,7 +1322,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pagador',
+                      AppLocalizations.of(context)!.payer,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: Colors.grey[700],
@@ -1319,7 +1333,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     DropdownButtonFormField<String?>(
                       initialValue: _selectedPayer,
                       decoration: InputDecoration(
-                        hintText: 'Tots',
+                        hintText: AppLocalizations.of(context)!.all,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 10,
@@ -1335,9 +1349,9 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                         fillColor: Colors.grey[50],
                       ),
                       items: [
-                        const DropdownMenuItem(
+                        DropdownMenuItem(
                           value: null,
-                          child: Text('Tots'),
+                          child: Text(AppLocalizations.of(context)!.all),
                         ),
                         ...members.map(
                           (m) => DropdownMenuItem(
@@ -1358,7 +1372,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
             // Amount range
             Text(
-              'Rang d\'import',
+              AppLocalizations.of(context)!.amountRange,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[700],
@@ -1373,7 +1387,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     controller: _minController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      hintText: 'Mínim',
+                      hintText: AppLocalizations.of(context)!.minimum,
                       suffixText: '€',
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -1400,7 +1414,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     controller: _maxController,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      hintText: 'Màxim',
+                      hintText: AppLocalizations.of(context)!.maximum,
                       suffixText: '€',
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -1424,7 +1438,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
 
             // Date range filter
             Text(
-              'Rang de dates',
+              AppLocalizations.of(context)!.dateRange,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.grey[700],
@@ -1440,7 +1454,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     label: Text(
                       _dateFrom != null
                           ? '${_dateFrom!.day}/${_dateFrom!.month}/${_dateFrom!.year}'
-                          : 'Des de...',
+                          : AppLocalizations.of(context)!.from,
                     ),
                     selected: _dateFrom != null,
                     onPressed: () async {
@@ -1471,7 +1485,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                     label: Text(
                       _dateTo != null
                           ? '${_dateTo!.day}/${_dateTo!.month}/${_dateTo!.year}'
-                          : 'Fins a...',
+                          : AppLocalizations.of(context)!.to,
                     ),
                     selected: _dateTo != null,
                     onPressed: () async {
@@ -1516,7 +1530,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text('Netejar'),
+                    child: Text(AppLocalizations.of(context)!.clear),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1531,7 +1545,7 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
-                    child: const Text('Aplicar Filtres'),
+                    child: Text(AppLocalizations.of(context)!.applyFilters),
                   ),
                 ),
               ],
@@ -1561,13 +1575,13 @@ class _RecurringExpensesView extends ConsumerWidget {
               color: Colors.green.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Totes les despeses fixes pagades!',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              AppLocalizations.of(context)!.allFixedPaid,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              'Aquest mes ja ho tens tot al dia.',
+              AppLocalizations.of(context)!.allUpToDate,
               style: TextStyle(color: Colors.grey[600]),
             ),
           ],
@@ -1586,6 +1600,9 @@ class _RecurringExpensesView extends ConsumerWidget {
           categoryIcon: item.category.icon,
           isIncome: isIncome,
           confirmDismiss: (direction) async {
+            final l10n = AppLocalizations.of(context)!;
+            final messenger = ScaffoldMessenger.of(context);
+            
             final result = await showDialog<ConfirmFixedExpenseResult>(
               context: context,
               builder: (ctx) => ConfirmFixedExpenseDialog(
@@ -1606,7 +1623,7 @@ class _RecurringExpensesView extends ConsumerWidget {
               groupId: groupId,
               date: result.date,
               amount: item.subCategory.monthlyBudget,
-              concept: 'Pagament ${item.subCategory.name}',
+              concept: l10n.paymentOf(item.subCategory.name),
               categoryId: item.category.id,
               subCategoryId: item.subCategory.id,
               categoryName: item.category.name,
@@ -1620,15 +1637,13 @@ class _RecurringExpensesView extends ConsumerWidget {
                 .read(transactionNotifierProvider.notifier)
                 .addTransaction(transaction);
 
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'Pagament registrat el ${DateFormat('dd/MM', 'ca_ES').format(result.date)}: ${item.subCategory.name}',
-                  ),
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(
+                  '${l10n.paymentOf(item.subCategory.name)} (${DateFormat('dd/MM', 'ca_ES').format(result.date)})',
                 ),
-              );
-            }
+              ),
+            );
             return true;
           },
           onPay: () {
@@ -1644,12 +1659,49 @@ class _RecurringExpensesView extends ConsumerWidget {
                 initialCategory: item.category,
                 initialSubCategory: item.subCategory,
                 initialAmount: item.subCategory.monthlyBudget,
-                initialConcept: 'Pagament ${item.subCategory.name}',
+                initialConcept: AppLocalizations.of(context)!.paymentOf(item.subCategory.name),
               ),
             );
           },
         );
       },
+    );
+  }
+}
+
+class _SummaryInHeader extends StatelessWidget {
+  final String label;
+  final double amount;
+  final Color color;
+
+  const _SummaryInHeader({
+    required this.label,
+    required this.amount,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey[500],
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        Text(
+          '${amount >= 0 ? '+' : ''}${amount.toStringAsFixed(0)}€',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }

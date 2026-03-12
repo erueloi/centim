@@ -15,7 +15,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # Read more about iOS versioning at
 
 
-version: 1.2.10
+version: 1.2.11
 
 environment:
   sdk: '>=3.0.0 <4.0.0' # Reverted to ^3.0.0
@@ -90,6 +90,7 @@ flutter:
   assets:
     - assets/images/
     - assets/release_notes.md
+    - assets/user_guide.md
     - .env
 
   # To add custom fonts to your application, add a fonts section here,
@@ -111,4 +112,5 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
 

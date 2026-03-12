@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:centim/l10n/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/providers/repository_providers.dart';
 
@@ -47,6 +48,42 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showUserGuide() async {
+    try {
+      final userGuide = await rootBundle.loadString('assets/user_guide.md');
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(
+            AppLocalizations.of(context)!.howItWorks,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: MarkdownBody(data: userGuide),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Tancar'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error carregant guia d'ús: $e")),
+        );
+      }
+    }
   }
 
   Future<void> _showReleaseNotes() async {
@@ -206,6 +243,21 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ),
 
               const SizedBox(height: 48),
+
+              ListTile(
+                leading: const Icon(Icons.help_outline, color: AppTheme.copper),
+                title: Text(
+                  AppLocalizations.of(context)!.howItWorks,
+                  style: const TextStyle(color: AppTheme.copper, fontWeight: FontWeight.w500),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: AppTheme.copper),
+                onTap: _showUserGuide,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+              const SizedBox(height: 16),
 
               OutlinedButton.icon(
                 onPressed: _showReleaseNotes,

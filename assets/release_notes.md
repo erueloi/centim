@@ -1,5 +1,8 @@
 ﻿# Release Notes
 
+## v1.2.11
+Usuari: Guia d'usuari.
+Fix intern: Posar tot el text de l'aplicació als fitxers arb.
 ## v1.2.10
 Dashboard Grafics millorats amb nomes despeses i ingressos.
 Informació dels estalvis usats.
@@ -79,6 +82,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

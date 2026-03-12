@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:centim/l10n/app_localizations.dart';
 import '../../../../domain/models/category.dart';
 import '../sheets/add_transaction_sheet.dart';
 import '../providers/category_notifier.dart';
@@ -46,9 +47,9 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Accés Ràpid',
-          style: TextStyle(
+        Text(
+          AppLocalizations.of(context)!.quickAccessTitle,
+          style: const TextStyle(
             color: AppTheme.anthracite,
             fontWeight: FontWeight.bold,
             fontSize: 18,
@@ -65,7 +66,7 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
                     Expanded(
                       child: _QuickActionButton(
                         icon: Icons.money_off,
-                        label: 'Despesa',
+                        label: AppLocalizations.of(context)!.expenseLabel,
                         color: Colors.red.shade400,
                         isSelected: _expandedType == TransactionType.expense,
                         onTap: () => _toggleExpanded(TransactionType.expense),
@@ -75,7 +76,7 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
                     Expanded(
                       child: _QuickActionButton(
                         icon: Icons.attach_money,
-                        label: 'Ingrés',
+                        label: AppLocalizations.of(context)!.incomeLabel,
                         color: Colors.green.shade500,
                         isSelected: _expandedType == TransactionType.income,
                         onTap: () => _toggleExpanded(TransactionType.income),
@@ -85,7 +86,7 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
                     Expanded(
                       child: _QuickActionButton(
                         icon: Icons.monetization_on,
-                        label: 'Ja he cobrat!',
+                        label: AppLocalizations.of(context)!.alreadyPaid,
                         color: AppTheme.copper,
                         isSelected: false,
                         onTap: () async {
@@ -95,14 +96,15 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
-                              title: const Text('💰 Confirmar nòmina'),
-                              content: const Text(
-                                'Has rebut la nòmina? Això tancarà el cicle actual i n\'obrirà un de nou.',
+                              title: Text(AppLocalizations.of(context)!.confirmSalary),
+                              content: Text(
+                                AppLocalizations.of(context)!
+                                    .salaryConfirmationMessage,
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Cancel·lar'),
+                                  child: Text(AppLocalizations.of(context)!.cancelButton),
                                 ),
                                 ElevatedButton(
                                   onPressed: () => Navigator.pop(ctx, true),
@@ -110,7 +112,7 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
                                     backgroundColor: AppTheme.copper,
                                     foregroundColor: Colors.white,
                                   ),
-                                  child: const Text('Sí, he cobrat!'),
+                                  child: Text(AppLocalizations.of(context)!.yesPaid),
                                 ),
                               ],
                             ),
@@ -135,8 +137,8 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
                               .where((c) => c.type == _expandedType)
                               .toList();
                           if (filteredCats.isEmpty) {
-                            return const Center(
-                                child: Text("No hi ha categories"));
+                            return Center(
+                                child: Text(AppLocalizations.of(context)!.noCategories));
                           }
                           return _buildCategoryGrid(filteredCats);
                         },
@@ -168,8 +170,8 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
         children: [
           Text(
             _expandedType == TransactionType.expense
-                ? 'On has fet la despesa?'
-                : 'D\'on prové l\'ingrés?',
+                ? AppLocalizations.of(context)!.whereExpense
+                : AppLocalizations.of(context)!.whereIncome,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
               color: AppTheme.anthracite,
