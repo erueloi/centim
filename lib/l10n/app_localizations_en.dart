@@ -611,4 +611,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String paymentOf(Object name) {
     return 'Payment of $name';
   }
+
+  @override
+  String get heatmapTotal => 'TOTAL';
+
+  @override
+  String get heatmapCycleRange => 'Cycle range';
+
+  @override
+  String get heatmapAllCycles => 'All';
+
+  @override
+  String get billingCyclesLabel => 'Billing Cycles';
+
+  @override
+  String get categoriesLabel => 'Categories';
 }

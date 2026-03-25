@@ -17,6 +17,7 @@ class PanoramicHeatmap extends _$PanoramicHeatmap {
   Set<String>? _persistedSelectedCycles;
   Set<String>? _persistedSelectedCategories;
   Set<String> _expandedCategoryIds = {};
+  int? _cycleRangeLimit; // null = use default (12), 0 = all
 
   @override
   Future<HeatmapState> build() async {
@@ -42,13 +43,21 @@ class PanoramicHeatmap extends _$PanoramicHeatmap {
         allCategories.where((c) => c.type == TransactionType.expense).toList();
 
     // 2. Determine selected filters
-    // If we have persisted values, use them. Otherwise, default to all.
-    final selectedCycleIds =
-        _persistedSelectedCycles ?? sortedCycles.map((c) => c.id).toSet();
+    // Default to last 12 cycles if no persisted selection
+    if (_persistedSelectedCycles == null) {
+      final rangeLimit = _cycleRangeLimit ?? 12;
+      if (rangeLimit == 0 || sortedCycles.length <= rangeLimit) {
+        _persistedSelectedCycles = sortedCycles.map((c) => c.id).toSet();
+      } else {
+        final lastN = sortedCycles.sublist(sortedCycles.length - rangeLimit);
+        _persistedSelectedCycles = lastN.map((c) => c.id).toSet();
+      }
+    }
+
+    final selectedCycleIds = _persistedSelectedCycles!;
     final selectedCategoryIds = _persistedSelectedCategories ??
         expenseCategories.map((c) => c.id).toSet();
 
-    _persistedSelectedCycles = selectedCycleIds;
     _persistedSelectedCategories = selectedCategoryIds;
 
     // 3. Aggregate data
@@ -62,6 +71,14 @@ class PanoramicHeatmap extends _$PanoramicHeatmap {
         .toList();
 
     final List<HeatmapRow> visibleRows = [];
+
+    // Accumulators for the TOTAL row
+    final Map<String, double> totalBudgetedPerCycle = {};
+    final Map<String, double> totalSpentPerCycle = {};
+    for (final cycle in filteredCycles) {
+      totalBudgetedPerCycle[cycle.id] = 0.0;
+      totalSpentPerCycle[cycle.id] = 0.0;
+    }
 
     for (final category in filteredCategories) {
       final Map<String, HeatmapCell> parentCells = {};
@@ -100,6 +117,12 @@ class PanoramicHeatmap extends _$PanoramicHeatmap {
           spent: spent,
           deviation: spent - totalBudget,
         );
+
+        // Accumulate for TOTAL row
+        totalBudgetedPerCycle[cycle.id] =
+            totalBudgetedPerCycle[cycle.id]! + totalBudget;
+        totalSpentPerCycle[cycle.id] =
+            totalSpentPerCycle[cycle.id]! + spent;
       }
 
       visibleRows.add(HeatmapRow(
@@ -158,6 +181,26 @@ class PanoramicHeatmap extends _$PanoramicHeatmap {
       }
     }
 
+    // 4. Add TOTAL row
+    final Map<String, HeatmapCell> totalCells = {};
+    for (final cycle in filteredCycles) {
+      final budgeted = totalBudgetedPerCycle[cycle.id]!;
+      final spent = totalSpentPerCycle[cycle.id]!;
+      totalCells[cycle.id] = HeatmapCell(
+        budgeted: budgeted,
+        spent: spent,
+        deviation: spent - budgeted,
+      );
+    }
+    visibleRows.add(HeatmapRow(
+      id: '__total__',
+      name: 'TOTAL',
+      icon: '',
+      isSubCategory: false,
+      cells: totalCells,
+      isTotalRow: true,
+    ));
+
     return HeatmapState(
       allCycles: sortedCycles,
       allCategories: expenseCategories,
@@ -201,10 +244,21 @@ class PanoramicHeatmap extends _$PanoramicHeatmap {
     ref.invalidateSelf();
   }
 
+  /// Sets cycle range to show the last N cycles (0 = all).
+  void setCycleRange(int count) {
+    _cycleRangeLimit = count;
+    _persistedSelectedCycles = null; // Force recalculation
+    ref.invalidateSelf();
+  }
+
+  /// Returns the current cycle range limit (0 = all, null = default 12).
+  int get currentCycleRange => _cycleRangeLimit ?? 12;
+
   void resetFilters() {
     _persistedSelectedCycles = null;
     _persistedSelectedCategories = null;
     _expandedCategoryIds = {};
+    _cycleRangeLimit = null;
     ref.invalidateSelf();
   }
 }

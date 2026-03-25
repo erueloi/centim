@@ -189,6 +189,7 @@ mixin _$HeatmapRow {
   Map<String, HeatmapCell> get cells =>
       throw _privateConstructorUsedError; // cycleId -> cell
   bool get isExpanded => throw _privateConstructorUsedError;
+  bool get isTotalRow => throw _privateConstructorUsedError;
 
   /// Create a copy of HeatmapRow
   /// with the given fields replaced by the non-null parameter values.
@@ -209,7 +210,8 @@ abstract class $HeatmapRowCopyWith<$Res> {
       String icon,
       bool isSubCategory,
       Map<String, HeatmapCell> cells,
-      bool isExpanded});
+      bool isExpanded,
+      bool isTotalRow});
 }
 
 /// @nodoc
@@ -233,6 +235,7 @@ class _$HeatmapRowCopyWithImpl<$Res, $Val extends HeatmapRow>
     Object? isSubCategory = null,
     Object? cells = null,
     Object? isExpanded = null,
+    Object? isTotalRow = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -259,6 +262,10 @@ class _$HeatmapRowCopyWithImpl<$Res, $Val extends HeatmapRow>
           ? _value.isExpanded
           : isExpanded // ignore: cast_nullable_to_non_nullable
               as bool,
+      isTotalRow: null == isTotalRow
+          ? _value.isTotalRow
+          : isTotalRow // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -277,7 +284,8 @@ abstract class _$$HeatmapRowImplCopyWith<$Res>
       String icon,
       bool isSubCategory,
       Map<String, HeatmapCell> cells,
-      bool isExpanded});
+      bool isExpanded,
+      bool isTotalRow});
 }
 
 /// @nodoc
@@ -299,6 +307,7 @@ class __$$HeatmapRowImplCopyWithImpl<$Res>
     Object? isSubCategory = null,
     Object? cells = null,
     Object? isExpanded = null,
+    Object? isTotalRow = null,
   }) {
     return _then(_$HeatmapRowImpl(
       id: null == id
@@ -325,6 +334,10 @@ class __$$HeatmapRowImplCopyWithImpl<$Res>
           ? _value.isExpanded
           : isExpanded // ignore: cast_nullable_to_non_nullable
               as bool,
+      isTotalRow: null == isTotalRow
+          ? _value.isTotalRow
+          : isTotalRow // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -338,7 +351,8 @@ class _$HeatmapRowImpl implements _HeatmapRow {
       required this.icon,
       required this.isSubCategory,
       required final Map<String, HeatmapCell> cells,
-      this.isExpanded = false})
+      this.isExpanded = false,
+      this.isTotalRow = false})
       : _cells = cells;
 
   @override
@@ -361,10 +375,13 @@ class _$HeatmapRowImpl implements _HeatmapRow {
   @override
   @JsonKey()
   final bool isExpanded;
+  @override
+  @JsonKey()
+  final bool isTotalRow;
 
   @override
   String toString() {
-    return 'HeatmapRow(id: $id, name: $name, icon: $icon, isSubCategory: $isSubCategory, cells: $cells, isExpanded: $isExpanded)';
+    return 'HeatmapRow(id: $id, name: $name, icon: $icon, isSubCategory: $isSubCategory, cells: $cells, isExpanded: $isExpanded, isTotalRow: $isTotalRow)';
   }
 
   @override
@@ -379,12 +396,14 @@ class _$HeatmapRowImpl implements _HeatmapRow {
                 other.isSubCategory == isSubCategory) &&
             const DeepCollectionEquality().equals(other._cells, _cells) &&
             (identical(other.isExpanded, isExpanded) ||
-                other.isExpanded == isExpanded));
+                other.isExpanded == isExpanded) &&
+            (identical(other.isTotalRow, isTotalRow) ||
+                other.isTotalRow == isTotalRow));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, id, name, icon, isSubCategory,
-      const DeepCollectionEquality().hash(_cells), isExpanded);
+      const DeepCollectionEquality().hash(_cells), isExpanded, isTotalRow);
 
   /// Create a copy of HeatmapRow
   /// with the given fields replaced by the non-null parameter values.
@@ -402,7 +421,8 @@ abstract class _HeatmapRow implements HeatmapRow {
       required final String icon,
       required final bool isSubCategory,
       required final Map<String, HeatmapCell> cells,
-      final bool isExpanded}) = _$HeatmapRowImpl;
+      final bool isExpanded,
+      final bool isTotalRow}) = _$HeatmapRowImpl;
 
   @override
   String get id;
@@ -416,6 +436,8 @@ abstract class _HeatmapRow implements HeatmapRow {
   Map<String, HeatmapCell> get cells; // cycleId -> cell
   @override
   bool get isExpanded;
+  @override
+  bool get isTotalRow;
 
   /// Create a copy of HeatmapRow
   /// with the given fields replaced by the non-null parameter values.

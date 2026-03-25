@@ -1,5 +1,8 @@
 ﻿# Release Notes
 
+## v1.2.12
+Heatmap: Incorporat una fila de total i filtre de 12 cicles per defecte.
+Inici: Redistribució visual.
 ## v1.2.11
 Usuari: Guia d'usuari.
 Fix intern: Posar tot el text de l'aplicació als fitxers arb.
@@ -82,6 +85,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

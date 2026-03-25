@@ -188,5 +188,10 @@
   "allUpToDate": "Everything is up to date this month.",
   "income": "Income",
   "expenses": "Expenses",
-  "paymentOf": "Payment of {name}"
+  "paymentOf": "Payment of {name}",
+  "heatmapTotal": "TOTAL",
+  "heatmapCycleRange": "Cycle range",
+  "heatmapAllCycles": "All",
+  "billingCyclesLabel": "Billing Cycles",
+  "categoriesLabel": "Categories"
 }

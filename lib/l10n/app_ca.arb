@@ -188,5 +188,10 @@
   "allUpToDate": "Aquest mes ja ho tens tot al dia.",
   "income": "Ingressos",
   "expenses": "Despeses",
-  "paymentOf": "Pagament de {name}"
+  "paymentOf": "Pagament de {name}",
+  "heatmapTotal": "TOTAL",
+  "heatmapCycleRange": "Rang de cicles",
+  "heatmapAllCycles": "Tots",
+  "billingCyclesLabel": "Cicles de Facturació",
+  "categoriesLabel": "Categories"
 }

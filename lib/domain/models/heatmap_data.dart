@@ -22,6 +22,7 @@ class HeatmapRow with _$HeatmapRow {
     required bool isSubCategory,
     required Map<String, HeatmapCell> cells, // cycleId -> cell
     @Default(false) bool isExpanded,
+    @Default(false) bool isTotalRow,
   }) = _HeatmapRow;
 }
 

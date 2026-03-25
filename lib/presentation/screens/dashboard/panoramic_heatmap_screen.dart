@@ -50,6 +50,7 @@ class _HeatmapBody extends ConsumerWidget {
       return const Center(child: Text('No hi ha dades suficients.'));
     }
 
+    final colorScheme = Theme.of(context).colorScheme;
     final dateFormat = DateFormat('MMM yyyy', 'ca_ES');
     // Filter only selected cycles for columns
     final selectedCycles = state.allCycles
@@ -75,38 +76,52 @@ class _HeatmapBody extends ConsumerWidget {
             child: DataTable(
               columnSpacing: 24,
               horizontalMargin: 16,
-              headingRowColor: WidgetStateProperty.all(Colors.grey[100]),
+              headingRowColor:
+                  WidgetStateProperty.all(colorScheme.surfaceContainerHighest),
               columns: [
-                const DataColumn(
+                DataColumn(
                   label: Text(
                     'CATEGORIA',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
                 ...selectedCycles.map(
                   (cycle) => DataColumn(
                     label: Text(
                       dateFormat.format(cycle.endDate).toUpperCase(),
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
                   ),
                 ),
               ],
               rows: state.visibleRows.map((row) {
+                final isTotalRow = row.isTotalRow;
                 return DataRow(
+                  color: isTotalRow
+                      ? WidgetStateProperty.all(
+                          colorScheme.primaryContainer.withValues(alpha: 0.3))
+                      : null,
                   cells: [
                     DataCell(
                       _CategoryNameCell(
                         row: row,
-                        onToggle: () => ref
-                            .read(panoramicHeatmapProvider.notifier)
-                            .toggleCategoryExpansion(row.id),
+                        onToggle: isTotalRow
+                            ? null
+                            : () => ref
+                                .read(panoramicHeatmapProvider.notifier)
+                                .toggleCategoryExpansion(row.id),
                       ),
                     ),
                     ...selectedCycles.map((cycle) {
                       final cell = row.cells[cycle.id];
                       return DataCell(
-                        _HeatmapCellWidget(cell: cell),
+                        _HeatmapCellWidget(cell: cell, isTotalRow: isTotalRow),
                       );
                     }),
                   ],
@@ -122,24 +137,38 @@ class _HeatmapBody extends ConsumerWidget {
 
 class _CategoryNameCell extends StatelessWidget {
   final HeatmapRow row;
-  final VoidCallback onToggle;
+  final VoidCallback? onToggle;
 
-  const _CategoryNameCell({required this.row, required this.onToggle});
+  const _CategoryNameCell({required this.row, this.onToggle});
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (row.isTotalRow) {
+      return Text(
+        row.name,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+          color: colorScheme.primary,
+        ),
+      );
+    }
+
     if (row.isSubCategory) {
       return Padding(
         padding: const EdgeInsets.only(left: 32.0),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.subdirectory_arrow_right,
-                size: 16, color: Colors.grey),
+            Icon(Icons.subdirectory_arrow_right,
+                size: 16, color: colorScheme.onSurface.withValues(alpha: 0.5)),
             const SizedBox(width: 8),
             Text(
               row.name,
-              style: const TextStyle(color: Colors.black54),
+              style: TextStyle(
+                  color: colorScheme.onSurface.withValues(alpha: 0.7)),
             ),
           ],
         ),
@@ -157,6 +186,7 @@ class _CategoryNameCell extends StatelessWidget {
             row.isExpanded
                 ? Icons.keyboard_arrow_down
                 : Icons.keyboard_arrow_right,
+            color: colorScheme.onSurface,
           ),
           onPressed: onToggle,
         ),
@@ -165,7 +195,10 @@ class _CategoryNameCell extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           row.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
       ],
     );
@@ -174,14 +207,19 @@ class _CategoryNameCell extends StatelessWidget {
 
 class _HeatmapCellWidget extends StatelessWidget {
   final HeatmapCell? cell;
+  final bool isTotalRow;
 
-  const _HeatmapCellWidget({this.cell});
+  const _HeatmapCellWidget({this.cell, this.isTotalRow = false});
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (cell == null) {
-      return const Center(
-          child: Text('-', style: TextStyle(color: Colors.grey)));
+      return Center(
+          child: Text('-',
+              style:
+                  TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4))));
     }
 
     final deviation = cell!.deviation;
@@ -227,9 +265,10 @@ class _HeatmapCellWidget extends StatelessWidget {
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 12,
-            fontWeight: deviation != 0 ? FontWeight.bold : FontWeight.normal,
-            color: opacity > 0.5 ? Colors.white : Colors.black87,
+            fontSize: isTotalRow ? 14 : 12,
+            fontWeight:
+                (deviation != 0 || isTotalRow) ? FontWeight.bold : FontWeight.normal,
+            color: opacity > 0.5 ? Colors.white : colorScheme.onSurface,
           ),
         ),
       ),

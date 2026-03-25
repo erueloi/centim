@@ -1237,6 +1237,36 @@ abstract class AppLocalizations {
   /// In ca, this message translates to:
   /// **'Pagament de {name}'**
   String paymentOf(Object name);
+
+  /// No description provided for @heatmapTotal.
+  ///
+  /// In ca, this message translates to:
+  /// **'TOTAL'**
+  String get heatmapTotal;
+
+  /// No description provided for @heatmapCycleRange.
+  ///
+  /// In ca, this message translates to:
+  /// **'Rang de cicles'**
+  String get heatmapCycleRange;
+
+  /// No description provided for @heatmapAllCycles.
+  ///
+  /// In ca, this message translates to:
+  /// **'Tots'**
+  String get heatmapAllCycles;
+
+  /// No description provided for @billingCyclesLabel.
+  ///
+  /// In ca, this message translates to:
+  /// **'Cicles de Facturació'**
+  String get billingCyclesLabel;
+
+  /// No description provided for @categoriesLabel.
+  ///
+  /// In ca, this message translates to:
+  /// **'Categories'**
+  String get categoriesLabel;
 }
 
 class _AppLocalizationsDelegate

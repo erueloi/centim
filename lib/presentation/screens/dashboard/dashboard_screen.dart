@@ -226,13 +226,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const SizedBox(height: 4),
+                            const AiInsightCard(),
+                            const SizedBox(height: 16),
                             DashboardDonutChart(summary: summary),
                             const SizedBox(height: 16),
-                            const DashboardSavingsCard(),
-                            const SizedBox(height: 16),
-                            const AiInsightCard(),
                             const WatchlistSection(),
+                            const SizedBox(height: 16),
+                            const DashboardSavingsCard(),
                             const SizedBox(height: 32),
                             const FinancialHealthIndicator(),
                             const SizedBox(height: 32),
