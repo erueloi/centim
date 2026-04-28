@@ -887,7 +887,7 @@ abstract class AppLocalizations {
   /// No description provided for @withdrawFunds.
   ///
   /// In ca, this message translates to:
-  /// **'Retirar Fons'**
+  /// **'Retirar'**
   String get withdrawFunds;
 
   /// No description provided for @adjustBalanceTitle.
@@ -917,7 +917,7 @@ abstract class AppLocalizations {
   /// No description provided for @withdrawTitle.
   ///
   /// In ca, this message translates to:
-  /// **'Retirar estalvis'**
+  /// **'Retirar fons'**
   String get withdrawTitle;
 
   /// No description provided for @withdrawMessage.
@@ -1267,6 +1267,132 @@ abstract class AppLocalizations {
   /// In ca, this message translates to:
   /// **'Categories'**
   String get categoriesLabel;
+
+  /// No description provided for @coachChatTitle.
+  ///
+  /// In ca, this message translates to:
+  /// **'Cèntim Coach'**
+  String get coachChatTitle;
+
+  /// No description provided for @coachChatWelcome.
+  ///
+  /// In ca, this message translates to:
+  /// **'Hola! 👋 Sóc el teu coach financer. Pregunta\'m qualsevol cosa sobre els teus moviments, pressupostos o estalvis.'**
+  String get coachChatWelcome;
+
+  /// No description provided for @coachChatHint.
+  ///
+  /// In ca, this message translates to:
+  /// **'Escriu la teva pregunta...'**
+  String get coachChatHint;
+
+  /// No description provided for @coachSuggestion1.
+  ///
+  /// In ca, this message translates to:
+  /// **'Quant vaig gastar de menjar el mes passat?'**
+  String get coachSuggestion1;
+
+  /// No description provided for @coachSuggestion2.
+  ///
+  /// In ca, this message translates to:
+  /// **'Quines categories estan per sobre del pressupost?'**
+  String get coachSuggestion2;
+
+  /// No description provided for @coachSuggestion3.
+  ///
+  /// In ca, this message translates to:
+  /// **'Quin és el meu estalvi mitjà?'**
+  String get coachSuggestion3;
+
+  /// No description provided for @coachAskButton.
+  ///
+  /// In ca, this message translates to:
+  /// **'Pregunta al Coach'**
+  String get coachAskButton;
+
+  /// No description provided for @coachNewConversation.
+  ///
+  /// In ca, this message translates to:
+  /// **'Nova conversa'**
+  String get coachNewConversation;
+
+  /// No description provided for @contributeButton.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aportar'**
+  String get contributeButton;
+
+  /// No description provided for @contributeTitle.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aportar a la guardiola'**
+  String get contributeTitle;
+
+  /// No description provided for @contributeMessage.
+  ///
+  /// In ca, this message translates to:
+  /// **'Quant vols aportar a aquesta guardiola?'**
+  String get contributeMessage;
+
+  /// No description provided for @contributeAmountLabel.
+  ///
+  /// In ca, this message translates to:
+  /// **'Import a aportar (€)'**
+  String get contributeAmountLabel;
+
+  /// No description provided for @contributedSuccess.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aportat {amount}€ correctament.'**
+  String contributedSuccess(Object amount);
+
+  /// No description provided for @adjustBalanceHint.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aquest ajust crearà un moviment de balanç automàtic'**
+  String get adjustBalanceHint;
+
+  /// No description provided for @savingsNotePlaceholder.
+  ///
+  /// In ca, this message translates to:
+  /// **'Nota (opcional)'**
+  String get savingsNotePlaceholder;
+
+  /// No description provided for @today.
+  ///
+  /// In ca, this message translates to:
+  /// **'Avui'**
+  String get today;
+
+  /// No description provided for @accountLabel.
+  ///
+  /// In ca, this message translates to:
+  /// **'Compte'**
+  String get accountLabel;
+
+  /// No description provided for @noAccountsAvailable.
+  ///
+  /// In ca, this message translates to:
+  /// **'No hi ha comptes líquids disponibles'**
+  String get noAccountsAvailable;
+
+  /// No description provided for @selectAccount.
+  ///
+  /// In ca, this message translates to:
+  /// **'Selecciona un compte'**
+  String get selectAccount;
+
+  /// No description provided for @noAccount.
+  ///
+  /// In ca, this message translates to:
+  /// **'Sense compte'**
+  String get noAccount;
+
+  /// No description provided for @insufficientFunds.
+  ///
+  /// In ca, this message translates to:
+  /// **'No hi ha prous fons a la guardiola'**
+  String get insufficientFunds;
 }
 
 class _AppLocalizationsDelegate

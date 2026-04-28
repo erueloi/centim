@@ -164,7 +164,7 @@ class CycleReportNotifier extends _$CycleReportNotifier {
       final userName = userProfile?.name ?? 'Usuari';
 
       final aiService = ref.read(aiCoachServiceProvider);
-      final insight = await aiService.getInsight(
+      final insight = await aiService.generateCycleVerdict(
         userName: userName,
         summary: dummySummary,
         activeCycle: cycle,

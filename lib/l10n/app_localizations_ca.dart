@@ -413,7 +413,7 @@ class AppLocalizationsCa extends AppLocalizations {
   String get adjustBalance => 'Quadrar Saldo';
 
   @override
-  String get withdrawFunds => 'Retirar Fons';
+  String get withdrawFunds => 'Retirar';
 
   @override
   String get adjustBalanceTitle => 'Ajustar saldo';
@@ -429,7 +429,7 @@ class AppLocalizationsCa extends AppLocalizations {
   String get balanceAdjusted => 'Saldo ajustat correctament.';
 
   @override
-  String get withdrawTitle => 'Retirar estalvis';
+  String get withdrawTitle => 'Retirar fons';
 
   @override
   String get withdrawMessage =>
@@ -626,4 +626,72 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get categoriesLabel => 'Categories';
+
+  @override
+  String get coachChatTitle => 'Cèntim Coach';
+
+  @override
+  String get coachChatWelcome =>
+      'Hola! 👋 Sóc el teu coach financer. Pregunta\'m qualsevol cosa sobre els teus moviments, pressupostos o estalvis.';
+
+  @override
+  String get coachChatHint => 'Escriu la teva pregunta...';
+
+  @override
+  String get coachSuggestion1 => 'Quant vaig gastar de menjar el mes passat?';
+
+  @override
+  String get coachSuggestion2 =>
+      'Quines categories estan per sobre del pressupost?';
+
+  @override
+  String get coachSuggestion3 => 'Quin és el meu estalvi mitjà?';
+
+  @override
+  String get coachAskButton => 'Pregunta al Coach';
+
+  @override
+  String get coachNewConversation => 'Nova conversa';
+
+  @override
+  String get contributeButton => 'Aportar';
+
+  @override
+  String get contributeTitle => 'Aportar a la guardiola';
+
+  @override
+  String get contributeMessage => 'Quant vols aportar a aquesta guardiola?';
+
+  @override
+  String get contributeAmountLabel => 'Import a aportar (€)';
+
+  @override
+  String contributedSuccess(Object amount) {
+    return 'Aportat $amount€ correctament.';
+  }
+
+  @override
+  String get adjustBalanceHint =>
+      'Aquest ajust crearà un moviment de balanç automàtic';
+
+  @override
+  String get savingsNotePlaceholder => 'Nota (opcional)';
+
+  @override
+  String get today => 'Avui';
+
+  @override
+  String get accountLabel => 'Compte';
+
+  @override
+  String get noAccountsAvailable => 'No hi ha comptes líquids disponibles';
+
+  @override
+  String get selectAccount => 'Selecciona un compte';
+
+  @override
+  String get noAccount => 'Sense compte';
+
+  @override
+  String get insufficientFunds => 'No hi ha prous fons a la guardiola';
 }

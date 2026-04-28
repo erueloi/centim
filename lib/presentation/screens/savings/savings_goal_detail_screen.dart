@@ -2,251 +2,34 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:centim/l10n/app_localizations.dart';
 
 import '../../../../core/theme/app_theme.dart';
-import '../../../../domain/models/asset.dart';
 import '../../../../domain/models/savings_goal.dart';
-import '../../../../domain/models/transaction.dart';
 import '../../sheets/add_savings_goal_sheet.dart';
-import '../../providers/asset_provider.dart';
-import '../../providers/category_notifier.dart';
-import '../../providers/transaction_notifier.dart';
-import '../../providers/savings_goal_provider.dart';
-import '../../providers/auth_providers.dart';
+import '../../sheets/savings_action_sheet.dart';
 
 class SavingsGoalDetailScreen extends ConsumerWidget {
   final SavingsGoal goal;
 
   const SavingsGoalDetailScreen({super.key, required this.goal});
 
-  Future<void> _adjustBalance(BuildContext context, WidgetRef ref) async {
-    final controller = TextEditingController(
-      text: goal.currentAmount.toStringAsFixed(2).replaceAll('.', ','),
-    );
-
-    final amount = await showDialog<double>(
+  void _openActionSheet(
+      BuildContext context, SavingsActionType actionType) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ajustar saldo'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Aquest ajust registrarà un moviment per quadrar el saldo actual de la guardiola.',
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Nou saldo actual (€)',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel·lar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final val = double.tryParse(controller.text.replaceAll(',', '.'));
-              if (val != null && val >= 0) Navigator.pop(context, val);
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SavingsActionSheet(
+        goal: goal,
+        actionType: actionType,
       ),
     );
-
-    if (amount == null || amount == goal.currentAmount) return;
-
-    try {
-      await ref
-          .read(savingsGoalNotifierProvider.notifier)
-          .adjustBalance(goal.id, amount);
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Saldo ajustat correctament.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al ajustar el saldo: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _withdraw(BuildContext context, WidgetRef ref) async {
-    final assetsAsync = await ref.read(assetNotifierProvider.future);
-    final categories = await ref.read(categoryNotifierProvider.future);
-    final userProfile = ref.read(userProfileProvider).valueOrNull;
-
-    // Find bank/cash accounts
-    final accounts = assetsAsync
-        .where(
-            (a) => a.type == AssetType.bankAccount || a.type == AssetType.cash)
-        .toList();
-
-    // Find the category/subcategory linked to this savings goal
-    String resolvedCategoryId = 'income_savings';
-    String resolvedSubCategoryId = 'withdrawal';
-    String resolvedCategoryName = 'Estalvi';
-    String resolvedSubCategoryName = 'Retirada';
-
-    for (var cat in categories) {
-      for (var sub in cat.subcategories) {
-        if (sub.linkedSavingsGoalId == goal.id) {
-          resolvedCategoryId = cat.id;
-          resolvedSubCategoryId = sub.id;
-          resolvedCategoryName = cat.name;
-          resolvedSubCategoryName = sub.name;
-          break;
-        }
-      }
-    }
-
-    final payer =
-        userProfile?.name ?? userProfile?.email.split('@').first ?? 'User';
-
-    final amountController = TextEditingController();
-    String? selectedAccountId = accounts.isNotEmpty ? accounts.first.id : null;
-
-    if (!context.mounted) return;
-
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Retirar estalvis'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Aquests fons es mouran a la teva cartera principal com a ingrés.',
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Import a retirar (€)',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              if (accounts.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedAccountId,
-                  decoration: const InputDecoration(
-                    labelText: 'Compte destí',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.account_balance),
-                  ),
-                  items: [
-                    ...accounts.map((a) => DropdownMenuItem(
-                          value: a.id,
-                          child: Text(a.name),
-                        )),
-                    const DropdownMenuItem(
-                      value: null,
-                      child: Text('Sense especificar'),
-                    ),
-                  ],
-                  onChanged: (val) {
-                    setDialogState(() {
-                      selectedAccountId = val;
-                    });
-                  },
-                ),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel·lar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final val =
-                    double.tryParse(amountController.text.replaceAll(',', '.'));
-                if (val != null && val > 0) {
-                  Navigator.pop(context, {
-                    'amount': val,
-                    'accountId': selectedAccountId,
-                  });
-                }
-              },
-              child: const Text('Retirar'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (result == null) return;
-    final amount = result['amount'] as double;
-    final accountId = result['accountId'] as String?;
-
-    // Check if enough funds
-    if (amount > goal.currentAmount) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No tens prous fons a la guardiola.')),
-        );
-      }
-      return;
-    }
-
-    final groupId = await ref.read(currentGroupIdProvider.future);
-    if (groupId == null) return;
-
-    final transaction = Transaction(
-      groupId: groupId,
-      date: DateTime.now(),
-      amount: amount,
-      concept: 'Retirada de ${goal.name}',
-      categoryId: resolvedCategoryId,
-      subCategoryId: resolvedSubCategoryId,
-      categoryName: resolvedCategoryName,
-      subCategoryName: resolvedSubCategoryName,
-      payer: payer,
-      isIncome: true,
-      savingsGoalId: goal.id,
-      accountId: accountId,
-    );
-
-    await ref
-        .read(transactionNotifierProvider.notifier)
-        .addTransaction(transaction);
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Retirats ${amount.toStringAsFixed(2)}€ correctament.'),
-        ),
-      );
-    }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final currencyFormat = NumberFormat.currency(
       locale: 'ca_ES',
       symbol: '€',
@@ -278,30 +61,18 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
-              if (value == 'withdraw') {
-                _withdraw(context, ref);
-              } else if (value == 'adjust') {
-                _adjustBalance(context, ref);
+              if (value == 'adjust') {
+                _openActionSheet(context, SavingsActionType.adjust);
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'adjust',
                 child: Row(
                   children: [
-                    Icon(Icons.balance, color: AppTheme.copper),
-                    SizedBox(width: 8),
-                    Text('Quadrar Saldo'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'withdraw',
-                child: Row(
-                  children: [
-                    Icon(Icons.output, color: AppTheme.copper),
-                    SizedBox(width: 8),
-                    Text('Retirar Fons'),
+                    const Icon(Icons.balance, color: AppTheme.copper),
+                    const SizedBox(width: 8),
+                    Text(l10n.adjustBalance),
                   ],
                 ),
               ),
@@ -350,6 +121,45 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
                       'de ${currencyFormat.format(goal.targetAmount)}',
                       style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                     ),
+                  const SizedBox(height: 20),
+                  // Action buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: () => _openActionSheet(
+                            context, SavingsActionType.contribute),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(l10n.contributeButton),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Color(goal.color),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: () => _openActionSheet(
+                            context, SavingsActionType.withdraw),
+                        icon: const Icon(Icons.output, size: 18),
+                        label: Text(l10n.withdrawFunds),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.anthracite,
+                          side: BorderSide(
+                              color: Colors.grey.withValues(alpha: 0.3)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 12),
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -401,10 +211,10 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: sortedHistory.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Text('Encara no hi ha moviments.'),
+                        padding: const EdgeInsets.all(32.0),
+                        child: Text(l10n.noMovementsYet),
                       ),
                     )
                   : ListView.builder(
@@ -427,7 +237,9 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
                               ),
                             ),
                             title: Text(
-                              entry.note.isNotEmpty ? entry.note : 'Aportació',
+                              entry.note.isNotEmpty
+                                  ? entry.note
+                                  : l10n.contributionLabel,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -454,21 +266,11 @@ class SavingsGoalDetailScreen extends ConsumerWidget {
   List<FlSpot> _generateSpots(List<SavingsEntry> entries) {
     if (entries.isEmpty) return [];
 
-    // We need to calculate running total for the chart
     double runningTotal = 0;
     List<FlSpot> spots = [];
 
-    // Start with 0 at the beginning? Or just the first entry?
-    // Let's assume start at 0 before first entry if we want.
-    // simpler: just map index to amount.
-
     for (int i = 0; i < entries.length; i++) {
-      runningTotal += entries[i].amount; // Logic: history tracks contributions
-      // To prevent showing just contributions, we accumulate them.
-      // Wait, `history` in `SavingsGoal` tracks contributions (date, amount).
-      // `currentAmount` is the sum.
-      // The chart should show the accumulated total over time.
-
+      runningTotal += entries[i].amount;
       spots.add(FlSpot(i.toDouble(), runningTotal));
     }
 

@@ -410,10 +410,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nameRequired => 'Name is required';
 
   @override
-  String get adjustBalance => 'Square Balance';
+  String get adjustBalance => 'Adjust Balance';
 
   @override
-  String get withdrawFunds => 'Withdraw Funds';
+  String get withdrawFunds => 'Withdraw';
 
   @override
   String get adjustBalanceTitle => 'Adjust balance';
@@ -429,7 +429,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get balanceAdjusted => 'Balance adjusted correctly.';
 
   @override
-  String get withdrawTitle => 'Withdraw savings';
+  String get withdrawTitle => 'Withdraw funds';
 
   @override
   String get withdrawMessage =>
@@ -626,4 +626,71 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoriesLabel => 'Categories';
+
+  @override
+  String get coachChatTitle => 'Cèntim Coach';
+
+  @override
+  String get coachChatWelcome =>
+      'Hi! 👋 I\'m your financial coach. Ask me anything about your movements, budgets or savings.';
+
+  @override
+  String get coachChatHint => 'Type your question...';
+
+  @override
+  String get coachSuggestion1 => 'How much did I spend on food last month?';
+
+  @override
+  String get coachSuggestion2 => 'Which categories are over budget?';
+
+  @override
+  String get coachSuggestion3 => 'What\'s my average savings?';
+
+  @override
+  String get coachAskButton => 'Ask the Coach';
+
+  @override
+  String get coachNewConversation => 'New conversation';
+
+  @override
+  String get contributeButton => 'Contribute';
+
+  @override
+  String get contributeTitle => 'Contribute to savings';
+
+  @override
+  String get contributeMessage => 'How much do you want to contribute?';
+
+  @override
+  String get contributeAmountLabel => 'Amount to contribute (€)';
+
+  @override
+  String contributedSuccess(Object amount) {
+    return 'Contributed $amount€ successfully.';
+  }
+
+  @override
+  String get adjustBalanceHint =>
+      'This adjustment will create an automatic balance movement';
+
+  @override
+  String get savingsNotePlaceholder => 'Note (optional)';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get accountLabel => 'Account';
+
+  @override
+  String get noAccountsAvailable => 'No liquid accounts available';
+
+  @override
+  String get selectAccount => 'Select an account';
+
+  @override
+  String get noAccount => 'No account';
+
+  @override
+  String get insufficientFunds => 'Insufficient funds in the savings goal';
 }

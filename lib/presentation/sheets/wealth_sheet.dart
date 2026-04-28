@@ -48,6 +48,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
   // Asset Fields
   final _assetValueController = TextEditingController();
   String _assetType = 'Altres';
+  bool _assetTypeInitialized = false;
+  AssetType? _rawAssetType; // Per desar el tipus fins que context estigui disponible
 
   String? _selectedBankOption; // 'CaixaBank', 'ING', 'Targeta YOU', 'Altres'
 
@@ -60,8 +62,28 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_assetType == 'Altres') {
-      _assetType = AppLocalizations.of(context)!.assetTypeOther;
+    if (!_assetTypeInitialized) {
+      _assetTypeInitialized = true;
+      final l10n = AppLocalizations.of(context)!;
+      if (_rawAssetType != null) {
+        // Edició d'un actiu existent: convertir AssetType a String localitzat
+        switch (_rawAssetType!) {
+          case AssetType.realEstate:
+            _assetType = l10n.assetTypeRealEstate;
+            break;
+          case AssetType.bankAccount:
+            _assetType = l10n.assetTypeBankAccount;
+            break;
+          case AssetType.cash:
+            _assetType = l10n.assetTypeCash;
+            break;
+          case AssetType.other:
+            _assetType = l10n.assetTypeOther;
+            break;
+        }
+      } else {
+        _assetType = l10n.assetTypeOther;
+      }
     }
   }
 
@@ -94,20 +116,8 @@ class _WealthSheetState extends ConsumerState<WealthSheet> {
       _nameController.text = widget.initialAsset!.name;
       _assetValueController.text = widget.initialAsset!.amount.toString();
 
-      switch (widget.initialAsset!.type) {
-        case AssetType.realEstate:
-          _assetType = AppLocalizations.of(context)!.assetTypeRealEstate;
-          break;
-        case AssetType.bankAccount:
-          _assetType = AppLocalizations.of(context)!.assetTypeBankAccount;
-          break;
-        case AssetType.cash:
-          _assetType = AppLocalizations.of(context)!.assetTypeCash;
-          break;
-        case AssetType.other:
-          _assetType = AppLocalizations.of(context)!.assetTypeOther;
-          break;
-      }
+      // Guardem el tipus raw; la conversió a String localitzat es fa a didChangeDependencies()
+      _rawAssetType = widget.initialAsset!.type;
 
       if (widget.initialAsset!.bankName != null) {
         _bankController.text = widget.initialAsset!.bankName!;

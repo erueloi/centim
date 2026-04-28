@@ -14,6 +14,7 @@ import '../screens/budget/annual_budget_screen.dart'; // Keep for navigation
 import '../../../domain/models/billing_cycle.dart';
 import '../../../domain/models/budget_entry.dart';
 import '../../../data/providers/repository_providers.dart';
+import '../providers/budget_provider.dart';
 
 class SubCategoryEditorSheet extends ConsumerStatefulWidget {
   final Category category;
@@ -220,6 +221,8 @@ class _SubCategoryEditorSheetState
           await repo.setEntry(groupId, entry);
         }
       }
+      // Force refresh of the balance footer
+      ref.invalidate(zeroBudgetBalanceProvider);
     }
 
     if (mounted) Navigator.pop(context);

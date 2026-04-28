@@ -504,6 +504,9 @@ class _SubcategoryRow extends ConsumerWidget {
                 await repo.setEntry(groupId, entry);
               }
 
+              ref.invalidate(budgetNotifierProvider);
+              ref.invalidate(dashboardBudgetNotifierProvider);
+
               if (context.mounted) Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(

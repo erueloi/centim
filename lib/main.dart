@@ -17,8 +17,9 @@ void main() async {
 
   try {
     await dotenv.load(fileName: ".env");
+    debugPrint('✅ .env loaded. GEMINI_API_KEY present: ${dotenv.env.containsKey('GEMINI_API_KEY')}');
   } catch (e) {
-    debugPrint('.env file not found. AI features might not work.');
+    debugPrint('⚠️ .env load error: ${e.runtimeType} - $e');
   }
 
   runApp(const ProviderScope(child: MyApp()));

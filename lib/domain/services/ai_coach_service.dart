@@ -1,12 +1,63 @@
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/financial_summary.dart';
-import '../../domain/models/billing_cycle.dart';
+import '../models/billing_cycle.dart';
+import '../models/chat_message.dart';
 
 class AiCoachService {
   final String _modelName = 'gemini-2.5-flash';
 
-  Future<String> getInsight({
+  /// Chat conversacional: envia una pregunta amb context financer complet.
+  Future<String> askQuestion({
+    required String question,
+    required String financialContext,
+    required List<ChatMessage> conversationHistory,
+    required String userName,
+  }) async {
+    final apiKey = _getApiKey();
+
+    final model = GenerativeModel(
+      model: _modelName,
+      apiKey: apiKey,
+      systemInstruction: Content.system('''
+Ets el 'Cèntim Coach', l'assistent financer personal de $userName. Ets un expert analitzant dades financeres personals.
+
+CONTEXT FINANCER (dades reals de l'usuari):
+$financialContext
+
+INSTRUCCIONS:
+1. Respon SEMPRE en Català.
+2. Basa les teves respostes EXCLUSIVAMENT en les dades del context financer proporcionat. Si no tens dades suficients per respondre, digues-ho clarament.
+3. Quan l'usuari pregunta per una categoria o concepte, busca a les transaccions per nom de categoria, subcategoria o concepte (cerca parcial, case-insensitive).
+4. Quan l'usuari pregunta per un mes, filtra les transaccions pel rang de dates dels cicles de facturació corresponents.
+5. Respon de forma concisa i directa. Utilitza emojis per fer-ho acollidor.
+6. Si dones xifres, arrodoneix a 2 decimals i afegeix el símbol €.
+7. Si l'usuari no especifica un mes concret i pregunta sobre hàbits, fes una mitjana dels cicles disponibles.
+8. El to ha de ser empàtic, motivador i còmplice. Mai renyis per gastar massa.
+'''),
+    );
+
+    // Construir historial de conversa per a Gemini
+    final contents = <Content>[];
+    for (final msg in conversationHistory) {
+      if (msg.isUser) {
+        contents.add(Content.text(msg.text));
+      } else {
+        contents.add(Content.model([TextPart(msg.text)]));
+      }
+    }
+    // Afegir la pregunta actual
+    contents.add(Content.text(question));
+
+    final response = await model.generateContent(contents);
+
+    return response.text?.trim() ??
+        "Ho sento, no he pogut processar la teva pregunta. Prova-ho de nou! 🤔";
+  }
+
+  /// Genera el veredicte IA per a un informe de cicle tancat.
+  /// Manté el comportament original dels CycleReports.
+  Future<String> generateCycleVerdict({
     required String userName,
     required FinancialSummary summary,
     required BillingCycle activeCycle,
@@ -16,19 +67,13 @@ class AiCoachService {
     required List<Map<String, dynamic>> unexpectedExpenses,
     bool isHistorical = false,
   }) async {
-    final apiKey = dotenv.env['GEMINI_API_KEY'];
-    if (apiKey == null ||
-        apiKey.isEmpty ||
-        apiKey == 'posa_la_teva_clau_aqui') {
-      throw Exception(
-          'API Key no configurada. Si us plau, afegeix-la al fitxer .env.');
-    }
+    final apiKey = _getApiKey();
 
     final model = GenerativeModel(
       model: _modelName,
       apiKey: apiKey,
       systemInstruction: Content.system('''
-Ets el 'Cèntim Coach', l'assistent financer personal de l'Eloi i el Jose. Saps que estan enmig de la gran aventura de reformar una Masia del 1768 a la Floresta 🏡.
+Ets el 'Cèntim Coach', l'assistent financer personal de $userName. Saps que estan enmig de la gran aventura de reformar una Masia del 1768 a la Floresta 🏡.
 
 To i Actitud: 
 El teu to ha de ser assertiu, super empàtic, motivador, còmplice i divertit. Tens totalment prohibit fer-los sentir culpables, renyar-los de forma agressiva o fer-los posar tristos.
@@ -44,7 +89,7 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
 '''),
     );
 
-    final contextJson = _prepareContextJson(
+    final contextJson = _prepareCycleContextJson(
       summary: summary,
       activeCycle: activeCycle,
       categoryExpenses: categoryExpenses,
@@ -60,7 +105,18 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
     return response.text?.trim() ?? "Ho sento, m'he quedat sense paraules!";
   }
 
-  String _prepareContextJson({
+  String _getApiKey() {
+    final apiKey = dotenv.env['GEMINI_API_KEY'];
+    if (apiKey == null ||
+        apiKey.isEmpty ||
+        apiKey == 'posa_la_teva_clau_aqui') {
+      throw Exception(
+          'API Key no configurada. Si us plau, afegeix-la al fitxer .env.');
+    }
+    return apiKey;
+  }
+
+  String _prepareCycleContextJson({
     required FinancialSummary summary,
     required BillingCycle activeCycle,
     required Map<String, double> categoryExpenses,
@@ -72,7 +128,6 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
     // Calculate month elapsed percentage
     final totalDays =
         activeCycle.endDate.difference(activeCycle.startDate).inDays;
-    // Prevent division by zero if start and end are the same day
     final safeTotalDays = totalDays > 0 ? totalDays : 1;
 
     int monthElapsedPercentage = 100;
@@ -97,13 +152,11 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
       final spent = categoryExpenses[category] ?? 0.0;
       final budget = categoryBudgets[category] ?? 0.0;
 
-      // Calculate deviation. E.g. spent 150, budget 100 -> deviation is +50
       if (budget > 0) {
         deviations[category] = spent - budget;
       }
     }
 
-    // Sort by largest deviation (overspending)
     final sortedCategories = deviations.keys.toList()
       ..sort((a, b) => (deviations[b]!).compareTo(deviations[a]!));
 
@@ -131,8 +184,7 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
 
     // Savings status
     final savingsStatus = {
-      'estalvi_previst': summary
-          .availableToSpend, // In zero-based, availableToSpend should ideally be 0, but if positive means we could save more
+      'estalvi_previst': summary.availableToSpend,
       'percentatge_estalvi_actual': summary.savingsPercentage.round(),
     };
 

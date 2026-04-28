@@ -51,21 +51,10 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
     final incomesByCategory = <String, double>{};
     final expensesByCategory = <String, double>{};
 
-    // Internal totals including everything (for availableToSpend)
-    double internalTotalIncome = 0.0;
-    double internalTotalExpense = 0.0;
-
     double savedThisCycle = 0.0;
     double withdrawnThisCycle = 0.0;
 
     for (final t in currentMonthTransactions) {
-      // Calculate internal balance impact
-      if (t.isIncome) {
-        internalTotalIncome += t.amount;
-      } else {
-        internalTotalExpense += t.amount;
-      }
-
       // EXCLUSION: If it's a savings goal movement, don't include in categorized charts or "External" totals
       final isSavingsMovement = t.savingsGoalId != null ||
           linkedSavingsSubIds.contains(t.subCategoryId);
@@ -123,8 +112,8 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
                 linkedSavingsSubIds.contains(t.subCategoryId)))
         .fold(0.0, (sum, t) => sum + t.amount);
 
-    // Balance available reflects real cash flow including internal transfers from savings
-    final availableToSpend = internalTotalIncome - internalTotalExpense;
+    // Balance available reflects categorized cash flow (excluding savings movements)
+    final availableToSpend = monthlyIncomeExternal - monthlyExpensesExternal;
 
     // 10/30/60 Metrics (based on categorized expenses)
     // Savings: transactions in savings categories (external contributions, not internal transfers)

@@ -1,5 +1,9 @@
 ﻿# Release Notes
 
+## v1.2.13
+Inici: Coach obert per a fer consultes generals.
+Donut: Informació sense estalvi.
+Guardioles: Aportaicó i retirada millorat
 ## v1.2.12
 Heatmap: Incorporat una fila de total i filtre de 12 cicles per defecte.
 Inici: Redistribució visual.
@@ -85,6 +89,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
