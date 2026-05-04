@@ -89,9 +89,7 @@ class TransactionNotifier extends _$TransactionNotifier {
             SavingsEntry(
               date: transaction.date,
               amount: effectiveAmount,
-              note: isWithdrawal
-                  ? 'Retirada automàtica: ${transaction.concept}'
-                  : 'Aportació automàtica: ${transaction.concept}',
+              note: transaction.concept,
             ),
           ],
         );

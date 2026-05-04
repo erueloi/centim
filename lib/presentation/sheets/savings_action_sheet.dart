@@ -150,7 +150,7 @@ class _SavingsActionSheetState extends ConsumerState<SavingsActionSheet> {
       subCategoryName: resolvedSubCategoryName,
       payer: payer,
       isIncome: _isWithdraw,
-      savingsGoalId: widget.goal.id,
+      savingsGoalId: null,
       accountId: _selectedAccountId,
     );
 

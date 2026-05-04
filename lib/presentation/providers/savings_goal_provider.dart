@@ -138,7 +138,6 @@ class SavingsGoalNotifier extends _$SavingsGoalNotifier {
     if (newAmount == goal.currentAmount) return;
 
     final difference = newAmount - goal.currentAmount;
-    final isPositiveAdjustment = difference > 0;
 
     // 1. Update Goal
     final newEntry = SavingsEntry(
@@ -153,52 +152,5 @@ class SavingsGoalNotifier extends _$SavingsGoalNotifier {
     );
     await repo.updateSavingsGoal(updatedGoal);
 
-    // 2. Find real category/subcategory linked to this goal
-    final categories = await ref.read(categoryNotifierProvider.future);
-    String categoryId = 'savings_category_id';
-    String subCategoryId = 'adjustment_sub';
-    String categoryName = 'Estalvi';
-    String subCategoryName = 'Ajust';
-
-    for (var cat in categories) {
-      for (var sub in cat.subcategories) {
-        if (sub.linkedSavingsGoalId == goalId) {
-          categoryId = cat.id;
-          subCategoryId = sub.id;
-          categoryName = cat.name;
-          subCategoryName = sub.name;
-          break;
-        }
-      }
-    }
-
-    // 3. Use real payer name
-    final userProfile = ref.read(userProfileProvider).valueOrNull;
-    final payer =
-        userProfile?.name ?? userProfile?.email.split('@').first ?? 'User';
-
-    // 4. Create Transaction to balance the main budget
-    final transactionRepo = ref.read(transactionRepositoryProvider);
-
-    final transaction = Transaction(
-      id: null,
-      groupId: groupId,
-      date: DateTime.now(),
-      amount: difference.abs(),
-      concept: 'Ajust de saldo a ${goal.name}',
-      categoryId: categoryId,
-      subCategoryId: subCategoryId,
-      categoryName: categoryName,
-      subCategoryName: subCategoryName,
-      payer: payer,
-      // If positive adjustment (added to goal), it's an expense from main budget
-      // If negative adjustment (removed from goal), it's an income to main budget
-      isIncome: !isPositiveAdjustment,
-      // If it's a withdrawal (negative difference -> income),
-      // do NOT set savingsGoalId here because we ALREADY updated the goal above.
-      // TransactionNotifier deducts from goal if savingsGoalId is set.
-    );
-
-    await transactionRepo.addTransaction(transaction);
   }
 }

@@ -126,19 +126,29 @@ class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
                           );
                         }
 
-                        return ListView.separated(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          itemCount: filteredStatuses.length,
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final status = filteredStatuses[index];
-                            return _BudgetCard(
-                              status: status,
-                              type: _selectedType, // Pass type for color logic
-                              isReadOnly: widget.isReadOnly,
-                            );
-                          },
+                        return Column(
+                          children: [
+                            Expanded(
+                              child: ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                itemCount: filteredStatuses.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  final status = filteredStatuses[index];
+                                  return _BudgetCard(
+                                    status: status,
+                                    type: _selectedType,
+                                    isReadOnly: widget.isReadOnly,
+                                  );
+                                },
+                              ),
+                            ),
+                            _GlobalBudgetSummary(
+                              statuses: filteredStatuses,
+                              type: _selectedType,
+                            ),
+                          ],
                         );
                       },
                       loading: () =>
@@ -912,6 +922,138 @@ class _CategoryTrendsCharts extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _GlobalBudgetSummary extends StatelessWidget {
+  final List<BudgetStatus> statuses;
+  final TransactionType type;
+
+  const _GlobalBudgetSummary({required this.statuses, required this.type});
+
+  @override
+  Widget build(BuildContext context) {
+    double totalBudget = 0.0;
+    for (final s in statuses) {
+      for (final sub in s.subcategoryStatuses) {
+        if (sub.subcategory.linkedSavingsGoalId == null) {
+          totalBudget += sub.budget;
+        }
+      }
+    }
+    double totalSpent = 0.0;
+    for (final s in statuses) {
+      for (final sub in s.subcategoryStatuses) {
+        if (sub.subcategory.linkedSavingsGoalId == null) {
+          totalSpent += sub.spent;
+        }
+      }
+    }
+    final remaining = totalBudget - totalSpent;
+    final isExpense = type == TransactionType.expense;
+
+    if (totalBudget == 0 && totalSpent == 0) return const SizedBox.shrink();
+
+    final isNegative = remaining < 0;
+    
+    Color panelColor = AppTheme.anthracite;
+    Color onPanelColor = Colors.white;
+    if (isExpense && isNegative) {
+       panelColor = const Color(0xFFB71C1C); 
+    } else if (!isExpense && isNegative) {
+       panelColor = const Color(0xFF2E7D32); 
+    }
+    
+    final percentage = totalBudget > 0 ? (totalSpent / totalBudget).clamp(0.0, 1.0) : (totalSpent > 0 ? 1.0 : 0.0);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: panelColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  isExpense ? 'MARGE LLIURE GLOBAL' : 'PENDENT D\'INGRESSAR',
+                  style: TextStyle(
+                    color: onPanelColor.withValues(alpha: 0.7),
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+                Text(
+                  '${totalSpent.toStringAsFixed(2).replaceAll('.', ',')}€ / ${totalBudget.toStringAsFixed(2).replaceAll('.', ',')}€',
+                  style: TextStyle(
+                    color: onPanelColor.withValues(alpha: 0.7),
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    isExpense 
+                      ? (isNegative ? '${remaining.toStringAsFixed(2).replaceAll('.', ',')}€' : '${remaining.toStringAsFixed(2).replaceAll('.', ',')}€ restants')
+                      : (isNegative ? '+${remaining.abs().toStringAsFixed(2).replaceAll('.', ',')}€ extra!' : '${remaining.toStringAsFixed(2).replaceAll('.', ',')}€ restants'),
+                    style: TextStyle(
+                      color: onPanelColor,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (isNegative)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      isExpense ? 'Pressupost superat' : 'Objectiu superat',
+                      style: TextStyle(
+                        color: onPanelColor,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: percentage,
+                backgroundColor: Colors.white.withValues(alpha: 0.2),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isExpense && isNegative ? Colors.redAccent : (isExpense ? AppTheme.copper : Colors.greenAccent),
+                ),
+                minHeight: 6,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
