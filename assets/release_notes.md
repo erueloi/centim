@@ -1,5 +1,7 @@
 ﻿# Release Notes
 
+## v1.2.15
+Inici: Bugfix quadre de text Coach.
 ## v1.2.14
 Patrimoni: Bugfix retirada i ingrés guardiola.
 Detall: Barra de progrés real.
@@ -92,6 +94,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

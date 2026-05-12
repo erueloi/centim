@@ -352,7 +352,7 @@ class _CoachChatSheetState extends ConsumerState<CoachChatSheet> {
         right: 8,
         top: 8,
         bottom: MediaQuery.of(context).viewInsets.bottom > 0
-            ? 8
+            ? MediaQuery.of(context).viewInsets.bottom + 8
             : MediaQuery.of(context).padding.bottom + 8,
       ),
       decoration: BoxDecoration(
