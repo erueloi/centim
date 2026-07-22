@@ -39,6 +39,7 @@ class _SubCategoryEditorSheetState
   late TextEditingController _amountController;
   late bool _isFixed;
   late bool _isWatched;
+  late bool _archived;
   late PaymentTiming _paymentTiming;
   int _paymentDay = 1;
   String? _selectedPayerId;
@@ -58,6 +59,7 @@ class _SubCategoryEditorSheetState
     );
     _isFixed = widget.subCategory?.isFixed ?? false;
     _isWatched = widget.subCategory?.isWatched ?? false;
+    _archived = widget.subCategory?.archived ?? false;
     _paymentTiming =
         widget.subCategory?.paymentTiming ?? PaymentTiming.specificDay;
     _paymentDay = widget.subCategory?.paymentDay ?? 1;
@@ -139,6 +141,29 @@ class _SubCategoryEditorSheetState
       return;
     }
 
+    if (_archived && (_linkedSavingsGoalId != null || _linkedDebtId != null)) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Arxivar subcategoria enllaçada'),
+          content: const Text(
+            'Aquesta subcategoria té un deute o guardiola vinculada. Es mantindrà l\'enllaç però s\'ocultarà del pressupost i selectors actius. Vols continuar?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel·lar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Sí, arxivar'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+
     final amount = double.tryParse(_amountController.text) ?? 0.0;
 
     // When editing a specific month, save as BudgetEntry override
@@ -152,6 +177,7 @@ class _SubCategoryEditorSheetState
           monthlyBudget: baseAmount,
           isFixed: _isFixed,
           isWatched: _isWatched,
+          archived: _archived,
           paymentTiming: _paymentTiming,
           paymentDay: (_isFixed && _paymentTiming == PaymentTiming.specificDay)
               ? _paymentDay
@@ -166,6 +192,7 @@ class _SubCategoryEditorSheetState
           monthlyBudget: baseAmount,
           isFixed: _isFixed,
           isWatched: _isWatched,
+          archived: _archived,
           paymentTiming: _paymentTiming,
           paymentDay: (_isFixed && _paymentTiming == PaymentTiming.specificDay)
               ? _paymentDay
@@ -601,6 +628,22 @@ class _SubCategoryEditorSheetState
               ),
               child: Column(
                 children: [
+                  if (widget.subCategory != null) ...[
+                    SwitchListTile(
+                      title: const Text(
+                        '📦 Arxivar Subcategoria',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: const Text(
+                        'S\'amagarà de l\'editor de pressupost i selectors actius, conservant la història.',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                      value: _archived,
+                      onChanged: (val) => setState(() => _archived = val),
+                      activeTrackColor: Colors.orange,
+                    ),
+                    const Divider(),
+                  ],
                   SwitchListTile(
                     title: const Text(
                       '👁 Vigilar al Dashboard',

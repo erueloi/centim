@@ -24,6 +24,7 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
   late TextEditingController _nameController;
   late String _selectedIcon;
   late TransactionType _selectedType;
+  late bool _isArchived;
   int? _selectedColor;
 
   final List<String> _commonEmojis = [
@@ -81,6 +82,7 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
     _selectedIcon = widget.category?.icon ?? '🏠';
     _selectedType = widget.category?.type ?? widget.initialType;
     _selectedColor = widget.category?.color;
+    _isArchived = widget.category?.archived ?? false;
   }
 
   @override
@@ -155,6 +157,7 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
           icon: _selectedIcon,
           type: _selectedType,
           color: _selectedColor,
+          archived: _isArchived,
         ) ??
         Category(
           id: const Uuid().v4(),
@@ -162,6 +165,7 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
           icon: _selectedIcon,
           type: _selectedType,
           color: _selectedColor,
+          archived: _isArchived,
         );
 
     if (widget.category == null) {
@@ -330,6 +334,20 @@ class _CategoryEditorSheetState extends ConsumerState<CategoryEditorSheet> {
                 }).toList(),
               ),
             ),
+            if (widget.category != null) ...[
+              const SizedBox(height: 16),
+              SwitchListTile(
+                title: const Text('📦 Arxivar Categoria',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: const Text(
+                  'S\'amagarà dels selectors i pressupostos actius, conservant la història.',
+                  style: TextStyle(fontSize: 12),
+                ),
+                value: _isArchived,
+                onChanged: (val) => setState(() => _isArchived = val),
+                activeTrackColor: Colors.orange,
+              ),
+            ],
             const SizedBox(height: 32),
 
             // Save Button

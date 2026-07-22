@@ -26,7 +26,7 @@ final currentMonthBudgetEntriesProvider =
 // ignore: unused_element
 typedef CurrentMonthBudgetEntriesRef
     = AutoDisposeStreamProviderRef<List<BudgetEntry>>;
-String _$zeroBudgetBalanceHash() => r'2b5006c7a7f947b24698fa78f9ab8bd0b314717c';
+String _$zeroBudgetBalanceHash() => r'a898bfa173d7ab97f747b52eecc96b6520c4aba4';
 
 /// See also [zeroBudgetBalance].
 @ProviderFor(zeroBudgetBalance)

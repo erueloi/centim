@@ -225,11 +225,19 @@ class _ManageCategoriesScreenState
                   key: ValueKey('${selectedCycle?.id}_$_selectedType'),
                   child: categoriesAsync.when(
                     data: (categories) {
-                      final filteredCategories = categories
+                      final filteredTypeCategories = categories
                           .where((c) => c.type == _selectedType)
                           .toList();
 
-                      if (filteredCategories.isEmpty) {
+                      final activeCategories = filteredTypeCategories
+                          .where((c) => !c.archived)
+                          .toList();
+
+                      final archivedCategories = filteredTypeCategories
+                          .where((c) => c.archived)
+                          .toList();
+
+                      if (activeCategories.isEmpty && archivedCategories.isEmpty) {
                         return Center(
                           key: ValueKey('empty_$_selectedType'),
                           child: Column(
@@ -261,41 +269,76 @@ class _ManageCategoriesScreenState
                           ),
                         );
                       }
-                      return ReorderableListView.builder(
+                      return ListView(
                         key: ValueKey(
                           'list_${selectedCycle?.id}_$_selectedType',
                         ),
-                        buildDefaultDragHandles: false,
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        itemCount: filteredCategories.length,
-                        itemBuilder: (context, index) {
-                          final category = filteredCategories[index];
-                          return Container(
-                            key: ValueKey(category.id),
-                            child: _CategoryTile(
-                              category: category,
-                              index: index,
-                            ),
-                          );
-                        },
-                        onReorder: (oldIndex, newIndex) {
-                          if (oldIndex < newIndex) newIndex -= 1;
-                          final item = filteredCategories.removeAt(oldIndex);
-                          filteredCategories.insert(newIndex, item);
+                        children: [
+                          if (activeCategories.isNotEmpty)
+                            ReorderableListView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              buildDefaultDragHandles: false,
+                              itemCount: activeCategories.length,
+                              itemBuilder: (context, index) {
+                                final category = activeCategories[index];
+                                return Container(
+                                  key: ValueKey(category.id),
+                                  child: _CategoryTile(
+                                    category: category,
+                                    index: index,
+                                  ),
+                                );
+                              },
+                              onReorder: (oldIndex, newIndex) {
+                                if (oldIndex < newIndex) newIndex -= 1;
+                                final item = activeCategories.removeAt(oldIndex);
+                                activeCategories.insert(newIndex, item);
 
-                          final offset = _selectedType == TransactionType.income
-                              ? 10000
-                              : 0;
-                          final updatedCategories = <Category>[];
-                          for (int i = 0; i < filteredCategories.length; i++) {
-                            updatedCategories.add(
-                              filteredCategories[i].copyWith(order: offset + i),
-                            );
-                          }
-                          ref
-                              .read(categoryNotifierProvider.notifier)
-                              .updateCategoriesOrder(updatedCategories);
-                        },
+                                final offset =
+                                    _selectedType == TransactionType.income
+                                        ? 10000
+                                        : 0;
+                                final updatedCategories = <Category>[];
+                                for (int i = 0;
+                                    i < activeCategories.length;
+                                    i++) {
+                                  updatedCategories.add(
+                                    activeCategories[i].copyWith(order: offset + i),
+                                  );
+                                }
+                                ref
+                                    .read(categoryNotifierProvider.notifier)
+                                    .updateCategoriesOrder(updatedCategories);
+                              },
+                            ),
+                          if (archivedCategories.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            Theme(
+                              data: Theme.of(context).copyWith(
+                                dividerColor: Colors.transparent,
+                              ),
+                              child: ExpansionTile(
+                                leading: const Icon(Icons.archive_outlined,
+                                    color: Colors.grey),
+                                title: Text(
+                                  'Categories Arxivades (${archivedCategories.length})',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                                children: archivedCategories.map((cat) {
+                                  return _CategoryTile(
+                                    category: cat,
+                                    index: -1,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                        ],
                       );
                     },
                     loading: () =>
@@ -695,6 +738,14 @@ class _CategoryTile extends ConsumerWidget {
                         backgroundColor: Colors.white,
                         builder: (_) => CategoryEditorSheet(category: category),
                       );
+                    } else if (value == 'archive') {
+                      ref
+                          .read(categoryNotifierProvider.notifier)
+                          .updateCategory(category.copyWith(archived: true));
+                    } else if (value == 'unarchive') {
+                      ref
+                          .read(categoryNotifierProvider.notifier)
+                          .updateCategory(category.copyWith(archived: false));
                     } else if (value == 'delete') {
                       _deleteCategory(context, ref, category);
                     }
@@ -710,6 +761,28 @@ class _CategoryTile extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    if (!category.archived)
+                      const PopupMenuItem(
+                        value: 'archive',
+                        child: Row(
+                          children: [
+                            Icon(Icons.archive_outlined, size: 18, color: Colors.orange),
+                            SizedBox(width: 8),
+                            Text('Arxivar', style: TextStyle(color: Colors.orange)),
+                          ],
+                        ),
+                      )
+                    else
+                      const PopupMenuItem(
+                        value: 'unarchive',
+                        child: Row(
+                          children: [
+                            Icon(Icons.unarchive_outlined, size: 18, color: Colors.green),
+                            SizedBox(width: 8),
+                            Text('Desarxivar', style: TextStyle(color: Colors.green)),
+                          ],
+                        ),
+                      ),
                     const PopupMenuItem(
                       value: 'delete',
                       child: Row(
@@ -794,13 +867,40 @@ class _CategoryTile extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  sub.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
+                                 Row(
+                                   children: [
+                                     Text(
+                                       sub.name,
+                                       style: TextStyle(
+                                         fontWeight: FontWeight.bold,
+                                         fontSize: 16,
+                                         color: sub.archived
+                                             ? Colors.grey
+                                             : AppTheme.anthracite,
+                                       ),
+                                     ),
+                                     if (sub.archived) ...[
+                                       const SizedBox(width: 6),
+                                       Container(
+                                         padding: const EdgeInsets.symmetric(
+                                             horizontal: 6, vertical: 2),
+                                         decoration: BoxDecoration(
+                                           color: Colors.orange.shade100,
+                                           borderRadius:
+                                               BorderRadius.circular(6),
+                                         ),
+                                         child: Text(
+                                           'Arxivada 📦',
+                                           style: TextStyle(
+                                             fontSize: 10,
+                                             fontWeight: FontWeight.bold,
+                                             color: Colors.orange.shade900,
+                                           ),
+                                         ),
+                                       ),
+                                     ],
+                                   ],
+                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   'Pressupost: ${subBudget.toStringAsFixed(2)} €${isOverride ? ' (base: ${sub.monthlyBudget.toStringAsFixed(0)}€)' : ''} | $fixText',
@@ -1022,6 +1122,47 @@ Future<void> _deleteCategory(
   WidgetRef ref,
   Category category,
 ) async {
+  final groupId = ref.read(currentGroupIdProvider).valueOrNull;
+  if (groupId == null) return;
+
+  final repo = ref.read(transactionRepositoryProvider);
+  int totalTxCount = 0;
+  for (final sub in category.subcategories) {
+    totalTxCount += await repo.countBySubCategory(groupId, sub.id);
+  }
+
+  if (!context.mounted) return;
+
+  if (totalTxCount > 0) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('No es pot eliminar'),
+        content: Text(
+          'Aquesta categoria té $totalTxCount moviments associats. En lloc d\'eliminar-la, pots utilitzar l\'opció "Arxivar" per ocultar-la conservant tota la història.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('D\'acord'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final updatedCategory = category.copyWith(archived: true);
+              await ref
+                  .read(categoryNotifierProvider.notifier)
+                  .updateCategory(updatedCategory);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.copper, foregroundColor: Colors.white),
+            child: const Text('Arxivar ara'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
   final confirm = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(

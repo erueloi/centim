@@ -134,7 +134,7 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
                       return categoriesAsync.when(
                         data: (categories) {
                           final filteredCats = categories
-                              .where((c) => c.type == _expandedType)
+                              .where((c) => c.type == _expandedType && !c.archived)
                               .toList();
                           if (filteredCats.isEmpty) {
                             return Center(

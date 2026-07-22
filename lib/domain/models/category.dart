@@ -15,6 +15,7 @@ class Category with _$Category {
     @Default(TransactionType.expense) TransactionType type,
     int? order,
     int? color, // Color value as int (0xAARRGGBB)
+    @Default(false) bool archived,
   }) = _Category;
 
   factory Category.fromJson(Map<String, dynamic> json) =>
@@ -31,6 +32,7 @@ class SubCategory with _$SubCategory {
     required double monthlyBudget,
     @Default(false) bool isFixed,
     @Default(false) bool isWatched,
+    @Default(false) bool archived,
     String? defaultPayerId, // Who usually pays this
     int? paymentDay, // Day of month (1-31) for fixed expenses
     @Default(PaymentTiming.specificDay) PaymentTiming paymentTiming,

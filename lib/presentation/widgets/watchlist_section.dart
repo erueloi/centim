@@ -70,10 +70,13 @@ class WatchlistSection extends ConsumerWidget {
                     final List<_WatchlistItemData> alerts = [];
 
                     for (var category in categories) {
-                      if (category.type == TransactionType.income) continue;
+                      if (category.type == TransactionType.income ||
+                          category.archived) {
+                        continue;
+                      }
 
                       for (var sub in category.subcategories) {
-                        if (!sub.isWatched) continue;
+                        if (!sub.isWatched || sub.archived) continue;
 
                         // Resolem el pressupost efectiu (override mensual > base)
                         final entry =

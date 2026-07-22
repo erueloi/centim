@@ -1,0 +1,14 @@
+# Compiled output
+lib/
+
+# Dependencies
+node_modules/
+
+# Firebase / Functions runtime config (may contain secrets)
+.runtimeconfig.json
+.env
+.env.*
+*.pem
+
+# Logs
+*.log

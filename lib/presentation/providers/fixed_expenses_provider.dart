@@ -17,7 +17,9 @@ List<FixedExpenseItem> fixedExpenses(Ref ref) {
 
   // 1. Flatten and find parent
   for (final category in categories) {
+    if (category.archived) continue;
     for (final sub in category.subcategories) {
+      if (sub.archived) continue;
       if (sub.isFixed) {
         fixedItems.add(FixedExpenseItem(sub, category));
       }

@@ -416,10 +416,11 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                         final filteredCategories = categories
                             .where(
                               (c) =>
+                                  !c.archived &&
                                   c.type ==
-                                  (_isIncome
-                                      ? TransactionType.income
-                                      : TransactionType.expense),
+                                      (_isIncome
+                                          ? TransactionType.income
+                                          : TransactionType.expense),
                             )
                             .toList();
 
@@ -487,7 +488,8 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
 
                     // --- SUBCATEGORIES (Conditionally Shown) ---
                     if (_selectedCategory != null &&
-                        _selectedCategory!.subcategories.isNotEmpty) ...[
+                        _selectedCategory!.subcategories
+                            .any((s) => !s.archived)) ...[
                       const SizedBox(height: 16),
                       Text(
                         'Subcategoria',
@@ -500,7 +502,9 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: _selectedCategory!.subcategories.map((sub) {
+                        children: _selectedCategory!.subcategories
+                            .where((sub) => !sub.archived)
+                            .map((sub) {
                           final isSelected = _selectedSubCategory?.id == sub.id;
                           return ChoiceChip(
                             label: Text(sub.name),

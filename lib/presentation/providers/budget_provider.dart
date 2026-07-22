@@ -142,9 +142,12 @@ List<BudgetStatus> _calculateBudgetStatus(
         !tDay.isAfter(endDay);
   }).toList();
 
-  return categories.map((category) {
-    // 1. Calculate Total Budget for this Category (sum of subcategories, considering entries)
-    final totalBudget = category.subcategories.fold(0.0, (sum, sub) {
+  return categories.where((category) => !category.archived).map((category) {
+    final activeSubcategories =
+        category.subcategories.where((sub) => !sub.archived).toList();
+
+    // 1. Calculate Total Budget for this Category (sum of active subcategories, considering entries)
+    final totalBudget = activeSubcategories.fold(0.0, (sum, sub) {
       // Find entry for this subcategory
       final entry = budgetEntries.firstWhere(
         (e) => e.subCategoryId == sub.id,
@@ -173,7 +176,7 @@ List<BudgetStatus> _calculateBudgetStatus(
     );
 
     // 3. Calculate per-subcategory status
-    final subcategoryStatuses = category.subcategories.map((sub) {
+    final subcategoryStatuses = activeSubcategories.map((sub) {
       final entry = budgetEntries.firstWhere(
         (e) => e.subCategoryId == sub.id,
         orElse: () => BudgetEntry(
@@ -275,7 +278,9 @@ Future<ZeroBudgetSummary> zeroBudgetBalance(Ref ref) async {
   double totalExpenses = 0;
 
   for (final cat in categories) {
+    if (cat.archived) continue;
     for (final sub in cat.subcategories) {
+      if (sub.archived) continue;
       // Determine effective budget
       double budget = sub.monthlyBudget;
       if (cycle != null) {

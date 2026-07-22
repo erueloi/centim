@@ -52,9 +52,11 @@ class _QuickTransactionSheetState extends ConsumerState<QuickTransactionSheet> {
       final members = await ref.read(groupMembersProvider.future);
       final payer = members.isNotEmpty ? members.first.uid : 'unknown';
 
-      // Assignem una subcategoria per defecte (la primera) per ser una entrada d'un sol tap ràpida
-      final defaultSubCat = widget.category.subcategories.isNotEmpty
-          ? widget.category.subcategories.first
+      // Assignem una subcategoria per defecte (la primera activa) per ser una entrada d'un sol tap ràpida
+      final activeSubcats =
+          widget.category.subcategories.where((s) => !s.archived).toList();
+      final defaultSubCat = activeSubcats.isNotEmpty
+          ? activeSubcats.first
           : const SubCategory(
               id: 'default',
               name: 'General',

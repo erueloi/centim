@@ -27,7 +27,9 @@ mixin _$Category {
   List<SubCategory> get subcategories => throw _privateConstructorUsedError;
   TransactionType get type => throw _privateConstructorUsedError;
   int? get order => throw _privateConstructorUsedError;
-  int? get color => throw _privateConstructorUsedError;
+  int? get color =>
+      throw _privateConstructorUsedError; // Color value as int (0xAARRGGBB)
+  bool get archived => throw _privateConstructorUsedError;
 
   /// Serializes this Category to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -51,7 +53,8 @@ abstract class $CategoryCopyWith<$Res> {
       List<SubCategory> subcategories,
       TransactionType type,
       int? order,
-      int? color});
+      int? color,
+      bool archived});
 }
 
 /// @nodoc
@@ -76,6 +79,7 @@ class _$CategoryCopyWithImpl<$Res, $Val extends Category>
     Object? type = null,
     Object? order = freezed,
     Object? color = freezed,
+    Object? archived = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -106,6 +110,10 @@ class _$CategoryCopyWithImpl<$Res, $Val extends Category>
           ? _value.color
           : color // ignore: cast_nullable_to_non_nullable
               as int?,
+      archived: null == archived
+          ? _value.archived
+          : archived // ignore: cast_nullable_to_non_nullable
+              as bool,
     ) as $Val);
   }
 }
@@ -125,7 +133,8 @@ abstract class _$$CategoryImplCopyWith<$Res>
       List<SubCategory> subcategories,
       TransactionType type,
       int? order,
-      int? color});
+      int? color,
+      bool archived});
 }
 
 /// @nodoc
@@ -148,6 +157,7 @@ class __$$CategoryImplCopyWithImpl<$Res>
     Object? type = null,
     Object? order = freezed,
     Object? color = freezed,
+    Object? archived = null,
   }) {
     return _then(_$CategoryImpl(
       id: null == id
@@ -178,6 +188,10 @@ class __$$CategoryImplCopyWithImpl<$Res>
           ? _value.color
           : color // ignore: cast_nullable_to_non_nullable
               as int?,
+      archived: null == archived
+          ? _value.archived
+          : archived // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -192,7 +206,8 @@ class _$CategoryImpl implements _Category {
       final List<SubCategory> subcategories = const [],
       this.type = TransactionType.expense,
       this.order,
-      this.color})
+      this.color,
+      this.archived = false})
       : _subcategories = subcategories;
 
   factory _$CategoryImpl.fromJson(Map<String, dynamic> json) =>
@@ -222,10 +237,14 @@ class _$CategoryImpl implements _Category {
   final int? order;
   @override
   final int? color;
+// Color value as int (0xAARRGGBB)
+  @override
+  @JsonKey()
+  final bool archived;
 
   @override
   String toString() {
-    return 'Category(id: $id, name: $name, icon: $icon, subcategories: $subcategories, type: $type, order: $order, color: $color)';
+    return 'Category(id: $id, name: $name, icon: $icon, subcategories: $subcategories, type: $type, order: $order, color: $color, archived: $archived)';
   }
 
   @override
@@ -240,13 +259,23 @@ class _$CategoryImpl implements _Category {
                 .equals(other._subcategories, _subcategories) &&
             (identical(other.type, type) || other.type == type) &&
             (identical(other.order, order) || other.order == order) &&
-            (identical(other.color, color) || other.color == color));
+            (identical(other.color, color) || other.color == color) &&
+            (identical(other.archived, archived) ||
+                other.archived == archived));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, id, name, icon,
-      const DeepCollectionEquality().hash(_subcategories), type, order, color);
+  int get hashCode => Object.hash(
+      runtimeType,
+      id,
+      name,
+      icon,
+      const DeepCollectionEquality().hash(_subcategories),
+      type,
+      order,
+      color,
+      archived);
 
   /// Create a copy of Category
   /// with the given fields replaced by the non-null parameter values.
@@ -272,7 +301,8 @@ abstract class _Category implements Category {
       final List<SubCategory> subcategories,
       final TransactionType type,
       final int? order,
-      final int? color}) = _$CategoryImpl;
+      final int? color,
+      final bool archived}) = _$CategoryImpl;
 
   factory _Category.fromJson(Map<String, dynamic> json) =
       _$CategoryImpl.fromJson;
@@ -290,7 +320,9 @@ abstract class _Category implements Category {
   @override
   int? get order;
   @override
-  int? get color;
+  int? get color; // Color value as int (0xAARRGGBB)
+  @override
+  bool get archived;
 
   /// Create a copy of Category
   /// with the given fields replaced by the non-null parameter values.
@@ -311,6 +343,7 @@ mixin _$SubCategory {
   double get monthlyBudget => throw _privateConstructorUsedError;
   bool get isFixed => throw _privateConstructorUsedError;
   bool get isWatched => throw _privateConstructorUsedError;
+  bool get archived => throw _privateConstructorUsedError;
   String? get defaultPayerId =>
       throw _privateConstructorUsedError; // Who usually pays this
   int? get paymentDay =>
@@ -342,6 +375,7 @@ abstract class $SubCategoryCopyWith<$Res> {
       double monthlyBudget,
       bool isFixed,
       bool isWatched,
+      bool archived,
       String? defaultPayerId,
       int? paymentDay,
       PaymentTiming paymentTiming,
@@ -369,6 +403,7 @@ class _$SubCategoryCopyWithImpl<$Res, $Val extends SubCategory>
     Object? monthlyBudget = null,
     Object? isFixed = null,
     Object? isWatched = null,
+    Object? archived = null,
     Object? defaultPayerId = freezed,
     Object? paymentDay = freezed,
     Object? paymentTiming = null,
@@ -395,6 +430,10 @@ class _$SubCategoryCopyWithImpl<$Res, $Val extends SubCategory>
       isWatched: null == isWatched
           ? _value.isWatched
           : isWatched // ignore: cast_nullable_to_non_nullable
+              as bool,
+      archived: null == archived
+          ? _value.archived
+          : archived // ignore: cast_nullable_to_non_nullable
               as bool,
       defaultPayerId: freezed == defaultPayerId
           ? _value.defaultPayerId
@@ -434,6 +473,7 @@ abstract class _$$SubCategoryImplCopyWith<$Res>
       double monthlyBudget,
       bool isFixed,
       bool isWatched,
+      bool archived,
       String? defaultPayerId,
       int? paymentDay,
       PaymentTiming paymentTiming,
@@ -459,6 +499,7 @@ class __$$SubCategoryImplCopyWithImpl<$Res>
     Object? monthlyBudget = null,
     Object? isFixed = null,
     Object? isWatched = null,
+    Object? archived = null,
     Object? defaultPayerId = freezed,
     Object? paymentDay = freezed,
     Object? paymentTiming = null,
@@ -485,6 +526,10 @@ class __$$SubCategoryImplCopyWithImpl<$Res>
       isWatched: null == isWatched
           ? _value.isWatched
           : isWatched // ignore: cast_nullable_to_non_nullable
+              as bool,
+      archived: null == archived
+          ? _value.archived
+          : archived // ignore: cast_nullable_to_non_nullable
               as bool,
       defaultPayerId: freezed == defaultPayerId
           ? _value.defaultPayerId
@@ -519,6 +564,7 @@ class _$SubCategoryImpl implements _SubCategory {
       required this.monthlyBudget,
       this.isFixed = false,
       this.isWatched = false,
+      this.archived = false,
       this.defaultPayerId,
       this.paymentDay,
       this.paymentTiming = PaymentTiming.specificDay,
@@ -541,6 +587,9 @@ class _$SubCategoryImpl implements _SubCategory {
   @JsonKey()
   final bool isWatched;
   @override
+  @JsonKey()
+  final bool archived;
+  @override
   final String? defaultPayerId;
 // Who usually pays this
   @override
@@ -557,7 +606,7 @@ class _$SubCategoryImpl implements _SubCategory {
 
   @override
   String toString() {
-    return 'SubCategory(id: $id, name: $name, monthlyBudget: $monthlyBudget, isFixed: $isFixed, isWatched: $isWatched, defaultPayerId: $defaultPayerId, paymentDay: $paymentDay, paymentTiming: $paymentTiming, linkedSavingsGoalId: $linkedSavingsGoalId, linkedDebtId: $linkedDebtId)';
+    return 'SubCategory(id: $id, name: $name, monthlyBudget: $monthlyBudget, isFixed: $isFixed, isWatched: $isWatched, archived: $archived, defaultPayerId: $defaultPayerId, paymentDay: $paymentDay, paymentTiming: $paymentTiming, linkedSavingsGoalId: $linkedSavingsGoalId, linkedDebtId: $linkedDebtId)';
   }
 
   @override
@@ -572,6 +621,8 @@ class _$SubCategoryImpl implements _SubCategory {
             (identical(other.isFixed, isFixed) || other.isFixed == isFixed) &&
             (identical(other.isWatched, isWatched) ||
                 other.isWatched == isWatched) &&
+            (identical(other.archived, archived) ||
+                other.archived == archived) &&
             (identical(other.defaultPayerId, defaultPayerId) ||
                 other.defaultPayerId == defaultPayerId) &&
             (identical(other.paymentDay, paymentDay) ||
@@ -593,6 +644,7 @@ class _$SubCategoryImpl implements _SubCategory {
       monthlyBudget,
       isFixed,
       isWatched,
+      archived,
       defaultPayerId,
       paymentDay,
       paymentTiming,
@@ -622,6 +674,7 @@ abstract class _SubCategory implements SubCategory {
       required final double monthlyBudget,
       final bool isFixed,
       final bool isWatched,
+      final bool archived,
       final String? defaultPayerId,
       final int? paymentDay,
       final PaymentTiming paymentTiming,
@@ -641,6 +694,8 @@ abstract class _SubCategory implements SubCategory {
   bool get isFixed;
   @override
   bool get isWatched;
+  @override
+  bool get archived;
   @override
   String? get defaultPayerId; // Who usually pays this
   @override

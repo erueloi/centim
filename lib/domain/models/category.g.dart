@@ -19,6 +19,7 @@ _$CategoryImpl _$$CategoryImplFromJson(Map<String, dynamic> json) =>
           TransactionType.expense,
       order: (json['order'] as num?)?.toInt(),
       color: (json['color'] as num?)?.toInt(),
+      archived: json['archived'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$CategoryImplToJson(_$CategoryImpl instance) =>
@@ -30,6 +31,7 @@ Map<String, dynamic> _$$CategoryImplToJson(_$CategoryImpl instance) =>
       'type': _$TransactionTypeEnumMap[instance.type]!,
       'order': instance.order,
       'color': instance.color,
+      'archived': instance.archived,
     };
 
 const _$TransactionTypeEnumMap = {
@@ -44,6 +46,7 @@ _$SubCategoryImpl _$$SubCategoryImplFromJson(Map<String, dynamic> json) =>
       monthlyBudget: (json['monthlyBudget'] as num).toDouble(),
       isFixed: json['isFixed'] as bool? ?? false,
       isWatched: json['isWatched'] as bool? ?? false,
+      archived: json['archived'] as bool? ?? false,
       defaultPayerId: json['defaultPayerId'] as String?,
       paymentDay: (json['paymentDay'] as num?)?.toInt(),
       paymentTiming:
@@ -60,6 +63,7 @@ Map<String, dynamic> _$$SubCategoryImplToJson(_$SubCategoryImpl instance) =>
       'monthlyBudget': instance.monthlyBudget,
       'isFixed': instance.isFixed,
       'isWatched': instance.isWatched,
+      'archived': instance.archived,
       'defaultPayerId': instance.defaultPayerId,
       'paymentDay': instance.paymentDay,
       'paymentTiming': _$PaymentTimingEnumMap[instance.paymentTiming]!,

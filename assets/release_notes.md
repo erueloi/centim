@@ -1,5 +1,8 @@
 ﻿# Release Notes
 
+## v1.2.16
+Categories: Arxivar categories que ja no fem anar.
+Functions: Sandbox de sincronització.
 ## v1.2.15
 Inici: Bugfix quadre de text Coach.
 ## v1.2.14
@@ -94,6 +97,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
