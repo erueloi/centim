@@ -5,11 +5,13 @@ import { getFirestore } from "firebase-admin/firestore";
 import {
   REGION,
   ASPSP_NAME,
+  ASPSP_COUNTRY,
   aspspSlug,
   bankConnectionDoc,
   ALL_EB_SECRETS,
   resolveEbCredentials,
 } from "./config.js";
+import { buildPsuHeaders } from "./psuHeaders.js";
 import {
   buildEnableBankingJwt,
   enableBankingFetch,
@@ -36,7 +38,11 @@ interface EbTransaction {
   remittance_information?: string[];
   creditor?: { name?: string };
   debtor?: { name?: string };
-  bank_transaction_code?: { description?: string };
+  bank_transaction_code?: {
+    description?: string;
+    code?: string;
+    sub_code?: string;
+  };
   merchant_category_code?: string;
 }
 interface EbTransactionsResponse {
@@ -91,6 +97,8 @@ function normalizeTx(t: EbTransaction): NormalizedTx | null {
 interface EbCtx {
   jwt: string;
   baseUrl: string;
+  /** Capçaleres PSU-* (accés amb el client present). */
+  psuHeaders?: Record<string, string>;
 }
 
 /** Recull tots els moviments d'un compte seguint la paginació (continuation_key). */
@@ -108,7 +116,13 @@ async function fetchAllTransactions(
     if (continuationKey) query.continuation_key = continuationKey;
     const resp = await enableBankingFetch<EbTransactionsResponse>(
       `/accounts/${uid}/transactions`,
-      { method: "GET", jwt: ctx.jwt, baseUrl: ctx.baseUrl, query }
+      {
+        method: "GET",
+        jwt: ctx.jwt,
+        baseUrl: ctx.baseUrl,
+        query,
+        extraHeaders: ctx.psuHeaders,
+      }
     );
     for (const t of resp.transactions ?? []) all.push(t);
     continuationKey = resp.continuation_key;
@@ -166,7 +180,37 @@ export const fetchBankTransactions = onCall(
     }
 
     const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
-    const ctx: EbCtx = { jwt, baseUrl: creds.baseUrl };
+
+    // Capçaleres PSU: marquen la consulta com a feta AMB EL CLIENT PRESENT
+    // (l'usuari acaba de prémer "Sincronitza"), que és el que evita la quota
+    // d'accés desatès (~4/dia). Cal saber quines exigeix el banc: es desen a
+    // startBankAuth, i per a connexions anteriors les resolem un cop aquí.
+    let requiredPsuHeaders = snap.get("requiredPsuHeaders") as
+      | string[]
+      | undefined;
+    if (requiredPsuHeaders === undefined) {
+      try {
+        const catalog = await enableBankingFetch<{
+          aspsps?: { name: string; required_psu_headers?: string[] }[];
+        }>("/aspsps", {
+          method: "GET",
+          jwt,
+          baseUrl: creds.baseUrl,
+          query: { country: ASPSP_COUNTRY.value() },
+        });
+        const target = ASPSP_NAME.value().toLowerCase();
+        requiredPsuHeaders =
+          (catalog.aspsps ?? []).find(
+            (a) => a.name.toLowerCase() === target
+          )?.required_psu_headers ?? [];
+        await docRef.set({ requiredPsuHeaders }, { merge: true });
+      } catch {
+        requiredPsuHeaders = [];
+      }
+    }
+
+    const psuHeaders = buildPsuHeaders(request.rawRequest, requiredPsuHeaders);
+    const ctx: EbCtx = { jwt, baseUrl: creds.baseUrl, psuHeaders };
 
     // La PSD2 limita les consultes AIS sense el client present (~4 per compte i
     // dia). Per no malgastar-ne cap: comprovem la caducitat amb el validUntil
@@ -272,6 +316,9 @@ export const fetchBankTransactions = onCall(
       accountCount: accountsOut.length,
       txTotal,
       dateTo: dateTo ?? null,
+      // Només els NOMS de les capçaleres PSU: mai la IP (dada personal).
+      psuHeadersSent: Object.keys(psuHeaders),
+      requiredPsuHeaders,
     });
 
     return {

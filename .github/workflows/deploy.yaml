@@ -94,7 +94,7 @@ jobs:
           echo "$FIREBASE_SA" > "$RUNNER_TEMP/firebase-sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
           npx --yes firebase-tools@latest deploy \
-            --only functions,firestore:rules \
+            --only functions,firestore \
             --project centim-162bd \
             --non-interactive
           rm -f "$RUNNER_TEMP/firebase-sa.json"

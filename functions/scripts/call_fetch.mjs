@@ -4,7 +4,7 @@
 // Ús (des de functions/):
 //   $env:EB_ID_TOKEN = (node scripts/get_id_token.mjs)
 //   node scripts/call_fetch.mjs
-//   # opcional: $env:EB_IBAN_SUFFIX="00161717"  $env:EB_DATE_FROM="2026-01-01"
+//   # opcional: $env:EB_IBAN_SUFFIX="<ultims digits IBAN>"  $env:EB_DATE_FROM="2026-01-01"
 
 import { getIdToken } from "./ebToken.mjs";
 

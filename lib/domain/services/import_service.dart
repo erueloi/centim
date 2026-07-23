@@ -62,6 +62,18 @@ class BankSyncBundle {
   });
 }
 
+/// Longitud mínima d'una clau de concepte per fiar-se'n en el match difús.
+const int _kMinConceptKeyLength = 4;
+
+/// Categories apreses de l'històric, indexades per concepte exacte i per
+/// concepte normalitzat. Es construeix un sol cop per importació.
+class _LearningIndex {
+  final Map<String, t_model.Transaction> byConcept;
+  final Map<String, t_model.Transaction> byKey;
+
+  const _LearningIndex({required this.byConcept, required this.byKey});
+}
+
 class ImportService {
   final Ref ref;
 
@@ -149,6 +161,7 @@ class ImportService {
     final List<ImportedTransaction> imported = [];
     final dateFormat = DateFormat('dd/MM/yyyy');
     final existingTransactions = await _fetchExistingTransactions();
+    final learning = _buildLearningIndex(existingTransactions);
 
     if (isFormatC) {
       // --- FORMAT C (Mobile) ---
@@ -223,7 +236,7 @@ class ImportService {
 
           tx.isDuplicate = _checkIsDuplicate(tx, existingTransactions);
           if (tx.isDuplicate) tx.selected = false;
-          await _autoCategorize(tx);
+          _autoCategorize(tx, learning);
           imported.add(tx);
         } catch (e) {
           debugPrint('Error parsing row C $i: $e');
@@ -284,7 +297,7 @@ class ImportService {
 
           tx.isDuplicate = _checkIsDuplicate(tx, existingTransactions);
           if (tx.isDuplicate) tx.selected = false;
-          await _autoCategorize(tx);
+          _autoCategorize(tx, learning);
           imported.add(tx);
         } catch (e) {
           debugPrint('Error parsing row B $i: $e');
@@ -394,7 +407,7 @@ class ImportService {
               existingTransactions,
             );
             if (transaction.isDuplicate) transaction.selected = false;
-            await _autoCategorize(transaction);
+            _autoCategorize(transaction, learning);
 
             imported.add(transaction);
           } catch (e) {
@@ -431,6 +444,7 @@ class ImportService {
       accounts: [BankAccountRequest(key: accountKey, dateFrom: dateFrom)],
     );
     final existingTransactions = await _fetchExistingTransactions();
+    final learning = _buildLearningIndex(existingTransactions);
 
     final List<ImportedTransaction> imported = [];
     final Map<String, DateTime> maxDateByKey = {};
@@ -456,7 +470,7 @@ class ImportService {
 
         tx.isDuplicate = _checkIsDuplicate(tx, existingTransactions);
         if (tx.isDuplicate) tx.selected = false;
-        await _autoCategorize(tx);
+        _autoCategorize(tx, learning);
         imported.add(tx);
 
         final prev = maxDateByKey[account.accountKey];
@@ -633,54 +647,56 @@ class ImportService {
     return false;
   }
 
-  Future<void> _autoCategorize(ImportedTransaction tx) async {
-    // 1. Fetch history for exact match
-    // final categories = await ref.read(categoryNotifierProvider.future);
+  /// Clau normalitzada d'un concepte, per agrupar variants del mateix comerç.
+  ///
+  /// Treu dígits, referències i puntuació: "Canva* 04948-1940" i
+  /// "Canva* 05012-2231" donen tots dos "canva", i per tant s'aprenen junts.
+  String _conceptKey(String concept) {
+    return concept
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-zà-öø-ÿ]+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
 
-    // Simple keyword matching against category names?
-    // e.g. if concept contains "Mercadona", and there is a subcategory "Supermercat"...
-    // But concept doesn't contain category name usually.
-    // So better rely on History (Exact Match) as primary.
-
-    // Only use categories if history fails?
-    // Or if we had keywords in Category model.
-    // For now, just use history lookup.
-    // To silence unused variable warning, we can just not fetch categories if not used.
-    // But let's check one thing: if concept *contains* subcategory name.
-
-    // Fallback: Check if concept contains any subcategory name
-    // ignore: unused_local_variable
-    bool matched = false;
-
-    try {
-      final groupId = await ref.read(currentGroupIdProvider.future);
-      final snapshot = await FirebaseFirestore.instance
-          .collection('transactions')
-          .where('groupId', isEqualTo: groupId)
-          .where('concept', isEqualTo: tx.concept)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isNotEmpty) {
-        final t = t_model.Transaction.fromFirestore(snapshot.docs.first);
-        tx.categoryId = t.categoryId;
-        tx.subCategoryId = t.subCategoryId;
-        return;
+  /// Construeix l'índex de categories apreses de l'històric.
+  ///
+  /// Com que `existing` ve ordenat per data descendent, `putIfAbsent` es queda
+  /// amb la decisió MÉS RECENT: això és el que fa que el sistema reaprengui
+  /// quan recategoritzes un moviment.
+  _LearningIndex _buildLearningIndex(List<t_model.Transaction> existing) {
+    final byConcept = <String, t_model.Transaction>{};
+    final byKey = <String, t_model.Transaction>{};
+    for (final t in existing) {
+      if (t.categoryId.isEmpty) continue;
+      byConcept.putIfAbsent(t.concept, () => t);
+      final key = _conceptKey(t.concept);
+      if (key.length >= _kMinConceptKeyLength) {
+        byKey.putIfAbsent(key, () => t);
       }
+    }
+    return _LearningIndex(byConcept: byConcept, byKey: byKey);
+  }
 
-      // Fuzzy search (manual implementation or expensive query)
-      // Let's stick to exact match for MVP or simplified Keyword map if User had one.
-      // Current system has no keyword map.
+  /// Proposa categoria a partir de l'històric: primer per concepte exacte i,
+  /// si no n'hi ha, per concepte normalitzat (mateix comerç, referència nova).
+  void _autoCategorize(ImportedTransaction tx, _LearningIndex index) {
+    final exact = index.byConcept[tx.concept];
+    if (exact != null) {
+      tx.categoryId = exact.categoryId;
+      tx.subCategoryId = exact.subCategoryId;
+      return;
+    }
 
-      // Basic Heuristics?
-      // If concept contains "MERCADONA" -> Food?
-      // This is hardcoded and bad.
-      // Better: The User will just categorize manually in staging, and next time we should learn.
+    final key = _conceptKey(tx.concept);
+    // Claus massa curtes (p.ex. "co", de "363768235 1136 CO") són massa
+    // genèriques i categoritzarien malament: val més deixar-ho a l'usuari.
+    if (key.length < _kMinConceptKeyLength) return;
 
-      // Let's try at least finding partial matches in local history if we had it.
-      // But for now, Exact Match with past transactions is the "Smart" feature.
-    } catch (e) {
-      // ignore
+    final fuzzy = index.byKey[key];
+    if (fuzzy != null) {
+      tx.categoryId = fuzzy.categoryId;
+      tx.subCategoryId = fuzzy.subCategoryId;
     }
   }
 }

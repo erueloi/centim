@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.2.19
+Categoritzacio automatica que apren de variants del mateix comerc i reapren en recategoritzar.
+Menys consultes a Firestore.
+Neteja del mode de diagnostic.
 ## v1.2.18
 Sincronitzacio bancaria (Enable Banking/CaixaBank): nou sheet per triar compte, data d'inici i compte desti abans d'importar.
 Sincronitzacio incremental per compte, reutilitzant la pantalla de revisio de l'Excel.
@@ -104,6 +108,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

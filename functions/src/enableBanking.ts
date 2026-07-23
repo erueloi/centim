@@ -57,6 +57,8 @@ interface EbRequestOptions {
   baseUrl?: string;
   query?: Record<string, string>;
   body?: unknown;
+  /** Capçaleres addicionals (p.ex. PSU-* per marcar accés amb client present). */
+  extraHeaders?: Record<string, string>;
 }
 
 /**
@@ -84,6 +86,7 @@ export async function enableBankingFetch<T>(
         Authorization: `Bearer ${opts.jwt}`,
         Accept: "application/json",
         ...(opts.body ? { "Content-Type": "application/json" } : {}),
+        ...(opts.extraHeaders ?? {}),
       },
       body: opts.body ? JSON.stringify(opts.body) : undefined,
     });

@@ -28,6 +28,8 @@ interface Aspsp {
   maximum_consent_validity?: number;
   auth_methods?: unknown[];
   psu_types?: string[];
+  /** Capçaleres PSU que aquest banc exigeix (accés amb client present). */
+  required_psu_headers?: string[];
 }
 
 interface AspspsResponse {
@@ -119,6 +121,8 @@ export const startBankAuth = onCall(
       {
         aspspName: caixa.name,
         aspspCountry: caixa.country,
+        // Les desem per poder marcar les consultes com a "client present".
+        requiredPsuHeaders: caixa.required_psu_headers ?? [],
         pendingState: state,
         pendingValidUntil: validUntil,
         status: "authorizing",

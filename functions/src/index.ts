@@ -8,6 +8,3 @@ export { finalizeBankSession } from "./finalizeBankSession.js";
 export { fetchBankTransactions } from "./fetchBankTransactions.js";
 export { listBankAccounts } from "./listBankAccounts.js";
 export { updateBankAccountConfig } from "./updateBankAccountConfig.js";
-
-// PROBE TEMPORAL (treure després de validar la cadena de producció):
-export { probeAccountData } from "./probeAccountData.js";
