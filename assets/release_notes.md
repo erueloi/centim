@@ -1,5 +1,10 @@
 # Release Notes
 
+## v1.2.18
+Sincronitzacio bancaria (Enable Banking/CaixaBank): nou sheet per triar compte, data d'inici i compte desti abans d'importar.
+Sincronitzacio incremental per compte, reutilitzant la pantalla de revisio de l'Excel.
+Missatges clars quan el banc limita les consultes (PSD2) i menys crides a l'API.
+Desplegament automatic de Cloud Functions i regles de Firestore.
 ## v1.2.17
 Sincronització bancària amb CaixaBank via Enable Banking
 ## v1.2.16
@@ -99,6 +104,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

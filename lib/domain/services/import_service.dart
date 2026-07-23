@@ -410,39 +410,26 @@ class ImportService {
     return imported;
   }
 
-  /// Sincronitza els moviments del banc (Enable Banking) via Cloud Function:
-  ///  - agafa NOMÉS els comptes marcats per sincronitzar i amb actiu assignat,
-  ///  - baixa incrementalment (des de lastSyncedDate ?? syncStartDate),
-  ///  - assigna cada moviment al seu actiu de Cèntim (accountId),
+  /// Sincronitza UN compte bancari concret (el triat a la pantalla prèvia):
+  ///  - baixa des de `dateFrom`,
+  ///  - assigna tots els moviments a `centimAssetId`,
   ///  - aplica la MATEIXA dedup i auto-categorització que l'import d'Excel.
-  /// No escriu res: alimenta la mateixa pantalla de revisió. Retorna també la
-  /// data màxima per compte (per avançar lastSyncedDate en confirmar) i avisos.
-  Future<BankSyncBundle> syncBankTransactions() async {
+  /// No escriu res: alimenta la mateixa pantalla de revisió. Retorna la data
+  /// màxima baixada (per avançar lastSyncedDate en confirmar) i avisos.
+  ///
+  /// Nota: el backend (fetchTransactions) admet diversos comptes alhora; la UI
+  /// en fa un per execució perquè la pantalla de revisió sigui inequívoca.
+  Future<BankSyncBundle> syncBankAccount({
+    required String accountKey,
+    required String dateFrom,
+    String? centimAssetId,
+  }) async {
     final service = ref.read(bankSyncServiceProvider);
-    final conn = await service.listAccounts();
-
     final warnings = <String>[];
-    final requests = <BankAccountRequest>[];
-    final assetByKey = <String, String>{};
 
-    for (final a in conn.accounts.where((a) => a.sync)) {
-      if (a.centimAssetId == null || a.centimAssetId!.isEmpty) {
-        warnings.add(
-            '${a.name ?? a.ibanMasked}: marcat per sincronitzar però sense compte de Cèntim assignat.');
-        continue;
-      }
-      assetByKey[a.accountKey] = a.centimAssetId!;
-      requests.add(BankAccountRequest(
-        key: a.accountKey,
-        dateFrom: a.lastSyncedDate ?? a.syncStartDate,
-      ));
-    }
-
-    if (requests.isEmpty) {
-      return BankSyncBundle(items: [], lastDateByKey: {}, warnings: warnings);
-    }
-
-    final result = await service.fetchTransactions(accounts: requests);
+    final result = await service.fetchTransactions(
+      accounts: [BankAccountRequest(key: accountKey, dateFrom: dateFrom)],
+    );
     final existingTransactions = await _fetchExistingTransactions();
 
     final List<ImportedTransaction> imported = [];
@@ -450,9 +437,9 @@ class ImportService {
 
     for (final account in result.accounts) {
       if (account.warning != null) {
-        warnings.add('${account.name ?? account.ibanMasked}: ${account.warning}');
+        warnings.add(account.warning!);
       }
-      final assetId = assetByKey[account.accountKey];
+      final assetId = centimAssetId;
 
       for (final m in account.transactions) {
         final tx = ImportedTransaction(

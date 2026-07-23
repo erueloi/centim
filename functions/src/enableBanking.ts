@@ -111,11 +111,43 @@ export async function enableBankingFetch<T>(
       method,
       status: response.status,
     });
+
+    // 429 = límit de peticions. Amb bancs reals sol ser el límit PSD2 d'accés
+    // sense el client present (4 consultes per compte i dia), no un error nostre.
+    if (response.status === 429) {
+      // Enable Banking no documenta capçaleres de quota, però si el servidor
+      // n'envia cap (Retry-After / *ratelimit*) les registrem i les aprofitem.
+      const rateHeaders: Record<string, string> = {};
+      response.headers.forEach((v, k) => {
+        const lk = k.toLowerCase();
+        if (lk === "retry-after" || lk.includes("ratelimit")) {
+          rateHeaders[lk] = v;
+        }
+      });
+      logger.warn("Límit de consultes del banc (429)", {
+        path,
+        rateHeaders,
+        hasRateHeaders: Object.keys(rateHeaders).length > 0,
+      });
+
+      const retryAfter = rateHeaders["retry-after"];
+      const retryHint = retryAfter ? ` Torna-ho a provar d'aquí ${retryAfter}s.` : "";
+
+      throw new HttpsError(
+        "resource-exhausted",
+        "El banc ha limitat les consultes. La normativa PSD2 permet només unes " +
+          "poques sincronitzacions per compte i dia sense tornar a identificar-te." +
+          (retryHint || " Torna-ho a provar més tard."),
+        { status: 429, path, retryAfter: retryAfter ?? null }
+      );
+    }
+
     throw new HttpsError(
       response.status === 401 || response.status === 403
         ? "permission-denied"
         : "internal",
-      `Enable Banking error ${response.status}`
+      `Enable Banking error ${response.status}`,
+      { status: response.status, path }
     );
   }
 

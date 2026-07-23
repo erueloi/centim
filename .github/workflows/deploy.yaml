@@ -52,6 +52,53 @@ jobs:
         run: |
           echo "GEMINI_API_KEY=$GEMINI_API_KEY" > .env
 
+      # --- Cloud Functions (Enable Banking proxy) + regles de Firestore ---
+      # Es despleguen ABANS del hosting perquè l'app web nova pugui dependre'n.
+      - name: Setup Node (Cloud Functions)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Create functions/.env (paràmetres, NO secrets)
+        env:
+          ENABLEBANKING_ENV: ${{ vars.ENABLEBANKING_ENV }}
+          ASPSP_NAME: ${{ vars.ASPSP_NAME }}
+          ASPSP_COUNTRY: ${{ vars.ASPSP_COUNTRY }}
+        run: |
+          # La clau .pem i l'APP_ID viuen a Secret Manager, no aquí. Aquests són
+          # només paràmetres de configuració (quin entorn i quin banc).
+          # Guarda de seguretat: si no estan definits com a Repository variables,
+          # avortem. Desplegar amb els defaults faria servir SANDBOX i trencaria
+          # la connexió de producció de forma silenciosa.
+          if [ -z "$ENABLEBANKING_ENV" ] || [ -z "$ASPSP_NAME" ]; then
+            echo "::error::Falten les Repository variables ENABLEBANKING_ENV i/o ASPSP_NAME (Settings → Secrets and variables → Actions → Variables)."
+            exit 1
+          fi
+          {
+            echo "ENABLEBANKING_ENV=$ENABLEBANKING_ENV"
+            echo "ASPSP_NAME=$ASPSP_NAME"
+            echo "ASPSP_COUNTRY=${ASPSP_COUNTRY:-ES}"
+          } > functions/.env
+          echo "functions/.env generat (env=$ENABLEBANKING_ENV, aspsp=$ASPSP_NAME)"
+
+      - name: Install Cloud Functions dependencies
+        run: npm ci
+        working-directory: functions
+
+      - name: Deploy Cloud Functions & Firestore rules
+        env:
+          FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CENTIM_162BD }}
+        run: |
+          # Reutilitzem el service account del deploy de hosting. Ha de tenir
+          # permisos per a Functions i Firestore rules (vegeu README/notes).
+          echo "$FIREBASE_SA" > "$RUNNER_TEMP/firebase-sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          npx --yes firebase-tools@latest deploy \
+            --only functions,firestore:rules \
+            --project centim-162bd \
+            --non-interactive
+          rm -f "$RUNNER_TEMP/firebase-sa.json"
+
       - name: Install Dependencies
         run: flutter pub get
 

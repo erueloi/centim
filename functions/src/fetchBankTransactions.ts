@@ -20,23 +20,11 @@ import {
   ibansOf,
   maskIban,
   accountKeyOf,
-  getAuthorizedSession,
-  accountUidsOf,
-  fetchAccountDetails,
 } from "./ebAccounts.js";
 
 // Finestra de dates per defecte i límits de paginació.
 const DEFAULT_LOOKBACK_DAYS = 90;
 const MAX_PAGES = 20;
-
-interface EbBalance {
-  balance_amount?: { amount?: string; currency?: string };
-  balance_type?: string;
-  name?: string;
-}
-interface EbBalancesResponse {
-  balances?: EbBalance[];
-}
 
 interface EbTransaction {
   transaction_amount?: { amount?: string; currency?: string };
@@ -180,18 +168,34 @@ export const fetchBankTransactions = onCall(
     const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
     const ctx: EbCtx = { jwt, baseUrl: creds.baseUrl };
 
-    const session = await getAuthorizedSession(ctx, sessionId);
+    // La PSD2 limita les consultes AIS sense el client present (~4 per compte i
+    // dia). Per no malgastar-ne cap: comprovem la caducitat amb el validUntil
+    // desat (sense cridar GET /sessions) i les metadades dels comptes surten de
+    // la caché escrita a finalize. Si la sessió s'hagués revocat, la crida de
+    // moviments retornarà 401 i el propagarem com a "cal reconnectar".
+    const validUntilStr = snap.get("validUntil") as string | undefined;
+    if (validUntilStr) {
+      const validUntil = new Date(validUntilStr);
+      if (!Number.isNaN(validUntil.getTime()) && validUntil < new Date()) {
+        throw new HttpsError(
+          "failed-precondition",
+          "El consentiment del banc ha caducat. Torna a connectar el banc.",
+          { needsReauth: true }
+        );
+      }
+    }
+
     const storedAccounts =
       (snap.get("accounts") as EbAccount[] | undefined) ?? [];
-    const uids = accountUidsOf(session, storedAccounts);
 
     const accountsOut = [];
     let txTotal = 0;
 
-    for (const accUid of uids) {
-      const details = await fetchAccountDetails(ctx, accUid);
-      const key = accountKeyOf(details);
-      const ibans = ibansOf(details);
+    for (const acc of storedAccounts) {
+      const accUid = acc.uid;
+      if (!accUid) continue;
+      const key = accountKeyOf(acc);
+      const ibans = ibansOf(acc);
 
       // Filtres d'inclusió: per petició explícita (perAccount) o per ibanSuffix.
       if (perAccount && !requestedByKey.has(key)) continue;
@@ -200,17 +204,6 @@ export const fetchBankTransactions = onCall(
       const accDateFrom = perAccount
         ? requestedByKey.get(key) ?? defaultDateFrom
         : defaultDateFrom;
-
-      const balancesResp = await enableBankingFetch<EbBalancesResponse>(
-        `/accounts/${accUid}/balances`,
-        { method: "GET", jwt, baseUrl: creds.baseUrl }
-      );
-      const balances = (balancesResp.balances ?? []).map((b) => ({
-        type: b.balance_type ?? null,
-        name: b.name ?? null,
-        amount: b.balance_amount?.amount ?? null,
-        currency: b.balance_amount?.currency ?? null,
-      }));
 
       // El banc (Redsys) limita l'històric recuperable. Si rebutja el dateFrom,
       // no fem petar tot el sync: marquem un avís i retornem el compte sense
@@ -228,13 +221,34 @@ export const fetchBankTransactions = onCall(
           .map(normalizeTx)
           .filter((t): t is NormalizedTx => t !== null);
       } catch (e) {
+        // Els errors que l'usuari ha d'entendre tal qual (límit de consultes,
+        // autorització revocada) NO s'amaguen darrere d'un avís: es propaguen.
+        if (
+          e instanceof HttpsError &&
+          (e.code === "resource-exhausted" || e.code === "permission-denied")
+        ) {
+          throw e;
+        }
+        const status =
+          e instanceof HttpsError &&
+          e.details &&
+          typeof e.details === "object" &&
+          "status" in e.details
+            ? (e.details as { status?: number }).status
+            : undefined;
+        // 400/422 solen indicar rang de dates no admès; la resta, error genèric.
         warning =
-          "El banc no permet recuperar moviments des d'aquesta data. " +
-          "Prova una data d'inici més recent.";
-        logger.warn("Límit del banc en fetch de moviments", {
+          status === 400 || status === 422
+            ? "El banc no permet recuperar moviments des d'aquesta data. Prova una data d'inici més recent."
+            : `No s'han pogut recuperar els moviments d'aquest compte${
+                status != null ? ` (error ${status})` : ""
+              }.`;
+        logger.warn("Error baixant moviments d'un compte", {
           uid,
           env: creds.env,
           accountKey: key,
+          status: status ?? null,
+          dateFrom: accDateFrom,
         });
       }
       txTotal += transactions.length;
@@ -242,10 +256,9 @@ export const fetchBankTransactions = onCall(
       accountsOut.push({
         accountKey: key,
         ibanMasked: maskIban(ibans[0] ?? ""),
-        name: details.name ?? null,
-        currency: details.currency ?? null,
+        name: acc.name ?? null,
+        currency: acc.currency ?? null,
         dateFrom: accDateFrom,
-        balances,
         transactionCount: transactions.length,
         transactions,
         warning,

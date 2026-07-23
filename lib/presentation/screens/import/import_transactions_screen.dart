@@ -15,7 +15,15 @@ import '../../../domain/models/category.dart';
 class ImportTransactionsScreen extends ConsumerStatefulWidget {
   final List<ImportedTransaction> transactions;
 
-  const ImportTransactionsScreen({super.key, required this.transactions});
+  /// Compte de Cèntim preseleccionat (el tria la pantalla prèvia del sync
+  /// bancari). A l'import d'Excel arriba null i el tria l'usuari aquí.
+  final String? initialAccountId;
+
+  const ImportTransactionsScreen({
+    super.key,
+    required this.transactions,
+    this.initialAccountId,
+  });
 
   @override
   ConsumerState<ImportTransactionsScreen> createState() =>
@@ -31,6 +39,7 @@ class _ImportTransactionsScreenState
   @override
   void initState() {
     super.initState();
+    _selectedAccountId = widget.initialAccountId;
     // Sort: duplicates first, then by date descending
     _items = List.from(widget.transactions)
       ..sort((a, b) {
@@ -282,8 +291,13 @@ class _ImportTransactionsScreenState
                                       '${a.name} (${a.amount.toStringAsFixed(2)} €)'),
                                 )),
                           ],
-                          onChanged: (v) =>
-                              setState(() => _selectedAccountId = v),
+                          onChanged: (v) => setState(() {
+                            _selectedAccountId = v;
+                            // El destí triat mana sobre el preassignat pel sync.
+                            for (final item in _items) {
+                              item.accountId = v;
+                            }
+                          }),
                         );
                       },
                       loading: () => const LinearProgressIndicator(),

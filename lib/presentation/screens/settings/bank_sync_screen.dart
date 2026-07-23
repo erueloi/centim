@@ -159,6 +159,13 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
           const SizedBox(height: 16),
           const Text('Comptes',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          const SizedBox(height: 4),
+          const Text(
+            'Els comptes que marquis apareixeran a la pantalla de sincronització. '
+            'El compte de Cèntim i la data són valors per defecte: en cada '
+            'sincronització podràs confirmar-los o canviar-los.',
+            style: TextStyle(color: Colors.grey, fontSize: 13),
+          ),
           const SizedBox(height: 8),
           for (int i = 0; i < _accounts.length; i++) _buildAccountCard(i),
         ],
