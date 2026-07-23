@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/transaction.dart' as t_model;
+import 'bank_sync_service.dart';
 
 import '../../presentation/providers/auth_providers.dart';
 
@@ -26,6 +27,9 @@ class ImportedTransaction {
   String? subCategoryId;
   bool selected;
   bool isDuplicate;
+  final String? bankTxId; // Id estable del banc (Enable Banking) per dedup exacte
+  final String? source; // 'excel' | 'enablebanking' | 'manual'
+  String? accountId; // Actiu de Cèntim assignat (per compte, al sync bancari)
 
   ImportedTransaction({
     required this.id,
@@ -37,6 +41,24 @@ class ImportedTransaction {
     this.subCategoryId,
     this.selected = true,
     this.isDuplicate = false,
+    this.bankTxId,
+    this.source,
+    this.accountId,
+  });
+}
+
+/// Resultat d'una sincronització bancària: moviments a revisar + data màxima
+/// baixada per compte (accountKey → YYYY-MM-DD, per avançar lastSyncedDate en
+/// confirmar) + avisos (p.ex. límit del banc o compte sense actiu assignat).
+class BankSyncBundle {
+  final List<ImportedTransaction> items;
+  final Map<String, String> lastDateByKey;
+  final List<String> warnings;
+
+  BankSyncBundle({
+    required this.items,
+    required this.lastDateByKey,
+    required this.warnings,
   });
 }
 
@@ -388,6 +410,85 @@ class ImportService {
     return imported;
   }
 
+  /// Sincronitza els moviments del banc (Enable Banking) via Cloud Function:
+  ///  - agafa NOMÉS els comptes marcats per sincronitzar i amb actiu assignat,
+  ///  - baixa incrementalment (des de lastSyncedDate ?? syncStartDate),
+  ///  - assigna cada moviment al seu actiu de Cèntim (accountId),
+  ///  - aplica la MATEIXA dedup i auto-categorització que l'import d'Excel.
+  /// No escriu res: alimenta la mateixa pantalla de revisió. Retorna també la
+  /// data màxima per compte (per avançar lastSyncedDate en confirmar) i avisos.
+  Future<BankSyncBundle> syncBankTransactions() async {
+    final service = ref.read(bankSyncServiceProvider);
+    final conn = await service.listAccounts();
+
+    final warnings = <String>[];
+    final requests = <BankAccountRequest>[];
+    final assetByKey = <String, String>{};
+
+    for (final a in conn.accounts.where((a) => a.sync)) {
+      if (a.centimAssetId == null || a.centimAssetId!.isEmpty) {
+        warnings.add(
+            '${a.name ?? a.ibanMasked}: marcat per sincronitzar però sense compte de Cèntim assignat.');
+        continue;
+      }
+      assetByKey[a.accountKey] = a.centimAssetId!;
+      requests.add(BankAccountRequest(
+        key: a.accountKey,
+        dateFrom: a.lastSyncedDate ?? a.syncStartDate,
+      ));
+    }
+
+    if (requests.isEmpty) {
+      return BankSyncBundle(items: [], lastDateByKey: {}, warnings: warnings);
+    }
+
+    final result = await service.fetchTransactions(accounts: requests);
+    final existingTransactions = await _fetchExistingTransactions();
+
+    final List<ImportedTransaction> imported = [];
+    final Map<String, DateTime> maxDateByKey = {};
+
+    for (final account in result.accounts) {
+      if (account.warning != null) {
+        warnings.add('${account.name ?? account.ibanMasked}: ${account.warning}');
+      }
+      final assetId = assetByKey[account.accountKey];
+
+      for (final m in account.transactions) {
+        final tx = ImportedTransaction(
+          id: UniqueKey().toString(),
+          date: m.date,
+          dateString: m.dateString,
+          concept: m.concept,
+          amount: m.amount, // signat: la UI usa el signe per despesa/ingrés
+          bankTxId: m.bankTxId,
+          source: 'enablebanking',
+          accountId: assetId,
+          selected: true,
+        );
+
+        tx.isDuplicate = _checkIsDuplicate(tx, existingTransactions);
+        if (tx.isDuplicate) tx.selected = false;
+        await _autoCategorize(tx);
+        imported.add(tx);
+
+        final prev = maxDateByKey[account.accountKey];
+        if (prev == null || m.date.isAfter(prev)) {
+          maxDateByKey[account.accountKey] = m.date;
+        }
+      }
+    }
+
+    imported.sort((a, b) => b.date.compareTo(a.date));
+    final lastDateByKey = maxDateByKey
+        .map((k, v) => MapEntry(k, DateFormat('yyyy-MM-dd').format(v)));
+    return BankSyncBundle(
+      items: imported,
+      lastDateByKey: lastDateByKey,
+      warnings: warnings,
+    );
+  }
+
   String _getValue(
     List<dynamic> row,
     Map<String, int> headerMap,
@@ -473,6 +574,20 @@ class ImportService {
     ImportedTransaction newTx,
     List<t_model.Transaction> existing,
   ) {
+    // Dedup EXACTE per id de banc (Enable Banking): si el moviment entrant porta
+    // bankTxId i ja existeix una transacció amb el mateix id, és duplicat segur
+    // (sense falsos positius). Els moviments d'Excel no tenen bankTxId i cauen a
+    // l'heurística difusa de sota.
+    final newBankId = newTx.bankTxId;
+    if (newBankId != null && newBankId.isNotEmpty) {
+      for (final old in existing) {
+        if (old.bankTxId != null && old.bankTxId == newBankId) {
+          debugPrint('DUPLICATE: bankTxId match "$newBankId"');
+          return true;
+        }
+      }
+    }
+
     const dayWindow = 3; // Allow +/- days difference
 
     // Normalize: lowercase, collapse whitespace
@@ -483,6 +598,14 @@ class ImportService {
     final newAmount = newTx.amount.abs();
 
     for (final old in existing) {
+      // Si tots dos tenen compte assignat i són diferents, no és el mateix
+      // moviment (clau difusa: data+import+concepte+accountId).
+      if (newTx.accountId != null &&
+          old.accountId != null &&
+          newTx.accountId != old.accountId) {
+        continue;
+      }
+
       final oldAmount = old.amount.abs();
 
       // Amount must match (within 1 cent tolerance)

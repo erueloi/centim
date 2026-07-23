@@ -74,6 +74,8 @@ class FirestoreTransactionRepository implements TransactionRepository {
       'payer': transaction.payer,
       'isIncome': transaction.isIncome,
       'accountId': transaction.accountId,
+      'source': transaction.source,
+      'bankTxId': transaction.bankTxId,
     };
   }
 
@@ -94,6 +96,8 @@ class FirestoreTransactionRepository implements TransactionRepository {
           'unknown', // Handle potentially missing payer in v1 docs
       isIncome: data['isIncome'] as bool? ?? false,
       accountId: data['accountId'] as String?,
+      source: data['source'] as String?,
+      bankTxId: data['bankTxId'] as String?,
     );
   }
 }

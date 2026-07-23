@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<!--
+  Pàgina de callback MÍNIMA i TEMPORAL per a la prova de producció.
+  Capta ?code=&state= després de la SCA i els mostra per copiar-los al script
+  call_finalize.mjs. NO és autenticada (s'obre al navegador del sistema), per això
+  NO crida cap callable. A la Fase 2 es substituirà per la versió amb deep-link
+  cap a l'app, que serà qui (autenticada) cridi finalizeBankSession.
+-->
+<html lang="ca">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Cèntim — Callback bancari</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 640px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1f2933; }
+    h1 { font-size: 22px; }
+    .row { margin: 18px 0; }
+    label { font-weight: 600; display: block; margin-bottom: 6px; font-size: 14px; }
+    .val { display: flex; gap: 8px; }
+    input { flex: 1; font-family: monospace; font-size: 14px; padding: 10px;
+      border: 1px solid #cbd2d9; border-radius: 8px; background: #f7f8fa; }
+    button { padding: 10px 14px; border: 0; border-radius: 8px; background: #2f6f4f;
+      color: #fff; font-weight: 600; cursor: pointer; }
+    .muted { color: #6b7480; font-size: 14px; }
+    .err { color: #b91c1c; }
+    code { background: #f0f2f4; padding: 2px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Autorització bancària rebuda</h1>
+  <p class="muted">Copia aquests valors i passa'ls al script <code>call_finalize.mjs</code>
+    per tancar la sessió. (Pàgina temporal de proves.)</p>
+
+  <div id="content"></div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const code = params.get("code");
+    const state = params.get("state");
+    const error = params.get("error");
+    const el = document.getElementById("content");
+
+    function field(label, value) {
+      const wrap = document.createElement("div");
+      wrap.className = "row";
+      const lab = document.createElement("label");
+      lab.textContent = label;
+      const val = document.createElement("div");
+      val.className = "val";
+      const inp = document.createElement("input");
+      inp.readOnly = true;
+      inp.value = value;
+      const btn = document.createElement("button");
+      btn.textContent = "Copiar";
+      btn.onclick = () => { inp.select(); navigator.clipboard.writeText(value); btn.textContent = "Copiat!"; };
+      val.appendChild(inp); val.appendChild(btn);
+      wrap.appendChild(lab); wrap.appendChild(val);
+      return wrap;
+    }
+
+    if (error) {
+      el.innerHTML = '<p class="err">El banc ha retornat un error: ' + error + '</p>';
+    } else if (code && state) {
+      el.appendChild(field("code", code));
+      el.appendChild(field("state", state));
+    } else {
+      el.innerHTML = '<p class="err">No s\'han rebut code/state a la URL.</p>';
+    }
+  </script>
+</body>
+</html>

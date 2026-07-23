@@ -130,7 +130,11 @@ class _ImportTransactionsScreenState
         // `required bool isIncome`
         // Usually amount is absolute value.
         await notifier.addTransaction(tx.copyWith(
-            amount: item.amount.abs(), accountId: _selectedAccountId));
+            amount: item.amount.abs(),
+            // El sync bancari assigna accountId per compte; el CSV usa el global.
+            accountId: item.accountId ?? _selectedAccountId,
+            source: item.source,
+            bankTxId: item.bankTxId));
         count++;
       }
 

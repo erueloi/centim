@@ -1,5 +1,7 @@
-﻿# Release Notes
+# Release Notes
 
+## v1.2.17
+Sincronització bancària amb CaixaBank via Enable Banking
 ## v1.2.16
 Categories: Arxivar categories que ja no fem anar.
 Functions: Sandbox de sincronització.
@@ -97,6 +99,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

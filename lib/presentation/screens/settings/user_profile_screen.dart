@@ -7,6 +7,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:centim/l10n/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/providers/repository_providers.dart';
+import 'bank_sync_screen.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key});
@@ -252,6 +253,27 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 ),
                 trailing: const Icon(Icons.chevron_right, color: AppTheme.copper),
                 onTap: _showUserGuide,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              ListTile(
+                leading:
+                    const Icon(Icons.account_balance, color: AppTheme.copper),
+                title: const Text(
+                  'Banc / Sincronització',
+                  style: TextStyle(
+                      color: AppTheme.copper, fontWeight: FontWeight.w500),
+                ),
+                trailing:
+                    const Icon(Icons.chevron_right, color: AppTheme.copper),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BankSyncScreen()),
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: Colors.grey[300]!),

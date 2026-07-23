@@ -2,7 +2,7 @@ import { importPKCS8, SignJWT, type KeyLike } from "jose";
 import { HttpsError, type CallableRequest } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 
-/** Base URL de l'API d'Enable Banking (Sandbox i Producció comparteixen host). */
+/** Base URL per defecte (Sandbox i Producció comparteixen host avui). */
 export const ENABLE_BANKING_BASE = "https://api.enablebanking.com";
 
 /**
@@ -53,6 +53,8 @@ export async function buildEnableBankingJwt(
 interface EbRequestOptions {
   method?: "GET" | "POST";
   jwt: string;
+  /** Base URL de l'entorn actiu (sandbox/producció). */
+  baseUrl?: string;
   query?: Record<string, string>;
   body?: unknown;
 }
@@ -65,7 +67,7 @@ export async function enableBankingFetch<T>(
   path: string,
   opts: EbRequestOptions
 ): Promise<T> {
-  const url = new URL(ENABLE_BANKING_BASE + path);
+  const url = new URL((opts.baseUrl ?? ENABLE_BANKING_BASE) + path);
   if (opts.query) {
     for (const [k, v] of Object.entries(opts.query)) {
       url.searchParams.set(k, v);

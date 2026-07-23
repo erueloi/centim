@@ -7,8 +7,8 @@ import {
   ASPSP_NAME,
   aspspSlug,
   bankConnectionDoc,
-  ENABLEBANKING_PEM,
-  ENABLEBANKING_APP_ID,
+  ALL_EB_SECRETS,
+  resolveEbCredentials,
 } from "./config.js";
 import {
   buildEnableBankingJwt,
@@ -35,7 +35,7 @@ interface SessionResponse {
 export const finalizeBankSession = onCall(
   {
     region: REGION,
-    secrets: [ENABLEBANKING_PEM, ENABLEBANKING_APP_ID],
+    secrets: ALL_EB_SECRETS,
   },
   async (request) => {
     const uid = requireUid(request);
@@ -71,16 +71,15 @@ export const finalizeBankSession = onCall(
       );
     }
 
-    const jwt = await buildEnableBankingJwt(
-      ENABLEBANKING_APP_ID.value(),
-      ENABLEBANKING_PEM.value()
-    );
+    const creds = resolveEbCredentials();
+    const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
 
     // 2. Bescanviar el code per una sessió. El `code` es tracta com a credencial:
     //    mai va a logs.
     const session = await enableBankingFetch<SessionResponse>("/sessions", {
       method: "POST",
       jwt,
+      baseUrl: creds.baseUrl,
       body: { code },
     });
 
@@ -102,6 +101,7 @@ export const finalizeBankSession = onCall(
         sessionId: session.session_id,
         accounts: session.accounts ?? [],
         validUntil,
+        env: creds.env,
         status: "connected",
         connectedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),

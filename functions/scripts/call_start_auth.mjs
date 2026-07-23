@@ -12,15 +12,12 @@
 //     -d '{"email":"test@exemple.com","password":"...","returnSecureToken":true}' \
 //     | jq -r .idToken
 
+import { getIdToken } from "./ebToken.mjs";
+
 const project = process.env.EB_PROJECT ?? "centim-162bd";
 const region = process.env.EB_REGION ?? "europe-west1";
 const fn = process.env.EB_FN ?? "startBankAuth";
-const idToken = process.env.EB_ID_TOKEN;
-
-if (!idToken) {
-  console.error("✗ Falta EB_ID_TOKEN (ID token de Firebase d'un usuari real).");
-  process.exit(1);
-}
+const idToken = await getIdToken();
 
 const url = `https://${region}-${project}.cloudfunctions.net/${fn}`;
 

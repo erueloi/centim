@@ -5,15 +5,15 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 import {
   REGION,
-  REDIRECT_URL,
+  resolveRedirectUrl,
   ASPSP_COUNTRY,
   ASPSP_NAME,
   aspspSlug,
   PSU_TYPE,
   REQUESTED_CONSENT_DAYS,
   bankConnectionDoc,
-  ENABLEBANKING_PEM,
-  ENABLEBANKING_APP_ID,
+  ALL_EB_SECRETS,
+  resolveEbCredentials,
 } from "./config.js";
 import {
   buildEnableBankingJwt,
@@ -51,23 +51,31 @@ interface AuthResponse {
 export const startBankAuth = onCall(
   {
     region: REGION,
-    secrets: [ENABLEBANKING_PEM, ENABLEBANKING_APP_ID],
+    secrets: ALL_EB_SECRETS,
   },
   async (request) => {
     const uid = requireUid(request);
 
     const targetName = ASPSP_NAME.value();
     const targetCountry = ASPSP_COUNTRY.value();
+    // Redirect dinàmic (web desplegada o localhost en dev), validat.
+    let redirectUrl: string;
+    try {
+      redirectUrl = resolveRedirectUrl(
+        request.data?.redirectUrl as string | undefined
+      );
+    } catch {
+      throw new HttpsError("invalid-argument", "redirect_url no permès.");
+    }
+    const creds = resolveEbCredentials();
 
-    const jwt = await buildEnableBankingJwt(
-      ENABLEBANKING_APP_ID.value(),
-      ENABLEBANKING_PEM.value()
-    );
+    const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
 
     // 2. Localitzar el banc objectiu entre les ASPSP del país.
     const aspspsResp = await enableBankingFetch<AspspsResponse>("/aspsps", {
       method: "GET",
       jwt,
+      baseUrl: creds.baseUrl,
       query: { country: targetCountry },
     });
 
@@ -123,11 +131,12 @@ export const startBankAuth = onCall(
     const auth = await enableBankingFetch<AuthResponse>("/auth", {
       method: "POST",
       jwt,
+      baseUrl: creds.baseUrl,
       body: {
         access: { valid_until: validUntil },
         aspsp: { name: caixa.name, country: caixa.country },
         state,
-        redirect_url: REDIRECT_URL,
+        redirect_url: redirectUrl,
         psu_type: PSU_TYPE,
       },
     });
@@ -141,12 +150,14 @@ export const startBankAuth = onCall(
 
     logger.info("Autorització bancària iniciada", {
       uid,
+      env: creds.env,
       aspsp: caixa.name,
       validUntil,
     });
 
     // No retornem el `state` al client: viu a Firestore i tornarà via redirect.
     return {
+      env: creds.env,
       authUrl: auth.url,
       aspspName: caixa.name,
       validUntil,

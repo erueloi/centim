@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/models/asset.dart';
 import '../../../domain/models/transaction.dart';
 import '../../../domain/models/transfer.dart';
 import '../../../domain/models/category.dart';
 import '../../../domain/services/import_service.dart';
+import '../../../domain/services/bank_sync_service.dart';
 import '../../providers/billing_cycle_provider.dart';
 import '../../providers/asset_provider.dart';
 import '../../providers/transaction_notifier.dart';
@@ -89,6 +91,100 @@ class MovimentsScreen extends ConsumerWidget {
                         ),
                       ),
                     );
+                  }
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.account_balance),
+              tooltip: 'Sincronitza banc',
+              onPressed: () async {
+                final service = ref.read(importServiceProvider);
+                final syncService = ref.read(bankSyncServiceProvider);
+
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (ctx) =>
+                      const Center(child: CircularProgressIndicator()),
+                );
+
+                BankSyncBundle bundle;
+                try {
+                  bundle = await service.syncBankTransactions();
+                } on FirebaseFunctionsException catch (e) {
+                  if (context.mounted) Navigator.pop(context);
+                  if (context.mounted) {
+                    final needsReauth = e.code == 'failed-precondition';
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(needsReauth
+                            ? 'Cal connectar el banc primer (Configuració → Banc).'
+                            : 'Error sincronitzant: ${e.message}'),
+                      ),
+                    );
+                  }
+                  return;
+                } catch (e) {
+                  if (context.mounted) Navigator.pop(context);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)!.errorText(e.toString()),
+                        ),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                if (context.mounted) Navigator.pop(context); // tanca loading
+
+                // Avisos (compte sense actiu assignat, límit del banc...).
+                if (bundle.warnings.isNotEmpty && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(bundle.warnings.join('\n')),
+                      duration: const Duration(seconds: 6),
+                    ),
+                  );
+                }
+
+                if (bundle.items.isEmpty) {
+                  if (bundle.warnings.isEmpty && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          AppLocalizations.of(context)!.noMovementsFound,
+                        ),
+                      ),
+                    );
+                  }
+                  return;
+                }
+
+                if (!context.mounted) return;
+                final saved = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ImportTransactionsScreen(
+                      transactions: bundle.items,
+                    ),
+                  ),
+                );
+
+                // En confirmar la importació, avança lastSyncedDate per compte.
+                if (saved == true) {
+                  try {
+                    for (final entry in bundle.lastDateByKey.entries) {
+                      await syncService.updateAccountConfig(
+                        accountKey: entry.key,
+                        lastSyncedDate: entry.value,
+                      );
+                    }
+                  } catch (_) {
+                    // No bloquejant: s'actualitzarà al proper sync.
                   }
                 }
               },

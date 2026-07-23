@@ -21,6 +21,8 @@ class Transaction with _$Transaction {
     String?
         savingsGoalId, // Non-null if this transaction is paid FROM savings (or is a withdrawal)
     String? accountId, // Linked bank account / cash asset ID
+    String? source, // Origen: 'excel' | 'enablebanking' | 'manual'
+    String? bankTxId, // Id estable del banc (entry_reference EB) per deduplicar
   }) = _Transaction;
 
   factory Transaction.fromFirestore(DocumentSnapshot doc) {
@@ -39,6 +41,8 @@ class Transaction with _$Transaction {
       isIncome: data['isIncome'] as bool? ?? false,
       savingsGoalId: data['savingsGoalId'] as String?,
       accountId: data['accountId'] as String?,
+      source: data['source'] as String?,
+      bankTxId: data['bankTxId'] as String?,
     );
   }
 }

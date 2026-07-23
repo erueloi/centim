@@ -27,6 +27,14 @@ service cloud.firestore {
       allow write: if isUser(userId);
     }
 
+    // BANK CONNECTIONS (Enable Banking): NOMÉS el propietari, i NOMÉS lectura
+    // (per mostrar/escoltar l'estat de connexió). Les escriptures (sessió i
+    // config de sync) es fan via Cloud Functions amb Admin SDK, així l'app mai
+    // toca el session_id ni cap camp sensible.
+    match /users/{userId}/bank_connections/{connId} {
+      allow read: if isUser(userId);
+    }
+
     // GROUPS:
     match /groups/{groupId} {
       allow create: if isAuthenticated();
