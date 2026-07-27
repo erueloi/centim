@@ -27,6 +27,9 @@ class CycleReport with _$CycleReport {
     @Default(0) int zeroExpenseDays,
     @Default(0) int totalDays,
     @Default([]) List<Map<String, dynamic>> unexpectedExpenses,
+
+    // Semàntica de càlcul amb què es va generar (0 = llegat, pre-ledger).
+    @Default(0) int schemaVersion,
   }) = _CycleReport;
 
   factory CycleReport.fromJson(Map<String, dynamic> json) =>

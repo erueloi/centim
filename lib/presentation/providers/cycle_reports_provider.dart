@@ -8,6 +8,7 @@ import 'transaction_notifier.dart';
 import 'category_notifier.dart';
 import 'ai_coach_provider.dart';
 import '../../domain/models/category.dart';
+import '../../domain/services/ledger_service.dart';
 
 part 'cycle_reports_provider.g.dart';
 
@@ -46,8 +47,10 @@ class CycleReportNotifier extends _$CycleReportNotifier {
       final categories = await ref.read(categoryNotifierProvider.future);
       final categoryExpenses = <String, double>{};
       final categoryBudgets = <String, double>{};
+      final nameById = <String, String>{};
 
       for (final cat in categories) {
+        nameById[cat.id] = cat.name;
         if (cat.type == TransactionType.income) continue;
         double catBudget = 0.0;
         for (final sub in cat.subcategories) {
@@ -57,24 +60,18 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         categoryExpenses[cat.name] = 0.0;
       }
 
-      double totalIncome = 0;
-      double totalExpense = 0;
+      // FONT ÚNICA DE CÀLCUL (mateixes regles que Dashboard i Trends).
+      final look = LedgerLookups.from(categories);
+      final ledger = summarizeLedger(cycleTx, look);
+      final double totalIncome = ledger.totalIncome;
+      final double totalExpense = ledger.totalExpense;
 
-      for (final tx in cycleTx) {
-        if (tx.isIncome) {
-          totalIncome += tx.amount;
-        } else {
-          totalExpense += tx.amount;
-          if (tx.categoryId.isNotEmpty) {
-            final cat = categories.firstWhere((c) => c.id == tx.categoryId,
-                orElse: () => categories.first);
-            if (cat.id == tx.categoryId) {
-              categoryExpenses[cat.name] =
-                  (categoryExpenses[cat.name] ?? 0.0) + tx.amount;
-            }
-          }
+      ledger.expenseByCategory.forEach((catId, amount) {
+        final name = nameById[catId];
+        if (name != null) {
+          categoryExpenses[name] = (categoryExpenses[name] ?? 0.0) + amount;
         }
-      }
+      });
 
       // 3. Calculate metrics
       double savingsPercentage = 0;
@@ -190,6 +187,7 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         zeroExpenseDays: zeroExpenseDays > 0 ? zeroExpenseDays : 0,
         totalDays: totalDays,
         unexpectedExpenses: unexpectedExpenses,
+        schemaVersion: kLedgerSchemaVersion,
       );
 
       final repo = ref.read(cycleReportRepositoryProvider);

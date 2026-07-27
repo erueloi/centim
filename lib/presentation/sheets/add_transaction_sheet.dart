@@ -10,6 +10,7 @@ import '../providers/category_notifier.dart';
 import '../providers/group_providers.dart';
 import '../providers/transaction_notifier.dart';
 import '../providers/savings_goal_provider.dart';
+import '../../domain/services/import_service.dart';
 
 class AddTransactionSheet extends ConsumerStatefulWidget {
   final Category? initialCategory;
@@ -141,6 +142,45 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
       // We'll stick to selected payer or default.
       final payer =
           _selectedPayerId ?? (members.isNotEmpty ? members.first.uid : '');
+
+      // Avís NO bloquejant de possible duplicat (només en crear, no en editar).
+      if (widget.transactionToEdit == null) {
+        final similar = await ref.read(importServiceProvider).findSimilar(
+              amount: amount,
+              date: _selectedDate,
+              concept: _conceptController.text,
+              accountId: _selectedAccountId,
+            );
+        if (similar != null && mounted) {
+          final proceed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Possible duplicat'),
+              content: Text(
+                'Sembla que ja tens un moviment semblant:\n\n'
+                '${similar.concept}\n'
+                '${similar.date.day}/${similar.date.month}/${similar.date.year} · '
+                '${similar.amount.toStringAsFixed(2)} €\n\n'
+                'Vols desar-lo igualment?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Cancel·lar'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(ctx, true),
+                  child: const Text('Desar igualment'),
+                ),
+              ],
+            ),
+          );
+          if (proceed != true) {
+            if (mounted) setState(() => _isLoading = false);
+            return;
+          }
+        }
+      }
 
       final transaction = Transaction(
         id: widget.transactionToEdit?.id, // Preserve ID if editing
@@ -413,16 +453,14 @@ class _AddTransactionSheetState extends ConsumerState<AddTransactionSheet> {
                           }
                         }
 
-                        final filteredCategories = categories
-                            .where(
-                              (c) =>
-                                  !c.archived &&
-                                  c.type ==
-                                      (_isIncome
-                                          ? TransactionType.income
-                                          : TransactionType.expense),
-                            )
-                            .toList();
+                        // Filtre ASIMÈTRIC (coherent amb la taula D1):
+                        //  - ingrés: categories d'ingrés O de despesa (refund)
+                        //  - despesa: NOMÉS categories de despesa
+                        final filteredCategories = categories.where((c) {
+                          if (c.archived) return false;
+                          if (_isIncome) return true;
+                          return c.type == TransactionType.expense;
+                        }).toList();
 
                         if (filteredCategories.isEmpty) {
                           return const Text('No hi ha categories disponibles.');

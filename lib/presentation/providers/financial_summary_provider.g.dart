@@ -7,7 +7,7 @@ part of 'financial_summary_provider.dart';
 // **************************************************************************
 
 String _$financialSummaryNotifierHash() =>
-    r'17d9e81feaaf2bf28f46843a79889b9e59939f7c';
+    r'59d6d0a665dd1f69ca2aa60406abe12ab7b8d168';
 
 /// See also [FinancialSummaryNotifier].
 @ProviderFor(FinancialSummaryNotifier)

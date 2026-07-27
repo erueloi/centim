@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/format_utils.dart';
 import '../../../domain/models/category.dart';
+import '../../../domain/services/subcategory_move_service.dart';
 
 import '../providers/category_notifier.dart';
 import '../providers/transaction_notifier.dart';
@@ -47,15 +50,19 @@ class _SubCategoryEditorSheetState
   String? _linkedDebtId;
   bool _isLinkedToSavings = false;
   double _fallbackBudget = 0.0; // Pressupost del cicle anterior (fallback)
+  late String _targetParentId; // Categoria pare (pot canviar: mou la subcat)
 
   @override
   void initState() {
     super.initState();
+    _targetParentId = widget.category.id;
     _nameController = TextEditingController(
       text: widget.subCategory?.name ?? '',
     );
     _amountController = TextEditingController(
-      text: widget.subCategory?.monthlyBudget.toStringAsFixed(0) ?? '0',
+      text: widget.subCategory != null
+          ? editableAmountText(widget.subCategory!.monthlyBudget)
+          : '0',
     );
     _isFixed = widget.subCategory?.isFixed ?? false;
     _isWatched = widget.subCategory?.isWatched ?? false;
@@ -113,7 +120,7 @@ class _SubCategoryEditorSheetState
       final entry = await repo.getEntry(groupId, entryId);
       if (entry != null && mounted) {
         setState(() {
-          _amountController.text = entry.amount.toStringAsFixed(0);
+          _amountController.text = editableAmountText(entry.amount);
         });
       }
     } catch (_) {
@@ -164,7 +171,7 @@ class _SubCategoryEditorSheetState
       if (confirm != true) return;
     }
 
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    final amount = parseEditableAmount(_amountController.text) ?? 0.0;
 
     // When editing a specific month, save as BudgetEntry override
     // and keep the base monthlyBudget unchanged
@@ -202,28 +209,36 @@ class _SubCategoryEditorSheetState
           linkedDebtId: _isLinkedToSavings ? _linkedDebtId : null,
         );
 
-    List<SubCategory> updatedSubcategories = List.from(
-      widget.category.subcategories,
-    );
-
-    if (widget.subCategory == null) {
-      updatedSubcategories.add(newSub);
+    // ── CANVI DE CATEGORIA PARE ──
+    // Si s'ha triat un pare diferent, el desat passa pel camí de moviment:
+    // dry-run → confirmació → moviment atòmic + reescriptura de l'històric.
+    if (widget.subCategory != null && _targetParentId != widget.category.id) {
+      final ok = await _handleParentMove(newSub);
+      if (!ok) return; // cancel·lat o error: no continuem
     } else {
-      final index = updatedSubcategories.indexWhere(
-        (s) => s.id == widget.subCategory!.id,
+      List<SubCategory> updatedSubcategories = List.from(
+        widget.category.subcategories,
       );
-      if (index != -1) {
-        updatedSubcategories[index] = newSub;
+
+      if (widget.subCategory == null) {
+        updatedSubcategories.add(newSub);
+      } else {
+        final index = updatedSubcategories.indexWhere(
+          (s) => s.id == widget.subCategory!.id,
+        );
+        if (index != -1) {
+          updatedSubcategories[index] = newSub;
+        }
       }
+
+      final updatedCategory = widget.category.copyWith(
+        subcategories: updatedSubcategories,
+      );
+
+      await ref
+          .read(categoryNotifierProvider.notifier)
+          .updateCategory(updatedCategory);
     }
-
-    final updatedCategory = widget.category.copyWith(
-      subcategories: updatedSubcategories,
-    );
-
-    await ref
-        .read(categoryNotifierProvider.notifier)
-        .updateCategory(updatedCategory);
 
     // Save month-specific budget override if a cycle is selected
     if (widget.selectedCycle != null) {
@@ -327,6 +342,255 @@ class _SubCategoryEditorSheetState
 
       if (mounted) Navigator.pop(context);
     }
+  }
+
+  /// Executa el canvi de pare: dry-run → confirmació informada → moviment
+  /// atòmic + reescriptura de l'històric amb progrés bloquejant.
+  /// Retorna true si s'ha completat.
+  Future<bool> _handleParentMove(SubCategory newSub) async {
+    final categories = await ref.read(categoryNotifierProvider.future);
+    if (!mounted) return false;
+
+    final from = categories.firstWhere((c) => c.id == widget.category.id,
+        orElse: () => widget.category);
+    final toList = categories.where((c) => c.id == _targetParentId).toList();
+    if (toList.isEmpty) return false;
+    final to = toList.first;
+
+    // Bloqueig dur: mai entre tipus diferents (canviaria la semàntica de tots
+    // els moviments i generaria incoherències massives).
+    if (to.type != from.type) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'No es pot moure entre categories d\'ingrés i de despesa.'),
+          ),
+        );
+      }
+      return false;
+    }
+
+    final service = ref.read(subcategoryMoveServiceProvider);
+    final report = await service.dryRun(
+      from: from,
+      to: to,
+      sub: newSub,
+    );
+    if (!mounted) return false;
+
+    final currency = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
+    final df = DateFormat('dd/MM/yyyy');
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Moure de categoria'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('«${report.subCategoryName}» passarà de '
+                  '«${report.fromName}» a «${report.toName}».'),
+              const SizedBox(height: 12),
+              if (report.transactionCount == 0)
+                const Text('No hi ha moviments històrics a reclassificar.')
+              else
+                Text(
+                  '${report.transactionCount} moviment'
+                  '${report.transactionCount == 1 ? '' : 's'} · '
+                  '${currency.format(report.totalAmount)} es reclassificaran'
+                  '${report.firstDate != null ? '\n(${df.format(report.firstDate!)} – ${df.format(report.lastDate!)})' : ''}.',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              if (report.hasLinks) ...[
+                const SizedBox(height: 12),
+                _warn(
+                  report.linkedDebtId != null
+                      ? 'Aquesta subcategoria està enllaçada a un DEUTE. '
+                          'Moure-la NO desfà l\'enllaç: seguirà amortitzant-lo. '
+                          'Si ja no és un deute, desvincula\'l a part.'
+                      : 'Aquesta subcategoria està enllaçada a una GUARDIOLA. '
+                          'Moure-la NO desfà l\'enllaç.',
+                ),
+              ],
+              if (report.nameCollision) ...[
+                const SizedBox(height: 12),
+                _warn(
+                  'Ja hi ha una subcategoria amb aquest nom a '
+                  '«${report.toName}». Funcionarà (els ids són únics) però pot '
+                  'confondre visualment.',
+                ),
+              ],
+              if (report.staleReportCycles.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _warn(
+                  '${report.staleReportCycles.length} informe'
+                  '${report.staleReportCycles.length == 1 ? '' : 's'} de cicle '
+                  'quedarà${report.staleReportCycles.length == 1 ? '' : 'n'} '
+                  'obsolet${report.staleReportCycles.length == 1 ? '' : 's'} '
+                  '(${report.staleReportCycles.join(', ')}). '
+                  'Regenera\'ls quan acabi.',
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel·lar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Moure'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return false;
+
+    // Progrés BLOQUEJANT: la finestra en què les transaccions encara apunten al
+    // pare vell ha de ser curta i no navegable.
+    final progress = ValueNotifier<String>('Movent la subcategoria…');
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: ValueListenableBuilder<String>(
+                  valueListenable: progress,
+                  builder: (_, v, __) => Text(v),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      await service.move(
+        from: from,
+        to: to,
+        sub: newSub,
+        onProgress: (done, total) {
+          if (total > 0) {
+            progress.value = 'Reclassificant moviments… $done/$total';
+          }
+        },
+      );
+      if (mounted) Navigator.pop(context); // tanca el progrés
+      return true;
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error movent la subcategoria: $e')),
+        );
+      }
+      return false;
+    } finally {
+      progress.dispose();
+    }
+  }
+
+  Widget _warn(String text) => Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded,
+              size: 18, color: Colors.orange),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: 13)),
+          ),
+        ],
+      );
+
+  /// Selector de categoria pare. Només ofereix categories del MATEIX tipus
+  /// (moure entre expense/income canviaria la semàntica de tots els moviments)
+  /// i no arxivades. Canviar-lo mou la subcategoria conservant-ne l'id.
+  Widget _buildParentSelector() {
+    final categoriesAsync = ref.watch(categoryNotifierProvider);
+    return categoriesAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (categories) {
+        final options = categories
+            .where((c) =>
+                c.type == widget.category.type &&
+                (!c.archived || c.id == widget.category.id))
+            .toList();
+        if (options.length < 2) return const SizedBox.shrink();
+
+        final changed = _targetParentId != widget.category.id;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: _targetParentId,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.drive_file_move_outline),
+                  labelText: 'Categoria pare',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                ),
+                items: options
+                    .map((c) => DropdownMenuItem(
+                          value: c.id,
+                          child: Text('${c.icon} ${c.name}'),
+                        ))
+                    .toList(),
+                onChanged: (v) =>
+                    setState(() => _targetParentId = v ?? widget.category.id),
+              ),
+              if (changed)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline,
+                          size: 16, color: Colors.orange),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'En desar es reclassificaran els moviments històrics '
+                          'd\'aquesta subcategoria.',
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.orange[800]),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -434,6 +698,7 @@ class _SubCategoryEditorSheetState
               ),
             ),
             const SizedBox(height: 16),
+            if (widget.subCategory != null) _buildParentSelector(),
             membersAsync.when(
               data: (members) {
                 if (members.isEmpty) return const SizedBox.shrink();
@@ -600,9 +865,9 @@ class _SubCategoryEditorSheetState
                       visualDensity: VisualDensity.compact,
                     ),
                   ),
-                  if ((double.tryParse(_amountController.text) ?? 0) <
+                  if ((parseEditableAmount(_amountController.text) ?? 0) <
                           calculatedAverage * 0.75 &&
-                      (double.tryParse(_amountController.text) ?? 0) > 0)
+                      (parseEditableAmount(_amountController.text) ?? 0) > 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Text(

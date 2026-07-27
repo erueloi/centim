@@ -70,6 +70,10 @@ class _BankCallbackHandlerState extends ConsumerState<_BankCallbackHandler> {
     if (pending != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _process(pending));
     }
+    // NOTA: aquí NO es repara res automàticament. Les transaccions
+    // desincronitzades es detecten en mode NOMÉS LECTURA i es mostren a
+    // Configuració → Incoherències, on l'usuari decideix si es reparen.
+    // Una escriptura silenciosa a cada arrencada és inacceptable.
   }
 
   Future<void> _process(({String code, String state}) pending) async {

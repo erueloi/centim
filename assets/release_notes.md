@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.2.20
+Refactor del model comptable: calcul unificat d'ingressos i despeses compartit per dashboard, tendencies, informes i pressupost.
+Correccio de la doble aplicacio de moviments de guardiola i de l'edicio que no ajustava el saldo.
+Validacio de tipus asimetrica a la importacio i al formulari, que permet reemborsaments pero bloqueja moviments mal categoritzats.
+Deduplicacio millorada entre comptes diferents i avis de possible duplicat en crear moviments a ma.
+Nova pantalla d'incoherencies amb badge a la barra superior.
+Ara es pot canviar la categoria pare d'una subcategoria conservant l'historic.
+Correccio de perdua de decimals i del separador decimal amb coma als camps d'import.
 ## v1.2.19
 Categoritzacio automatica que apren de variants del mateix comerc i reapren en recategoritzar.
 Menys consultes a Firestore.
@@ -108,6 +116,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

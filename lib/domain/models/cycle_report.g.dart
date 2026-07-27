@@ -30,6 +30,7 @@ _$CycleReportImpl _$$CycleReportImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as Map<String, dynamic>)
               .toList() ??
           const [],
+      schemaVersion: (json['schemaVersion'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$$CycleReportImplToJson(_$CycleReportImpl instance) =>
@@ -47,4 +48,5 @@ Map<String, dynamic> _$$CycleReportImplToJson(_$CycleReportImpl instance) =>
       'zeroExpenseDays': instance.zeroExpenseDays,
       'totalDays': instance.totalDays,
       'unexpectedExpenses': instance.unexpectedExpenses,
+      'schemaVersion': instance.schemaVersion,
     };

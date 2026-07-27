@@ -36,7 +36,8 @@ mixin _$CycleReport {
   int get zeroExpenseDays => throw _privateConstructorUsedError;
   int get totalDays => throw _privateConstructorUsedError;
   List<Map<String, dynamic>> get unexpectedExpenses =>
-      throw _privateConstructorUsedError;
+      throw _privateConstructorUsedError; // Semàntica de càlcul amb què es va generar (0 = llegat, pre-ledger).
+  int get schemaVersion => throw _privateConstructorUsedError;
 
   /// Serializes this CycleReport to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -67,7 +68,8 @@ abstract class $CycleReportCopyWith<$Res> {
       List<Map<String, dynamic>> topSaved,
       int zeroExpenseDays,
       int totalDays,
-      List<Map<String, dynamic>> unexpectedExpenses});
+      List<Map<String, dynamic>> unexpectedExpenses,
+      int schemaVersion});
 }
 
 /// @nodoc
@@ -98,6 +100,7 @@ class _$CycleReportCopyWithImpl<$Res, $Val extends CycleReport>
     Object? zeroExpenseDays = null,
     Object? totalDays = null,
     Object? unexpectedExpenses = null,
+    Object? schemaVersion = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -152,6 +155,10 @@ class _$CycleReportCopyWithImpl<$Res, $Val extends CycleReport>
           ? _value.unexpectedExpenses
           : unexpectedExpenses // ignore: cast_nullable_to_non_nullable
               as List<Map<String, dynamic>>,
+      schemaVersion: null == schemaVersion
+          ? _value.schemaVersion
+          : schemaVersion // ignore: cast_nullable_to_non_nullable
+              as int,
     ) as $Val);
   }
 }
@@ -177,7 +184,8 @@ abstract class _$$CycleReportImplCopyWith<$Res>
       List<Map<String, dynamic>> topSaved,
       int zeroExpenseDays,
       int totalDays,
-      List<Map<String, dynamic>> unexpectedExpenses});
+      List<Map<String, dynamic>> unexpectedExpenses,
+      int schemaVersion});
 }
 
 /// @nodoc
@@ -206,6 +214,7 @@ class __$$CycleReportImplCopyWithImpl<$Res>
     Object? zeroExpenseDays = null,
     Object? totalDays = null,
     Object? unexpectedExpenses = null,
+    Object? schemaVersion = null,
   }) {
     return _then(_$CycleReportImpl(
       id: null == id
@@ -260,6 +269,10 @@ class __$$CycleReportImplCopyWithImpl<$Res>
           ? _value._unexpectedExpenses
           : unexpectedExpenses // ignore: cast_nullable_to_non_nullable
               as List<Map<String, dynamic>>,
+      schemaVersion: null == schemaVersion
+          ? _value.schemaVersion
+          : schemaVersion // ignore: cast_nullable_to_non_nullable
+              as int,
     ));
   }
 }
@@ -280,7 +293,8 @@ class _$CycleReportImpl implements _CycleReport {
       final List<Map<String, dynamic>> topSaved = const [],
       this.zeroExpenseDays = 0,
       this.totalDays = 0,
-      final List<Map<String, dynamic>> unexpectedExpenses = const []})
+      final List<Map<String, dynamic>> unexpectedExpenses = const [],
+      this.schemaVersion = 0})
       : _topOverspent = topOverspent,
         _topSaved = topSaved,
         _unexpectedExpenses = unexpectedExpenses;
@@ -343,9 +357,14 @@ class _$CycleReportImpl implements _CycleReport {
     return EqualUnmodifiableListView(_unexpectedExpenses);
   }
 
+// Semàntica de càlcul amb què es va generar (0 = llegat, pre-ledger).
+  @override
+  @JsonKey()
+  final int schemaVersion;
+
   @override
   String toString() {
-    return 'CycleReport(id: $id, groupId: $groupId, cycleId: $cycleId, generatedAt: $generatedAt, aiVerdict: $aiVerdict, totalIncome: $totalIncome, totalExpense: $totalExpense, savingsPercentage: $savingsPercentage, topOverspent: $topOverspent, topSaved: $topSaved, zeroExpenseDays: $zeroExpenseDays, totalDays: $totalDays, unexpectedExpenses: $unexpectedExpenses)';
+    return 'CycleReport(id: $id, groupId: $groupId, cycleId: $cycleId, generatedAt: $generatedAt, aiVerdict: $aiVerdict, totalIncome: $totalIncome, totalExpense: $totalExpense, savingsPercentage: $savingsPercentage, topOverspent: $topOverspent, topSaved: $topSaved, zeroExpenseDays: $zeroExpenseDays, totalDays: $totalDays, unexpectedExpenses: $unexpectedExpenses, schemaVersion: $schemaVersion)';
   }
 
   @override
@@ -374,7 +393,9 @@ class _$CycleReportImpl implements _CycleReport {
             (identical(other.totalDays, totalDays) ||
                 other.totalDays == totalDays) &&
             const DeepCollectionEquality()
-                .equals(other._unexpectedExpenses, _unexpectedExpenses));
+                .equals(other._unexpectedExpenses, _unexpectedExpenses) &&
+            (identical(other.schemaVersion, schemaVersion) ||
+                other.schemaVersion == schemaVersion));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -393,7 +414,8 @@ class _$CycleReportImpl implements _CycleReport {
       const DeepCollectionEquality().hash(_topSaved),
       zeroExpenseDays,
       totalDays,
-      const DeepCollectionEquality().hash(_unexpectedExpenses));
+      const DeepCollectionEquality().hash(_unexpectedExpenses),
+      schemaVersion);
 
   /// Create a copy of CycleReport
   /// with the given fields replaced by the non-null parameter values.
@@ -425,7 +447,8 @@ abstract class _CycleReport implements CycleReport {
       final List<Map<String, dynamic>> topSaved,
       final int zeroExpenseDays,
       final int totalDays,
-      final List<Map<String, dynamic>> unexpectedExpenses}) = _$CycleReportImpl;
+      final List<Map<String, dynamic>> unexpectedExpenses,
+      final int schemaVersion}) = _$CycleReportImpl;
 
   factory _CycleReport.fromJson(Map<String, dynamic> json) =
       _$CycleReportImpl.fromJson;
@@ -456,7 +479,10 @@ abstract class _CycleReport implements CycleReport {
   @override
   int get totalDays;
   @override
-  List<Map<String, dynamic>> get unexpectedExpenses;
+  List<Map<String, dynamic>>
+      get unexpectedExpenses; // Semàntica de càlcul amb què es va generar (0 = llegat, pre-ledger).
+  @override
+  int get schemaVersion;
 
   /// Create a copy of CycleReport
   /// with the given fields replaced by the non-null parameter values.

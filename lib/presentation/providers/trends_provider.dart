@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../domain/models/category.dart';
+import '../../domain/services/ledger_service.dart';
 import 'transaction_notifier.dart';
 import 'category_notifier.dart';
 
@@ -122,6 +123,10 @@ class TrendsNotifier extends _$TrendsNotifier {
           t.date.isBefore(endDate.add(const Duration(days: 1)));
     }).toList();
 
+    // FONT ÚNICA DE CÀLCUL: classifiquem cada moviment amb les mateixes regles
+    // que el Dashboard (exclou guardioles/transfers, refunds resten, etc.).
+    final look = LedgerLookups.from(categories);
+
     // 2. Monthly Flow
     Map<String, MonthlyTrendData> monthlyMap = {};
 
@@ -136,36 +141,38 @@ class TrendsNotifier extends _$TrendsNotifier {
 
     for (var t in recentTransactions) {
       final key = "${t.date.year}-${t.date.month}";
-      if (monthlyMap.containsKey(key)) {
-        final current = monthlyMap[key]!;
-        if (t.isIncome) {
-          monthlyMap[key] = MonthlyTrendData(
-            month: current.month,
-            income: current.income + t.amount,
-            expense: current.expense,
-          );
-        } else {
-          monthlyMap[key] = MonthlyTrendData(
-            month: current.month,
-            income: current.income,
-            expense: current.expense + t.amount,
-          );
-        }
+      if (!monthlyMap.containsKey(key)) continue;
+      final c = classifyTransaction(t, look);
+      final current = monthlyMap[key]!;
+      if (c.bucket == LedgerBucket.income) {
+        monthlyMap[key] = MonthlyTrendData(
+          month: current.month,
+          income: current.income + c.delta,
+          expense: current.expense,
+        );
+      } else if (c.bucket == LedgerBucket.expense) {
+        monthlyMap[key] = MonthlyTrendData(
+          month: current.month,
+          income: current.income,
+          expense: current.expense + c.delta,
+        );
       }
+      // saved/withdrawn (guardioles) no entren al flux mensual.
     }
 
     final monthlyFlow = monthlyMap.values.toList()
       ..sort((a, b) => a.month.compareTo(b.month)); // Oldest first
 
-    // 3. Top Categories (Expense only)
+    // 3. Top Categories (despesa canònica: exclou guardioles, refunds resten)
     Map<String, double> categoryTotals = {};
     double totalExpenses = 0;
 
     for (var t in recentTransactions) {
-      if (!t.isIncome) {
+      final c = classifyTransaction(t, look);
+      if (c.bucket == LedgerBucket.expense) {
         categoryTotals[t.categoryId] =
-            (categoryTotals[t.categoryId] ?? 0) + t.amount;
-        totalExpenses += t.amount;
+            (categoryTotals[t.categoryId] ?? 0) + c.delta;
+        totalExpenses += c.delta;
       }
     }
 
@@ -193,12 +200,13 @@ class TrendsNotifier extends _$TrendsNotifier {
         // Compute subcategory breakdown for this category
         final subcatTotals = <String, double>{};
         for (var t in recentTransactions) {
-          if (!t.isIncome && t.categoryId == entry.key) {
-            final subName = t.subCategoryName.isNotEmpty
-                ? t.subCategoryName
-                : 'Sense subcategoria';
-            subcatTotals[subName] = (subcatTotals[subName] ?? 0) + t.amount;
-          }
+          if (t.categoryId != entry.key) continue;
+          final c = classifyTransaction(t, look);
+          if (c.bucket != LedgerBucket.expense) continue;
+          final subName = t.subCategoryName.isNotEmpty
+              ? t.subCategoryName
+              : 'Sense subcategoria';
+          subcatTotals[subName] = (subcatTotals[subName] ?? 0) + c.delta;
         }
         final sortedSubcats = subcatTotals.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
@@ -240,13 +248,10 @@ class TrendsNotifier extends _$TrendsNotifier {
     }
 
     // 4. Savings Rate (Total Income - Total Expense) / Total Income
-    // Calculated over the whole period
-    double totalPeriodIncome = recentTransactions
-        .where((t) => t.isIncome)
-        .fold(0, (sum, t) => sum + t.amount);
-    double totalPeriodExpense = recentTransactions
-        .where((t) => !t.isIncome)
-        .fold(0, (sum, t) => sum + t.amount);
+    // Calculat sobre tot el període amb els totals canònics del ledger.
+    final periodLedger = summarizeLedger(recentTransactions, look);
+    double totalPeriodIncome = periodLedger.totalIncome;
+    double totalPeriodExpense = periodLedger.totalExpense;
 
     double savingsRate = 0;
     if (totalPeriodIncome > 0) {

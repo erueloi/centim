@@ -575,76 +575,103 @@ class ImportService {
     ImportedTransaction newTx,
     List<t_model.Transaction> existing,
   ) {
-    // Dedup EXACTE per id de banc (Enable Banking): si el moviment entrant porta
-    // bankTxId i ja existeix una transacció amb el mateix id, és duplicat segur
-    // (sense falsos positius). Els moviments d'Excel no tenen bankTxId i cauen a
-    // l'heurística difusa de sota.
+    // 1. Dedup EXACTE per id de banc (Enable Banking): sense falsos positius.
     final newBankId = newTx.bankTxId;
     if (newBankId != null && newBankId.isNotEmpty) {
       for (final old in existing) {
-        if (old.bankTxId != null && old.bankTxId == newBankId) {
-          debugPrint('DUPLICATE: bankTxId match "$newBankId"');
-          return true;
-        }
+        if (old.bankTxId != null && old.bankTxId == newBankId) return true;
       }
     }
 
-    const dayWindow = 3; // Allow +/- days difference
-
-    // Normalize: lowercase, collapse whitespace
-    String normalize(String s) =>
-        s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
-
-    final newConcept = normalize(newTx.concept);
-    final newAmount = newTx.amount.abs();
-
+    // 2. Heurística difusa amb confiança segons el compte.
+    final newConcept = _normalizeConcept(newTx.concept);
     for (final old in existing) {
-      // Si tots dos tenen compte assignat i són diferents, no és el mateix
-      // moviment (clau difusa: data+import+concepte+accountId).
-      if (newTx.accountId != null &&
-          old.accountId != null &&
-          newTx.accountId != old.accountId) {
-        continue;
-      }
-
-      final oldAmount = old.amount.abs();
-
-      // Amount must match (within 1 cent tolerance)
-      if ((oldAmount - newAmount).abs() > 0.02) continue;
-
-      // Date check with window
-      final diff = old.date.difference(newTx.date).inDays.abs();
-      if (diff > dayWindow) continue;
-
-      final oldConcept = normalize(old.concept);
-
-      // Exact match
-      if (oldConcept == newConcept) {
-        debugPrint('DUPLICATE: exact match "$oldConcept"');
+      if (_looksLikeSame(
+        concept: newConcept,
+        amount: newTx.amount,
+        date: newTx.date,
+        accountId: newTx.accountId,
+        old: old,
+      )) {
         return true;
-      }
-
-      // Contains match (CSV concept often includes extra info)
-      if (newConcept.contains(oldConcept) || oldConcept.contains(newConcept)) {
-        debugPrint('DUPLICATE: contains match "$oldConcept" <-> "$newConcept"');
-        return true;
-      }
-
-      // Token overlap: if >60% of words match
-      final newWords = newConcept.split(' ').where((w) => w.length > 2).toSet();
-      final oldWords = oldConcept.split(' ').where((w) => w.length > 2).toSet();
-      if (newWords.isNotEmpty && oldWords.isNotEmpty) {
-        final intersection = newWords.intersection(oldWords);
-        final smaller = newWords.length < oldWords.length ? newWords : oldWords;
-        if (smaller.isNotEmpty && intersection.length / smaller.length >= 0.6) {
-          debugPrint(
-            'DUPLICATE: token overlap "${intersection.join(", ")}" in "$oldConcept" <-> "$newConcept"',
-          );
-          return true;
-        }
       }
     }
     return false;
+  }
+
+  /// Cerca un moviment ja existent semblant, per avisar a la creació manual.
+  /// NO bloqueja res: retorna el primer candidat o null.
+  Future<t_model.Transaction?> findSimilar({
+    required double amount,
+    required DateTime date,
+    required String concept,
+    String? accountId,
+    String? excludeId,
+  }) async {
+    final existing = await _fetchExistingTransactions();
+    final norm = _normalizeConcept(concept);
+    for (final old in existing) {
+      if (excludeId != null && old.id == excludeId) continue;
+      if (_looksLikeSame(
+        concept: norm,
+        amount: amount,
+        date: date,
+        accountId: accountId,
+        old: old,
+      )) {
+        return old;
+      }
+    }
+    return null;
+  }
+
+  String _normalizeConcept(String s) =>
+      s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+  /// Decideix si `old` és probablement el mateix moviment que el nou.
+  ///
+  /// El compte diferent NO descarta d'entrada: baixa la confiança i exigeix un
+  /// match més fort (concepte quasi-exacte, o mateixa data exacta amb l'import
+  /// ja coincident). Amb el mateix compte (o algun sense compte), s'aplica el
+  /// llindar difús habitual (exacte / conté / solapament de tokens ≥60%).
+  ///
+  /// Nota de futur: comptes diferents + imports amb SIGNES OPOSATS identifiquen
+  /// les dues potes d'una transferència interna (no implementat aquí).
+  bool _looksLikeSame({
+    required String concept, // ja normalitzat
+    required double amount,
+    required DateTime date,
+    required String? accountId,
+    required t_model.Transaction old,
+  }) {
+    const dayWindow = 3;
+    if ((old.amount.abs() - amount.abs()).abs() > 0.02) return false;
+    final dayDiff = old.date.difference(date).inDays.abs();
+    if (dayDiff > dayWindow) return false;
+
+    final oldConcept = _normalizeConcept(old.concept);
+    final exact = oldConcept == concept;
+    final contains =
+        concept.contains(oldConcept) || oldConcept.contains(concept);
+
+    final newWords = concept.split(' ').where((w) => w.length > 2).toSet();
+    final oldWords = oldConcept.split(' ').where((w) => w.length > 2).toSet();
+    bool tokenOverlap = false;
+    if (newWords.isNotEmpty && oldWords.isNotEmpty) {
+      final inter = newWords.intersection(oldWords);
+      final smaller = newWords.length < oldWords.length ? newWords : oldWords;
+      tokenOverlap = smaller.isNotEmpty && inter.length / smaller.length >= 0.6;
+    }
+    final conceptMatch = exact || contains || tokenOverlap;
+
+    final differentAccount =
+        accountId != null && old.accountId != null && accountId != old.accountId;
+
+    if (differentAccount) {
+      // Baixa confiança → cal senyal fort.
+      return exact || dayDiff == 0;
+    }
+    return conceptMatch;
   }
 
   /// Clau normalitzada d'un concepte, per agrupar variants del mateix comerç.

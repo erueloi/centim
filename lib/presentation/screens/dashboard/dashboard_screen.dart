@@ -13,8 +13,10 @@ import '../../widgets/watchlist_section.dart';
 import '../../widgets/ai_insight_card.dart';
 
 import '../../providers/billing_cycle_provider.dart';
+import '../../providers/incoherences_provider.dart';
 import '../settings/billing_cycles_settings_screen.dart';
 import '../settings/user_profile_screen.dart';
+import '../settings/incoherences_screen.dart';
 import 'cycle_reports_agenda_screen.dart';
 
 import '../../../domain/services/version_check_service.dart';
@@ -106,6 +108,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _confettiController.play();
   }
 
+  /// Badge d'incoherències a la barra superior (estil notificació): apareix
+  /// NOMÉS si n'hi ha i desapareix sol quan la llista queda a zero.
+  Widget _buildIncoherencesBadge(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final count = ref.watch(incoherencesProvider).maybeWhen(
+              data: (items) => items.length,
+              orElse: () => 0,
+            );
+        if (count == 0) return const SizedBox.shrink();
+        return IconButton(
+          tooltip: '$count moviment${count == 1 ? '' : 's'} a revisar',
+          icon: Badge.count(
+            count: count,
+            backgroundColor: Colors.orange,
+            textColor: Colors.white,
+            child: const Icon(Icons.rule),
+          ),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const IncoherencesScreen()),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // l10n unused here as title is hardcoded "Inici"
@@ -139,6 +168,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         automaticallyImplyLeading: false,
         actions: [
+          _buildIncoherencesBadge(context),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: AppLocalizations.of(context)!.cycleHistoryTooltip,

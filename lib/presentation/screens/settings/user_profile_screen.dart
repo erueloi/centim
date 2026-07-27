@@ -7,7 +7,9 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:centim/l10n/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/providers/repository_providers.dart';
+import '../../providers/incoherences_provider.dart';
 import 'bank_sync_screen.dart';
+import 'incoherences_screen.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key});
@@ -278,6 +280,55 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(color: Colors.grey[300]!),
                 ),
+              ),
+              const SizedBox(height: 16),
+
+              // Eina de manteniment (discreta): incoherències de dades.
+              Consumer(
+                builder: (context, ref, _) {
+                  final count = ref.watch(incoherencesProvider).maybeWhen(
+                        data: (items) => items.length,
+                        orElse: () => 0,
+                      );
+                  return ListTile(
+                    leading: const Icon(Icons.rule, color: AppTheme.copper),
+                    title: const Text(
+                      'Incoherències',
+                      style: TextStyle(
+                          color: AppTheme.copper,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (count > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text('$count',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        const Icon(Icons.chevron_right, color: AppTheme.copper),
+                      ],
+                    ),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const IncoherencesScreen()),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey[300]!),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
 

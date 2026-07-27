@@ -427,13 +427,22 @@ class _TransactionImportRowState extends State<_TransactionImportRow> {
             ? item.subCategoryId
             : null;
 
-    Category? selectedCat;
+    // Filtre ASIMÈTRIC segons el signe de l'import (coherent amb la taula D1):
+    //  - ingrés (amount > 0): categories d'ingrés O de despesa (refund)
+    //  - despesa (amount <= 0): NOMÉS categories de despesa (bloqueja el mal tipat)
+    final rowIsIncome = item.amount > 0;
+    final allowedCategories = widget.categories.where((c) {
+      if (rowIsIncome) return true;
+      return c.type == TransactionType.expense;
+    }).toList();
 
+    Category? selectedCat;
     if (categoryId != null) {
-      try {
-        selectedCat = widget.categories.firstWhere((c) => c.id == categoryId);
-      } catch (_) {
-        // categoryId doesn't match any category, reset it
+      final match = allowedCategories.where((c) => c.id == categoryId).toList();
+      if (match.isNotEmpty) {
+        selectedCat = match.first;
+      } else {
+        // Categoria inexistent o NO permesa per aquest signe → reset.
         item.categoryId = null;
       }
     }
@@ -500,8 +509,8 @@ class _TransactionImportRowState extends State<_TransactionImportRow> {
                       child: DropdownButton<String>(
                         isExpanded: true,
                         hint: const Text('Sense Categoria'),
-                        value: categoryId,
-                        items: widget.categories.map((c) {
+                        value: selectedCat?.id,
+                        items: allowedCategories.map((c) {
                           return DropdownMenuItem(
                             value: c.id,
                             child: Text('${c.icon} ${c.name}'),

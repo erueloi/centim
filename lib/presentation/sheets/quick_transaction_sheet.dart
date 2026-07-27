@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/format_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../domain/models/category.dart';
@@ -29,7 +30,7 @@ class _QuickTransactionSheetState extends ConsumerState<QuickTransactionSheet> {
 
   void _saveTransaction() async {
     final amountText = _amountController.text.replaceAll(',', '.');
-    final amount = double.tryParse(amountText);
+    final amount = parseEditableAmount(amountText);
 
     if (amount == null || amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(

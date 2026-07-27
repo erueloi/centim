@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../../../core/theme/app_theme.dart';
+import '../../../core/format_utils.dart';
 import '../../../domain/models/asset.dart';
 import '../../../domain/models/transaction.dart';
 import '../../../domain/models/transfer.dart';
@@ -1107,8 +1108,8 @@ class _FilterSheetState extends ConsumerState<_FilterSheet> {
     notifier.setType(_selectedType);
     notifier.setPayer(_selectedPayer);
 
-    final min = double.tryParse(_minController.text);
-    final max = double.tryParse(_maxController.text);
+    final min = parseEditableAmount(_minController.text);
+    final max = parseEditableAmount(_maxController.text);
     notifier.setAmountRange(min, max);
     notifier.setDateRange(_dateFrom, _dateTo);
 

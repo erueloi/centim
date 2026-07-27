@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/format_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/models/budget_entry.dart';
@@ -256,7 +257,7 @@ class _MonthCardState extends State<_MonthCard> {
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.amount.toStringAsFixed(0));
+    _controller = TextEditingController(text: editableAmountText(widget.amount));
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus) {
         _submit();
@@ -268,18 +269,18 @@ class _MonthCardState extends State<_MonthCard> {
   void didUpdateWidget(covariant _MonthCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.amount != oldWidget.amount && !_focusNode.hasFocus) {
-      _controller.text = widget.amount.toStringAsFixed(0);
+      _controller.text = editableAmountText(widget.amount);
     }
   }
 
   void _submit() {
-    final val = double.tryParse(_controller.text);
+    final val = parseEditableAmount(_controller.text);
     if (val != null && val != widget.amount) {
       widget.onChanged(val);
     } else {
       // Reset if invalid or unchanged
       if (!_focusNode.hasFocus) {
-        _controller.text = widget.amount.toStringAsFixed(0);
+        _controller.text = editableAmountText(widget.amount);
       }
     }
   }

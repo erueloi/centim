@@ -1,6 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/models/category.dart';
 
+/// Lògica PURA del canvi de pare d'una subcategoria: la treu de `from` i
+/// l'afegeix a `to` conservant el map sencer. Aïllada del repositori per poder
+/// verificar amb tests que no es perd cap camp pel camí.
+({Category from, Category to}) applySubcategoryMove({
+  required Category from,
+  required Category to,
+  required SubCategory sub,
+}) {
+  return (
+    from: from.copyWith(
+      subcategories: from.subcategories.where((s) => s.id != sub.id).toList(),
+    ),
+    to: to.copyWith(subcategories: [...to.subcategories, sub]),
+  );
+}
+
 class CategoryRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
@@ -95,6 +111,36 @@ class CategoryRepository {
         .collection('categories')
         .doc(category.id)
         .update(data);
+  }
+
+  /// Mou una subcategoria d'un pare a un altre CONSERVANT el seu id i tots els
+  /// seus camps. Els dos documents s'escriuen al MATEIX batch: o es fan els dos
+  /// canvis o cap, així la subcategoria no es pot perdre pel camí.
+  /// `sub` és la subcategoria a moure, ja amb qualsevol edició aplicada: així
+  /// el canvi de pare i l'edició de camps van al mateix batch.
+  Future<void> moveSubcategory({
+    required String groupId,
+    required Category from,
+    required Category to,
+    required SubCategory sub,
+  }) async {
+    // Es mou el map SENCER (id, name, monthlyBudget, isFixed, isWatched,
+    // linkedDebtId, linkedSavingsGoalId, defaultPayerId, paymentDay,
+    // paymentTiming, archived).
+    final moved = applySubcategoryMove(from: from, to: to, sub: sub);
+    final updatedFrom = moved.from;
+    final updatedTo = moved.to;
+
+    final col =
+        _firestore.collection('groups').doc(groupId).collection('categories');
+
+    final batch = _firestore.batch();
+    for (final c in [updatedFrom, updatedTo]) {
+      final data = c.toJson();
+      data['subcategories'] = c.subcategories.map((s) => s.toJson()).toList();
+      batch.update(col.doc(c.id), data);
+    }
+    await batch.commit();
   }
 
   Future<void> updateCategoriesOrder(

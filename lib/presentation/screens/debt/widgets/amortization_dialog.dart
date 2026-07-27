@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/format_utils.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../domain/models/debt_account.dart';
 
@@ -32,7 +33,7 @@ class _AmortizationDialogState extends State<AmortizationDialog> {
     _calculateAmortization();
     _amountController.addListener(() {
       setState(() {
-        _extraPayment = double.tryParse(_amountController.text) ?? 0.0;
+        _extraPayment = parseEditableAmount(_amountController.text) ?? 0.0;
         _calculateAmortization();
       });
     });

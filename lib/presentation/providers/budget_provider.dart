@@ -2,6 +2,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/category.dart';
+import '../../domain/models/transaction.dart';
+import '../../domain/services/ledger_service.dart';
 import 'category_notifier.dart';
 import 'transaction_notifier.dart';
 import 'auth_providers.dart';
@@ -126,10 +128,12 @@ class DashboardBudgetNotifier extends _$DashboardBudgetNotifier {
 // Helper function to avoid code duplication
 List<BudgetStatus> _calculateBudgetStatus(
   List<Category> categories,
-  List<dynamic> transactions,
+  List<Transaction> transactions,
   List<BudgetEntry> budgetEntries,
   BillingCycle cycle,
 ) {
+  final look = LedgerLookups.from(categories);
+
   final currentCycleTransactions = transactions.where((t) {
     // Assuming Transaction model has date
     final tDay = DateTime(t.date.year, t.date.month, t.date.day, 12, 0, 0);
@@ -165,15 +169,21 @@ List<BudgetStatus> _calculateBudgetStatus(
       return sum + effectiveBudget;
     });
 
-    // 2. Calculate Spent for this Category
+    // 2. Gastat de la categoria (regles canòniques: exclou guardioles; els
+    //    refunds —isIncome=true en categoria de despesa— resten).
     final categoryTransactions = currentCycleTransactions
         .where((t) => t.categoryId == category.id)
         .toList();
 
-    final spent = categoryTransactions.fold(
-      0.0,
-      (sum, t) => sum + ((t.amount as num).toDouble()),
-    );
+    double spent = 0.0;
+    final subSpentById = <String, double>{};
+    for (final t in categoryTransactions) {
+      final c = classifyTransaction(t, look);
+      if (c.bucket != LedgerBucket.expense) continue;
+      spent += c.delta;
+      subSpentById[t.subCategoryId] =
+          (subSpentById[t.subCategoryId] ?? 0) + c.delta;
+    }
 
     // 3. Calculate per-subcategory status
     final subcategoryStatuses = activeSubcategories.map((sub) {
@@ -190,10 +200,7 @@ List<BudgetStatus> _calculateBudgetStatus(
       final effectiveBudget =
           entry.id.isNotEmpty ? entry.amount : sub.monthlyBudget;
 
-      // Get transactions for this specific subcategory
-      final subSpent = categoryTransactions
-          .where((t) => t.subCategoryId == sub.id)
-          .fold(0.0, (sum, t) => sum + ((t.amount as num).toDouble()));
+      final subSpent = subSpentById[sub.id] ?? 0.0;
 
       final subPercentage = effectiveBudget > 0
           ? (subSpent / effectiveBudget)
