@@ -126,6 +126,10 @@ class LedgerSummary {
   double withdrawnThisCycle = 0;
   final Map<String, double> incomeByCategory = {};
   final Map<String, double> expenseByCategory = {};
+  final Map<String, double> savedByCategory = {};
+  final Map<String, double> withdrawnByCategory = {};
+  final Map<String, double> savedBySubcategory = {};
+  final Map<String, double> withdrawnBySubcategory = {};
   final List<Incoherence> incoherences = [];
 
   /// Estalvi net del cicle.
@@ -153,9 +157,17 @@ LedgerSummary summarizeLedger(
         break;
       case LedgerBucket.saved:
         s.savedThisCycle += c.delta;
+        s.savedByCategory[tx.categoryId] =
+            (s.savedByCategory[tx.categoryId] ?? 0) + c.delta;
+        s.savedBySubcategory[tx.subCategoryId] =
+            (s.savedBySubcategory[tx.subCategoryId] ?? 0) + c.delta;
         break;
       case LedgerBucket.withdrawn:
         s.withdrawnThisCycle += c.delta;
+        s.withdrawnByCategory[tx.categoryId] =
+            (s.withdrawnByCategory[tx.categoryId] ?? 0) + c.delta;
+        s.withdrawnBySubcategory[tx.subCategoryId] =
+            (s.withdrawnBySubcategory[tx.subCategoryId] ?? 0) + c.delta;
         break;
     }
     s.incoherences.addAll(c.incoherences);

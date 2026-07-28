@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.2.23
+Nou estat de fluxos de caixa amb saldo inicial arrossegat, mode degradat, desglossament dels comptes liquids i guardioles, avisos de quadrament i deteccio de moviments sense compte.
+Accio controlada per corregir solapaments entre cicles.
+Panoramica unificada amb el ledger: pressupost historic dels arxivats preservat, estalvi net, mesos sense moviments en gris i columnes de mitjana i acumulat.
+Persistencia correcta de savingsGoalId.
+Millora de Ja he cobrat: permet triar la data de cobrament, tanca el cicle vell el dia anterior, inicia el nou el dia de la nomina i reutilitza el mateix dialeg de revisio i segellat del pot.
+## v1.2.22
+Nou estat de fluxos de caixa amb saldo inicial arrossegat, desglossament dels comptes liquids i avisos de quadrament. Accio controlada per corregir solapaments entre cicles. Panoramica unificada amb el ledger: pressupost historic dels arxivats preservat, estalvi net, mesos sense moviments en gris i columnes de mitjana i acumulat. Persistencia correcta de savingsGoalId per revertir edicions i eliminacions de moviments de guardiola.
 ## v1.2.21
 Correccio de la pestanya Detall: les categories d'ingressos (nomina) mostraven 0 euros executats perque el calcul nomes comptava el cistell de despeses.
 Ara cada categoria compta el seu tipus, mantenint l'exclusio de guardioles i els moviments de signe contrari.
@@ -119,32 +127,4 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

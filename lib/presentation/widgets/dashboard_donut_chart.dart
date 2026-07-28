@@ -43,11 +43,14 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
                 ? widget.summary.monthlyExpenses
                 : 1.0;
 
-            String centerTitle = 'Disponible';
-            double centerAmount = widget.summary.availableToSpend;
+            // "Net del cicle", no "Disponible": això és ingressos − despeses
+            // del cicle, una xifra de PRESSUPOST. No és caixa i no quadra amb
+            // els comptes; per a caixa hi ha la targeta d'estat de caixa.
+            String centerTitle = 'Net del cicle';
+            double centerAmount = widget.summary.netOfCycle;
             String centerSubtitle =
                 'de ${currencyFormat.format(widget.summary.monthlyIncome)}';
-            Color centerColor = widget.summary.availableToSpend < 0
+            Color centerColor = widget.summary.netOfCycle < 0
                 ? Colors.red
                 : AppTheme.anthracite;
 
@@ -78,8 +81,8 @@ class _DashboardDonutChartState extends ConsumerState<DashboardDonutChart> {
             } else if (activeIndex == sortedEntries.length &&
                 widget.summary.monthlyIncome > widget.summary.monthlyExpenses) {
               // S'ha tocat la franja lliure restant grisa
-              centerTitle = 'Disponible';
-              centerAmount = widget.summary.availableToSpend;
+              centerTitle = 'Net del cicle';
+              centerAmount = widget.summary.netOfCycle;
               centerSubtitle = 'pressupost lliure';
             }
 

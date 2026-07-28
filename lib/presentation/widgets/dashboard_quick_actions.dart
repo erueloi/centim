@@ -89,38 +89,9 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
                         label: AppLocalizations.of(context)!.alreadyPaid,
                         color: AppTheme.copper,
                         isSelected: false,
-                        onTap: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              title: Text(AppLocalizations.of(context)!.confirmSalary),
-                              content: Text(
-                                AppLocalizations.of(context)!
-                                    .salaryConfirmationMessage,
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: Text(AppLocalizations.of(context)!.cancelButton),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppTheme.copper,
-                                    foregroundColor: Colors.white,
-                                  ),
-                                  child: Text(AppLocalizations.of(context)!.yesPaid),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirm == true) {
-                            widget.onNominaReceived();
-                          }
-                        },
+                        // Mateix flux que el banner de final de cicle: data de
+                        // cobrament + desglossament del pot + confirmació.
+                        onTap: widget.onNominaReceived,
                       ),
                     ),
                   ],
@@ -134,11 +105,13 @@ class _DashboardQuickActionsState extends ConsumerState<DashboardQuickActions> {
                       return categoriesAsync.when(
                         data: (categories) {
                           final filteredCats = categories
-                              .where((c) => c.type == _expandedType && !c.archived)
+                              .where(
+                                  (c) => c.type == _expandedType && !c.archived)
                               .toList();
                           if (filteredCats.isEmpty) {
                             return Center(
-                                child: Text(AppLocalizations.of(context)!.noCategories));
+                                child: Text(AppLocalizations.of(context)!
+                                    .noCategories));
                           }
                           return _buildCategoryGrid(filteredCats);
                         },

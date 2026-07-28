@@ -18,14 +18,14 @@ class FirestoreTransactionRepository implements TransactionRepository {
         .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data();
-        return _fromMap(data, doc.id);
+        return transactionFromFirestoreMap(data, doc.id);
       }).toList();
     });
   }
 
   @override
   Future<void> addTransaction(dom.Transaction transaction) async {
-    final data = _toMap(transaction);
+    final data = transactionToFirestoreMap(transaction);
     await _firestore.collection(_collectionName).add(data);
   }
 
@@ -34,7 +34,7 @@ class FirestoreTransactionRepository implements TransactionRepository {
     if (transaction.id == null) {
       throw Exception('Transaction ID is null. Cannot update.');
     }
-    final data = _toMap(transaction);
+    final data = transactionToFirestoreMap(transaction);
     await _firestore
         .collection(_collectionName)
         .doc(transaction.id)
@@ -59,45 +59,52 @@ class FirestoreTransactionRepository implements TransactionRepository {
         .get();
     return snapshot.count ?? 0;
   }
+}
 
-  Map<String, dynamic> _toMap(dom.Transaction transaction) {
-    return {
-      'groupId': transaction.groupId,
-      'date': Timestamp.fromDate(transaction.date),
-      'amount': transaction.amount,
-      'concept': transaction.concept,
-      // New Dynamic Fields
-      'categoryId': transaction.categoryId,
-      'subCategoryId': transaction.subCategoryId,
-      'categoryName': transaction.categoryName,
-      'subCategoryName': transaction.subCategoryName,
-      'payer': transaction.payer,
-      'isIncome': transaction.isIncome,
-      'accountId': transaction.accountId,
-      'source': transaction.source,
-      'bankTxId': transaction.bankTxId,
-    };
-  }
+/// Serialització pura i testable del document de moviment.
+///
+/// `savingsGoalId` és informació comptable, no només d'UI: en rellegir un
+/// moviment cal saber quina guardiola revertir si s'edita o s'esborra.
+Map<String, dynamic> transactionToFirestoreMap(dom.Transaction transaction) {
+  return {
+    'groupId': transaction.groupId,
+    'date': Timestamp.fromDate(transaction.date),
+    'amount': transaction.amount,
+    'concept': transaction.concept,
+    'categoryId': transaction.categoryId,
+    'subCategoryId': transaction.subCategoryId,
+    'categoryName': transaction.categoryName,
+    'subCategoryName': transaction.subCategoryName,
+    'payer': transaction.payer,
+    'isIncome': transaction.isIncome,
+    'savingsGoalId': transaction.savingsGoalId,
+    'accountId': transaction.accountId,
+    'source': transaction.source,
+    'bankTxId': transaction.bankTxId,
+  };
+}
 
-  dom.Transaction _fromMap(Map<String, dynamic> data, String id) {
-    return dom.Transaction(
-      id: id,
-      groupId: data['groupId'] as String? ?? 'unknown',
-      date: (data['date'] as Timestamp).toDate(),
-      amount: (data['amount'] as num).toDouble(),
-      concept: data['concept'] as String? ?? '',
-      // Map new fields with fallbacks for old data
-      categoryId: data['categoryId'] as String? ?? 'legacy_cat',
-      subCategoryId: data['subCategoryId'] as String? ?? 'legacy_sub',
-      categoryName: data['categoryName'] as String? ??
-          (data['category'] as String? ?? 'Unknown'),
-      subCategoryName: data['subCategoryName'] as String? ?? 'General',
-      payer: data['payer'] as String? ??
-          'unknown', // Handle potentially missing payer in v1 docs
-      isIncome: data['isIncome'] as bool? ?? false,
-      accountId: data['accountId'] as String?,
-      source: data['source'] as String?,
-      bankTxId: data['bankTxId'] as String?,
-    );
-  }
+/// Deserialització pura i testable del document de moviment.
+dom.Transaction transactionFromFirestoreMap(
+  Map<String, dynamic> data,
+  String id,
+) {
+  return dom.Transaction(
+    id: id,
+    groupId: data['groupId'] as String? ?? 'unknown',
+    date: (data['date'] as Timestamp).toDate(),
+    amount: (data['amount'] as num).toDouble(),
+    concept: data['concept'] as String? ?? '',
+    categoryId: data['categoryId'] as String? ?? 'legacy_cat',
+    subCategoryId: data['subCategoryId'] as String? ?? 'legacy_sub',
+    categoryName: data['categoryName'] as String? ??
+        (data['category'] as String? ?? 'Unknown'),
+    subCategoryName: data['subCategoryName'] as String? ?? 'General',
+    payer: data['payer'] as String? ?? 'unknown',
+    isIncome: data['isIncome'] as bool? ?? false,
+    savingsGoalId: data['savingsGoalId'] as String?,
+    accountId: data['accountId'] as String?,
+    source: data['source'] as String?,
+    bankTxId: data['bankTxId'] as String?,
+  );
 }

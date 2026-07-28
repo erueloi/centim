@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../domain/models/billing_cycle.dart';
+import '../../../domain/services/cycle_integrity_service.dart';
 import '../../providers/billing_cycle_provider.dart';
 import '../../providers/auth_providers.dart';
 import '../../../core/theme/app_theme.dart';
@@ -85,12 +86,23 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
           // Sort and Group
           final sortedCycles = List<BillingCycle>.from(cycles)
             ..sort((a, b) => a.startDate.compareTo(b.startDate));
+          final overlaps = findCycleGridProblems(sortedCycles)
+              .where((p) => p.type == CycleGridProblemType.overlap)
+              .toList();
 
           final grouped = _groupCyclesByYear(sortedCycles);
           final now = DateTime.now();
 
           return CustomScrollView(
             slivers: [
+              if (overlaps.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: _OverlapMaintenanceCard(
+                    overlaps: overlaps,
+                    onRepair: (problem) =>
+                        _confirmOverlapRepair(context, ref, problem),
+                  ),
+                ),
               for (final year in grouped.keys) ...[
                 SliverStickyHeader(year: year),
                 SliverList(
@@ -118,6 +130,82 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
+  }
+
+  Future<void> _confirmOverlapRepair(
+    BuildContext context,
+    WidgetRef ref,
+    CycleGridProblem problem,
+  ) async {
+    final df = DateFormat('dd/MM/yyyy');
+    final proposedEnd = proposedEndDateForOverlap(problem);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Corregir aquest solapament?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Es canviarà únicament la data final de «${problem.first.name}»:',
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '${df.format(problem.first.endDate)}  →  '
+              '${df.format(proposedEnd)}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'L’inici de «${problem.second.name}» es mantindrà a '
+              '${df.format(problem.second.startDate)}.',
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Aquesta és una acció de manteniment limitada al solapament; '
+              'no habilita l’edició general dels cicles antics.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel·lar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Corregir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final remaining = await ref
+          .read(billingCycleNotifierProvider.notifier)
+          .repairOverlap(problem);
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            remaining.isEmpty
+                ? 'Solapament corregit. Cap parell de cicles comparteix dia.'
+                : 'Solapament corregit. Encara en queden ${remaining.length}.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('No s’ha pogut corregir: $error')),
+      );
+    }
   }
 
   Map<int, List<BillingCycle>> _groupCyclesByYear(List<BillingCycle> cycles) {
@@ -480,6 +568,75 @@ class BillingCyclesSettingsScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _OverlapMaintenanceCard extends StatelessWidget {
+  final List<CycleGridProblem> overlaps;
+  final ValueChanged<CycleGridProblem> onRepair;
+
+  const _OverlapMaintenanceCard({
+    required this.overlaps,
+    required this.onRepair,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final df = DateFormat('dd/MM/yyyy');
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      color: Colors.orange.withValues(alpha: 0.08),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.build_circle_outlined,
+                    color: Colors.orange, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Manteniment de solapaments',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Només permet escurçar el final del primer cicle fins al dia '
+              'anterior a l’inici del següent.',
+              style: TextStyle(fontSize: 12),
+            ),
+            for (final problem in overlaps) ...[
+              const Divider(height: 22),
+              Text(problem.message, style: const TextStyle(fontSize: 13)),
+              const SizedBox(height: 4),
+              Text(
+                '«${problem.first.name}»: '
+                '${df.format(problem.first.endDate)} → '
+                '${df.format(proposedEndDateForOverlap(problem))}\n'
+                '«${problem.second.name}» conserva l’inici '
+                '${df.format(problem.second.startDate)}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.tonalIcon(
+                  onPressed: () => onRepair(problem),
+                  icon: const Icon(Icons.build_outlined, size: 17),
+                  label: const Text('Corregir solapament'),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

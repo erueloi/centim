@@ -16,6 +16,42 @@ import '../../domain/models/billing_cycle.dart';
 part 'budget_provider.freezed.dart';
 part 'budget_provider.g.dart';
 
+/// Mes comptable del pressupost d'un cicle.
+///
+/// És deliberadament la data FINAL del cicle: un cicle que va del 30/03 al
+/// 29/04 consumeix el pressupost d'abril. Panoràmica i Detall han de passar
+/// sempre per aquesta funció perquè no puguin divergir.
+DateTime budgetMonthForCycle(BillingCycle cycle) =>
+    DateTime(cycle.endDate.year, cycle.endDate.month);
+
+/// Moviments dins d'un cicle, amb `endDate` inclusiu i comparació per dia.
+List<Transaction> transactionsInBillingCycle(
+  Iterable<Transaction> transactions,
+  BillingCycle cycle,
+) {
+  final startDay = DateTime(
+    cycle.startDate.year,
+    cycle.startDate.month,
+    cycle.startDate.day,
+    12,
+  );
+  final endDay = DateTime(
+    cycle.endDate.year,
+    cycle.endDate.month,
+    cycle.endDate.day,
+    12,
+  );
+  return transactions.where((transaction) {
+    final day = DateTime(
+      transaction.date.year,
+      transaction.date.month,
+      transaction.date.day,
+      12,
+    );
+    return !day.isBefore(startDay) && !day.isAfter(endDay);
+  }).toList();
+}
+
 @freezed
 class SubcategoryBudgetStatus with _$SubcategoryBudgetStatus {
   const factory SubcategoryBudgetStatus({
@@ -52,30 +88,19 @@ class BudgetNotifier extends _$BudgetNotifier {
     // Watch ACTIVE CYCLE
     final activeCycle = ref.watch(activeCycleProvider);
 
-    // Watch budget entries for the cycle's start month/year,
-    // OR we might need to change how budget entries are stored?
-    // User requested "Logic of consultation: A movement belongs to Cycle X if date >= StartX and < StartY".
-    // Budgets are usually monthly.
-    // If we have custom cycles, do budgets align with cycles?
-    // Usually yes. "My budget for this Billing Period".
-    // But BudgetEntries are stored by (year, month).
-    // If a cycle is "28 Jan - 27 Feb", which month is it?
-    // It's usually named "Februar".
-    // Let's assume the cycle.startDate determines the "Budget Month" roughly,
-    // OR we map it to the month index of the cycle name?
-    // Simple approach: Use start date's month/year for fetching budget entries.
-    // If cycle is 28 Jan, maybe it maps to Feb budget?
-    // For now, let's use cycle.startDate.year/month.
-    // If the user wants to align budgets to cycles, we might need to migrate BudgetEntry to use CycleID.
-    // But for now, let's stick to (year, month) of the cycle start.
+    // BudgetEntries es desen per (year, month). El mes d'un cicle és el de la
+    // seva data final: 28 gen – 27 feb consumeix el pressupost de febrer.
+    // Aquesta regla està centralitzada a budgetMonthForCycle i és compartida
+    // amb la Panoràmica.
 
     final budgetEntryRepo = ref.read(budgetEntryRepositoryProvider);
+    final budgetMonth = budgetMonthForCycle(activeCycle);
     // Note: This matches entries stored with that year/month.
     final budgetEntries = await budgetEntryRepo
         .watchEntriesForMonth(
           groupId,
-          activeCycle.endDate.year,
-          activeCycle.endDate.month,
+          budgetMonth.year,
+          budgetMonth.month,
         )
         .first;
 
@@ -102,12 +127,13 @@ class DashboardBudgetNotifier extends _$DashboardBudgetNotifier {
 
     // Watch ACTIVE CYCLE
     final activeCycle = ref.watch(activeCycleProvider);
+    final budgetMonth = budgetMonthForCycle(activeCycle);
 
     final budgetEntries = await budgetEntryRepo
         .watchEntriesForMonth(
           groupId,
-          activeCycle.endDate.year,
-          activeCycle.endDate.month,
+          budgetMonth.year,
+          budgetMonth.month,
         )
         .first;
 
@@ -132,25 +158,20 @@ List<BudgetStatus> calculateBudgetStatus(
   List<Category> categories,
   List<Transaction> transactions,
   List<BudgetEntry> budgetEntries,
-  BillingCycle cycle,
-) {
+  BillingCycle cycle, {
+  bool includeArchived = false,
+}) {
   final look = LedgerLookups.from(categories);
 
-  final currentCycleTransactions = transactions.where((t) {
-    // Assuming Transaction model has date
-    final tDay = DateTime(t.date.year, t.date.month, t.date.day, 12, 0, 0);
-    final startDay = DateTime(cycle.startDate.year, cycle.startDate.month,
-        cycle.startDate.day, 12, 0, 0);
-    final endDay = DateTime(
-        cycle.endDate.year, cycle.endDate.month, cycle.endDate.day, 12, 0, 0);
+  final currentCycleTransactions =
+      transactionsInBillingCycle(transactions, cycle);
 
-    return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
-        !tDay.isAfter(endDay);
-  }).toList();
-
-  return categories.where((category) => !category.archived).map((category) {
-    final activeSubcategories =
-        category.subcategories.where((sub) => !sub.archived).toList();
+  return categories
+      .where((category) => includeArchived || !category.archived)
+      .map((category) {
+    final activeSubcategories = category.subcategories
+        .where((sub) => includeArchived || !sub.archived)
+        .toList();
 
     // 1. Calculate Total Budget for this Category (sum of active subcategories, considering entries)
     final totalBudget = activeSubcategories.fold(0.0, (sum, sub) {
@@ -283,11 +304,12 @@ Future<ZeroBudgetSummary> zeroBudgetBalance(Ref ref) async {
     final groupId = await ref.watch(currentGroupIdProvider.future);
     if (groupId != null) {
       final repo = ref.read(budgetEntryRepositoryProvider);
+      final budgetMonth = budgetMonthForCycle(cycle);
       entries = await repo
           .watchEntriesForMonth(
             groupId,
-            cycle.endDate.year,
-            cycle.endDate.month,
+            budgetMonth.year,
+            budgetMonth.month,
           )
           .first;
     }

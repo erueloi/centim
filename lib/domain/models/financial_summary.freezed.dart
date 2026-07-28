@@ -25,7 +25,12 @@ mixin _$FinancialSummary {
   double get savingsWithdrawalIncome =>
       throw _privateConstructorUsedError; // Income from savings withdrawals
   double get monthlyExpenses => throw _privateConstructorUsedError;
-  double get availableToSpend => throw _privateConstructorUsedError;
+
+  /// Ingressos − despeses del cicle. És una xifra de PRESSUPOST, no de caixa:
+  /// no inclou el saldo de partida ni els traspassos, i per tant no quadra
+  /// amb els comptes. Es deia `availableToSpend`, i aquell nom feia pensar
+  /// que eren diners disponibles al banc.
+  double get netOfCycle => throw _privateConstructorUsedError;
   double get savingsPercentage => throw _privateConstructorUsedError;
   double get debtPercentage => throw _privateConstructorUsedError;
   double get livingExpensesPercentage => throw _privateConstructorUsedError;
@@ -57,7 +62,7 @@ abstract class $FinancialSummaryCopyWith<$Res> {
       double monthlyIncome,
       double savingsWithdrawalIncome,
       double monthlyExpenses,
-      double availableToSpend,
+      double netOfCycle,
       double savingsPercentage,
       double debtPercentage,
       double livingExpensesPercentage,
@@ -89,7 +94,7 @@ class _$FinancialSummaryCopyWithImpl<$Res, $Val extends FinancialSummary>
     Object? monthlyIncome = null,
     Object? savingsWithdrawalIncome = null,
     Object? monthlyExpenses = null,
-    Object? availableToSpend = null,
+    Object? netOfCycle = null,
     Object? savingsPercentage = null,
     Object? debtPercentage = null,
     Object? livingExpensesPercentage = null,
@@ -127,9 +132,9 @@ class _$FinancialSummaryCopyWithImpl<$Res, $Val extends FinancialSummary>
           ? _value.monthlyExpenses
           : monthlyExpenses // ignore: cast_nullable_to_non_nullable
               as double,
-      availableToSpend: null == availableToSpend
-          ? _value.availableToSpend
-          : availableToSpend // ignore: cast_nullable_to_non_nullable
+      netOfCycle: null == netOfCycle
+          ? _value.netOfCycle
+          : netOfCycle // ignore: cast_nullable_to_non_nullable
               as double,
       savingsPercentage: null == savingsPercentage
           ? _value.savingsPercentage
@@ -179,7 +184,7 @@ abstract class _$$FinancialSummaryImplCopyWith<$Res>
       double monthlyIncome,
       double savingsWithdrawalIncome,
       double monthlyExpenses,
-      double availableToSpend,
+      double netOfCycle,
       double savingsPercentage,
       double debtPercentage,
       double livingExpensesPercentage,
@@ -209,7 +214,7 @@ class __$$FinancialSummaryImplCopyWithImpl<$Res>
     Object? monthlyIncome = null,
     Object? savingsWithdrawalIncome = null,
     Object? monthlyExpenses = null,
-    Object? availableToSpend = null,
+    Object? netOfCycle = null,
     Object? savingsPercentage = null,
     Object? debtPercentage = null,
     Object? livingExpensesPercentage = null,
@@ -247,9 +252,9 @@ class __$$FinancialSummaryImplCopyWithImpl<$Res>
           ? _value.monthlyExpenses
           : monthlyExpenses // ignore: cast_nullable_to_non_nullable
               as double,
-      availableToSpend: null == availableToSpend
-          ? _value.availableToSpend
-          : availableToSpend // ignore: cast_nullable_to_non_nullable
+      netOfCycle: null == netOfCycle
+          ? _value.netOfCycle
+          : netOfCycle // ignore: cast_nullable_to_non_nullable
               as double,
       savingsPercentage: null == savingsPercentage
           ? _value.savingsPercentage
@@ -294,7 +299,7 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
       required this.monthlyIncome,
       required this.savingsWithdrawalIncome,
       required this.monthlyExpenses,
-      required this.availableToSpend,
+      required this.netOfCycle,
       required this.savingsPercentage,
       required this.debtPercentage,
       required this.livingExpensesPercentage,
@@ -321,8 +326,13 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
 // Income from savings withdrawals
   @override
   final double monthlyExpenses;
+
+  /// Ingressos − despeses del cicle. És una xifra de PRESSUPOST, no de caixa:
+  /// no inclou el saldo de partida ni els traspassos, i per tant no quadra
+  /// amb els comptes. Es deia `availableToSpend`, i aquell nom feia pensar
+  /// que eren diners disponibles al banc.
   @override
-  final double availableToSpend;
+  final double netOfCycle;
   @override
   final double savingsPercentage;
   @override
@@ -357,7 +367,7 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
 
   @override
   String toString() {
-    return 'FinancialSummary(totalNetWorth: $totalNetWorth, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, equityRatio: $equityRatio, monthlyIncome: $monthlyIncome, savingsWithdrawalIncome: $savingsWithdrawalIncome, monthlyExpenses: $monthlyExpenses, availableToSpend: $availableToSpend, savingsPercentage: $savingsPercentage, debtPercentage: $debtPercentage, livingExpensesPercentage: $livingExpensesPercentage, savedThisCycle: $savedThisCycle, withdrawnThisCycle: $withdrawnThisCycle, incomesByCategory: $incomesByCategory, expensesByCategory: $expensesByCategory)';
+    return 'FinancialSummary(totalNetWorth: $totalNetWorth, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, equityRatio: $equityRatio, monthlyIncome: $monthlyIncome, savingsWithdrawalIncome: $savingsWithdrawalIncome, monthlyExpenses: $monthlyExpenses, netOfCycle: $netOfCycle, savingsPercentage: $savingsPercentage, debtPercentage: $debtPercentage, livingExpensesPercentage: $livingExpensesPercentage, savedThisCycle: $savedThisCycle, withdrawnThisCycle: $withdrawnThisCycle, incomesByCategory: $incomesByCategory, expensesByCategory: $expensesByCategory)';
   }
 
   @override
@@ -380,8 +390,8 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
                 other.savingsWithdrawalIncome == savingsWithdrawalIncome) &&
             (identical(other.monthlyExpenses, monthlyExpenses) ||
                 other.monthlyExpenses == monthlyExpenses) &&
-            (identical(other.availableToSpend, availableToSpend) ||
-                other.availableToSpend == availableToSpend) &&
+            (identical(other.netOfCycle, netOfCycle) ||
+                other.netOfCycle == netOfCycle) &&
             (identical(other.savingsPercentage, savingsPercentage) ||
                 other.savingsPercentage == savingsPercentage) &&
             (identical(other.debtPercentage, debtPercentage) ||
@@ -409,7 +419,7 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
       monthlyIncome,
       savingsWithdrawalIncome,
       monthlyExpenses,
-      availableToSpend,
+      netOfCycle,
       savingsPercentage,
       debtPercentage,
       livingExpensesPercentage,
@@ -437,7 +447,7 @@ abstract class _FinancialSummary implements FinancialSummary {
       required final double monthlyIncome,
       required final double savingsWithdrawalIncome,
       required final double monthlyExpenses,
-      required final double availableToSpend,
+      required final double netOfCycle,
       required final double savingsPercentage,
       required final double debtPercentage,
       required final double livingExpensesPercentage,
@@ -460,8 +470,13 @@ abstract class _FinancialSummary implements FinancialSummary {
   double get savingsWithdrawalIncome; // Income from savings withdrawals
   @override
   double get monthlyExpenses;
+
+  /// Ingressos − despeses del cicle. És una xifra de PRESSUPOST, no de caixa:
+  /// no inclou el saldo de partida ni els traspassos, i per tant no quadra
+  /// amb els comptes. Es deia `availableToSpend`, i aquell nom feia pensar
+  /// que eren diners disponibles al banc.
   @override
-  double get availableToSpend;
+  double get netOfCycle;
   @override
   double get savingsPercentage;
   @override

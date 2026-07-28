@@ -151,7 +151,7 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         monthlyIncome: totalIncome,
         savingsWithdrawalIncome: 0.0,
         monthlyExpenses: totalExpense,
-        availableToSpend: totalIncome - totalExpense,
+        netOfCycle: totalIncome - totalExpense,
         savingsPercentage: savingsPercentage,
         debtPercentage: 0.0,
         livingExpensesPercentage: 0.0,

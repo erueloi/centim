@@ -110,4 +110,45 @@ void main() {
     ], 'inc');
     expect(s.spent, 0);
   });
+
+  test('l’editor actiu continua excloent categories i subcategories arxivades',
+      () {
+    final archivedCategory = Category(
+      id: 'archived',
+      name: 'Arxivada',
+      icon: '',
+      archived: true,
+      subcategories: const [
+        SubCategory(id: 'old', name: 'Antiga', monthlyBudget: 100),
+      ],
+    );
+    final categoryWithArchivedSub = Category(
+      id: 'mixed',
+      name: 'Mixta',
+      icon: '',
+      subcategories: const [
+        SubCategory(id: 'active', name: 'Activa', monthlyBudget: 100),
+        SubCategory(
+          id: 'archived-sub',
+          name: 'Antiga',
+          monthlyBudget: 50,
+          archived: true,
+        ),
+      ],
+    );
+
+    final statuses = calculateBudgetStatus(
+      [archivedCategory, categoryWithArchivedSub],
+      const [],
+      const [],
+      cycle,
+    );
+
+    expect(statuses.map((item) => item.category.id), ['mixed']);
+    expect(statuses.single.total, 100);
+    expect(
+      statuses.single.subcategoryStatuses.map((item) => item.subcategory.id),
+      ['active'],
+    );
+  });
 }

@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/billing_cycle.dart';
+import '../../domain/services/cycle_integrity_service.dart';
 import '../../data/providers/repository_providers.dart';
 import 'auth_providers.dart';
 
@@ -49,6 +50,56 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
       final ids = cycles.map((c) => c.id).toList();
       await repo.deleteBatchBillingCycles(ids);
     }
+  }
+
+  /// Repara UN solapament detectat escurçant només el final del primer cicle.
+  ///
+  /// Es torna a validar contra les dades més recents abans d'escriure perquè
+  /// una targeta antiga no pugui aplicar una reparació que ja no correspon.
+  /// Retorna els solapaments que quedarien després del canvi.
+  Future<List<CycleGridProblem>> repairOverlap(
+    CycleGridProblem staleProblem,
+  ) async {
+    if (staleProblem.type != CycleGridProblemType.overlap) {
+      throw ArgumentError('Aquesta acció només resol solapaments.');
+    }
+
+    final groupId = await ref.read(currentGroupIdProvider.future);
+    if (groupId == null) throw StateError('No hi ha cap grup actiu.');
+
+    final repo = ref.read(billingCycleRepositoryProvider);
+    final cycles = await repo.watchBillingCycles(groupId).first;
+    final currentProblems = findCycleGridProblems(cycles);
+
+    final problem = currentProblems.where((p) {
+      return p.type == CycleGridProblemType.overlap &&
+          p.first.id == staleProblem.first.id &&
+          p.second.id == staleProblem.second.id;
+    }).firstOrNull;
+
+    if (problem == null) {
+      throw StateError('Aquest solapament ja no existeix.');
+    }
+
+    final proposedEnd = proposedEndDateForOverlap(problem);
+    if (proposedEnd.isBefore(problem.first.startDate)) {
+      throw StateError(
+        'La reparació deixaria el primer cicle amb dates invàlides.',
+      );
+    }
+
+    // Verificació pura sobre tota la graella abans de persistir.
+    final repairedCycles = cycles.map((cycle) {
+      return cycle.id == problem.first.id
+          ? cycle.copyWith(endDate: proposedEnd)
+          : cycle;
+    }).toList();
+    final remainingOverlaps = findCycleGridProblems(repairedCycles)
+        .where((p) => p.type == CycleGridProblemType.overlap)
+        .toList();
+
+    await repo.setEndDateForOverlapRepair(problem.first.id, proposedEnd);
+    return remainingOverlaps;
   }
 
   /// Configures the schedule for the next 12 months.
@@ -166,67 +217,100 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
     }
   }
 
-  /// Closes the current cycle and starts the next one immediately (e.g., Payday).
-  /// 1. Sets [activeCycle.endDate] to NOW.
-  /// 2. Finds or creates the next cycle and sets its [startDate] to NOW.
-  Future<void> closeCurrentAndStartNextCycle(BillingCycle activeCycle) async {
+  /// Tanca el cicle actual i comença el següent el dia de cobrament.
+  ///
+  /// 1. [activeCycle.endDate] = dia anterior a [payday].
+  /// 2. El cicle següent comença a [payday], que és el seu DIA 1.
+  /// 3. Si es passa [openingBalanceForNext], el segella com a saldo inicial del
+  ///    cicle següent. Sempre ve d'una confirmació explícita de l'usuari: un
+  ///    saldo inicial equivocat contamina tots els cicles posteriors, així que
+  ///    mai s'escriu sol.
+  Future<void> closeCurrentAndStartNextCycle(
+    BillingCycle activeCycle, {
+    required DateTime payday,
+    double? openingBalanceForNext,
+  }) async {
     final groupId = await ref.read(currentGroupIdProvider.future);
     if (groupId == null) return;
 
     final repo = ref.read(billingCycleRepositoryProvider);
     final cycles = await repo.watchBillingCycles(groupId).first;
-    final now = DateTime.now();
-
-    // 1. Close current cycle using exact date and 12:00:00
-    final nowNormalized = DateTime(now.year, now.month, now.day, 12, 0, 0);
-    final closingCycle = activeCycle.copyWith(endDate: nowNormalized);
-    await repo.updateBillingCycle(closingCycle);
-
-    // 2. Determine Next Cycle
-    // Logic: Look for a cycle that starts right after the *original* end date of the active cycle
-    // OR just look for the chronological next month.
-
-    // Let's rely on the chronological "Next Month".
-    // Wait, if we just shortened the endDate to NOW, we should look for the cycle that WAS supposed to be next.
-    // It's safer to identify the next expected month based on the original end date.
-    // But since we receive `activeCycle` which might be stale in UI but correct in ID,
-    // let's grab the freshest version of it first? No, local object is fine for logic.
-
-    // Actually better: Find the cycle physically starting after this one in the list.
-    final sortedCycles = List<BillingCycle>.from(cycles)
-      ..sort((a, b) => a.startDate.compareTo(b.startDate));
-
-    final currentIndex = sortedCycles.indexWhere((c) => c.id == activeCycle.id);
-    BillingCycle? nextCycle;
-
-    if (currentIndex != -1 && currentIndex + 1 < sortedCycles.length) {
-      nextCycle = sortedCycles[currentIndex + 1];
+    final currentCycle =
+        cycles.where((c) => c.id == activeCycle.id).firstOrNull;
+    if (currentCycle == null) {
+      throw StateError('El cicle que es vol tancar ja no existeix.');
     }
 
+    final boundary = cycleCloseBoundaryForPayday(payday);
+    final activeStart = DateTime(
+      currentCycle.startDate.year,
+      currentCycle.startDate.month,
+      currentCycle.startDate.day,
+      12,
+    );
+    if (boundary.currentEndDate.isBefore(activeStart)) {
+      throw ArgumentError.value(
+        payday,
+        'payday',
+        'La data de cobrament ha de ser posterior a l’inici del cicle actual.',
+      );
+    }
+
+    final nextStart = boundary.nextStartDate;
+    final sortedCycles = List<BillingCycle>.from(cycles)
+      ..sort((a, b) => a.startDate.compareTo(b.startDate));
+    final currentIndex = sortedCycles.indexWhere((c) => c.id == activeCycle.id);
+    final nextCycle =
+        currentIndex != -1 && currentIndex + 1 < sortedCycles.length
+            ? sortedCycles[currentIndex + 1]
+            : null;
+
+    // Validar-ho TOT abans de la primera escriptura: una data invàlida no pot
+    // deixar només el cicle vell retallat.
     if (nextCycle != null) {
-      // Update existing next cycle to start NOW (normalized)
+      final nextEnd = DateTime(
+        nextCycle.endDate.year,
+        nextCycle.endDate.month,
+        nextCycle.endDate.day,
+        12,
+      );
+      if (nextStart.isAfter(nextEnd)) {
+        throw ArgumentError.value(
+          payday,
+          'payday',
+          'La data de cobrament queda després del final del cicle següent.',
+        );
+      }
+    }
+
+    // 1. El cicle vell acaba el dia anterior al cobrament. `endDate` és
+    // inclusiu, així que aquest és l'únic tall que posa la nòmina al cicle nou
+    // sense compartir cap dia.
+    final closingCycle =
+        currentCycle.copyWith(endDate: boundary.currentEndDate);
+    await repo.updateBillingCycle(closingCycle);
+
+    String? nextCycleId;
+
+    if (nextCycle != null) {
+      // 2. El cicle següent comença el mateix dia del cobrament.
       final updatedNext = nextCycle.copyWith(
-        startDate: nowNormalized,
+        startDate: nextStart,
       );
       await repo.updateBillingCycle(updatedNext);
+      nextCycleId = nextCycle.id;
     } else {
-      // Create new next cycle
-      // Guess the month: Active Month + 1
-      // We need a robust way to name/date it.
-      // Fallback: If active was "Feb 2026", next is "Mar 2026"
-      // Let's use the date logic from `configureAnnualSchedule`
-      // Target Month is (active end month + 1)
-
-      final targetDate = activeCycle.endDate.add(
+      // Si encara no existeix, el nom correspon al mes central del nou cicle.
+      final targetDate = nextStart.add(
         const Duration(days: 15),
-      ); // Jump to middle of next month to be safe
+      );
       final targetMonth = targetDate.month;
       final targetYear = targetDate.year;
 
       final name = '${_getMonthName(targetMonth)} $targetYear';
 
-      // End date for new cycle -> +30 days approx
-      final nextMonthTarget = nowNormalized.add(const Duration(days: 30));
+      // Final provisional: el pròxim cobrament el tornarà a ajustar.
+      final nextMonthTarget = nextStart.add(const Duration(days: 30));
       final newEndDate = DateTime(nextMonthTarget.year, nextMonthTarget.month,
           nextMonthTarget.day, 12, 0, 0);
 
@@ -234,11 +318,20 @@ class BillingCycleNotifier extends _$BillingCycleNotifier {
         id: '',
         groupId: groupId,
         name: name,
-        startDate: nowNormalized,
+        startDate: nextStart,
         endDate: newEndDate,
       );
 
-      await repo.addBillingCycle(newCycle);
+      nextCycleId = await repo.addBillingCycle(newCycle);
+    }
+
+    // 3. Segellar el saldo inicial del cicle nou, si l'usuari l'ha confirmat.
+    if (openingBalanceForNext != null) {
+      await repo.setOpeningBalance(
+        nextCycleId,
+        openingBalanceForNext,
+        'auto-tancament',
+      );
     }
   }
 }

@@ -14,6 +14,32 @@ import 'debt_provider.dart';
 
 part 'transaction_notifier.g.dart';
 
+/// Efecte d'un moviment sobre UNA guardiola.
+///
+/// Precedència D5: `savingsGoalId` explícit mana sobre l'enllaç de la
+/// subcategoria. És pura perquè el round-trip Firestore i aquesta precedència
+/// es puguin provar junts.
+({String goalId, double delta})? goalEffectForTransaction(
+  Transaction tx,
+  List<Category> categories,
+) {
+  if (tx.savingsGoalId != null) {
+    return (goalId: tx.savingsGoalId!, delta: -tx.amount);
+  }
+  for (final category in categories) {
+    for (final subcategory in category.subcategories) {
+      if (subcategory.id == tx.subCategoryId &&
+          subcategory.linkedSavingsGoalId != null) {
+        return (
+          goalId: subcategory.linkedSavingsGoalId!,
+          delta: tx.isIncome ? -tx.amount : tx.amount,
+        );
+      }
+    }
+  }
+  return null;
+}
+
 @riverpod
 class TransactionNotifier extends _$TransactionNotifier {
   @override
@@ -49,12 +75,16 @@ class TransactionNotifier extends _$TransactionNotifier {
     }
 
     await _mutateSideEffects(remove: oldTx, add: transaction);
-    await ref.read(transactionRepositoryProvider).updateTransaction(transaction);
+    await ref
+        .read(transactionRepositoryProvider)
+        .updateTransaction(transaction);
   }
 
   Future<void> deleteTransaction(Transaction transaction) async {
     await _mutateSideEffects(remove: transaction);
-    await ref.read(transactionRepositoryProvider).deleteTransaction(transaction);
+    await ref
+        .read(transactionRepositoryProvider)
+        .deleteTransaction(transaction);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -67,7 +97,8 @@ class TransactionNotifier extends _$TransactionNotifier {
   //  - l'update no pateix curses de lectura (una escriptura neta per entitat).
   // ─────────────────────────────────────────────────────────────────────────
 
-  Future<void> _mutateSideEffects({Transaction? add, Transaction? remove}) async {
+  Future<void> _mutateSideEffects(
+      {Transaction? add, Transaction? remove}) async {
     final categories = await ref.read(categoryNotifierProvider.future);
 
     // Un delta NET per entitat → una sola escriptura (i, a la guardiola, una
@@ -81,7 +112,7 @@ class TransactionNotifier extends _$TransactionNotifier {
 
     void accumulate(Transaction tx, int sign) {
       // 1. Guardiola (UN sol efecte, per precedència).
-      final ge = _goalEffect(tx, categories);
+      final ge = goalEffectForTransaction(tx, categories);
       if (ge != null) {
         goalDeltas[ge.goalId] = (goalDeltas[ge.goalId] ?? 0) + sign * ge.delta;
         if (sign < 0) {
@@ -117,7 +148,8 @@ class TransactionNotifier extends _$TransactionNotifier {
     if (add != null) accumulate(add, 1);
 
     for (final id in goalDeltas.keys) {
-      await _writeGoalDelta(id, goalDeltas[id]!, goalDates[id]!, goalNotes[id]!);
+      await _writeGoalDelta(
+          id, goalDeltas[id]!, goalDates[id]!, goalNotes[id]!);
     }
     for (final e in assetDeltas.entries) {
       await _writeAssetDelta(e.key, e.value);
@@ -125,24 +157,6 @@ class TransactionNotifier extends _$TransactionNotifier {
     for (final e in debtDeltas.entries) {
       await _writeDebtDelta(e.key, e.value);
     }
-  }
-
-  /// Efecte net d'un moviment sobre UNA guardiola. `delta` > 0 = suma a la
-  /// guardiola. Precedència: `savingsGoalId` (pagar/retirar amb estalvis, que
-  /// SEMPRE treu de la guardiola) per sobre de la subcategoria enllaçada
-  /// (despesa = aportació, ingrés = retirada). Mai els dos alhora.
-  ({String goalId, double delta})? _goalEffect(
-    Transaction tx,
-    List<Category> categories,
-  ) {
-    if (tx.savingsGoalId != null) {
-      return (goalId: tx.savingsGoalId!, delta: -tx.amount);
-    }
-    final links = _linksFor(tx.subCategoryId, categories);
-    if (links.goalId != null) {
-      return (goalId: links.goalId!, delta: tx.isIncome ? -tx.amount : tx.amount);
-    }
-    return null;
   }
 
   ({String? goalId, String? debtId}) _linksFor(
@@ -203,9 +217,8 @@ class TransactionNotifier extends _$TransactionNotifier {
     try {
       final debts = await ref.read(debtNotifierProvider.future);
       final debt = debts.firstWhere((d) => d.id == debtId);
-      await ref
-          .read(debtNotifierProvider.notifier)
-          .updateDebt(debt.copyWith(currentBalance: debt.currentBalance + delta));
+      await ref.read(debtNotifierProvider.notifier).updateDebt(
+          debt.copyWith(currentBalance: debt.currentBalance + delta));
     } catch (e) {
       debugPrint('Error actualitzant deute $debtId: $e');
     }

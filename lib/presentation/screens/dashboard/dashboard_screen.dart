@@ -8,12 +8,15 @@ import '../../providers/financial_summary_provider.dart';
 import '../../widgets/financial_health_indicator.dart';
 import '../../widgets/dashboard_quick_actions.dart';
 import '../../widgets/dashboard_donut_chart.dart';
+import '../../widgets/cash_flow_card.dart';
+import '../../widgets/close_cycle_dialog.dart';
 import '../../widgets/dashboard_savings_card.dart';
 import '../../widgets/watchlist_section.dart';
 import '../../widgets/ai_insight_card.dart';
 
 import '../../providers/billing_cycle_provider.dart';
 import '../../providers/incoherences_provider.dart';
+import '../../providers/cash_flow_provider.dart';
 import '../settings/billing_cycles_settings_screen.dart';
 import '../settings/user_profile_screen.dart';
 import '../settings/incoherences_screen.dart';
@@ -83,28 +86,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return;
     }
 
-    // 1. Logic
-    await ref
-        .read(billingCycleNotifierProvider.notifier)
-        .closeCurrentAndStartNextCycle(activeCycle);
+    // 1. Confirmació: el saldo inicial del cicle nou arrossega tota la cadena
+    //    posterior, així que l'usuari l'ha de veure i validar abans.
+    final decision = await showCloseCycleDialog(context, ref, activeCycle);
+    if (decision == null) return; // cancel·lat
 
-    // 2. UI Updates
+    // 2. Tancament únic: calendari i saldo segellat passen pel mateix mètode.
+    try {
+      await ref
+          .read(billingCycleNotifierProvider.notifier)
+          .closeCurrentAndStartNextCycle(
+            activeCycle,
+            payday: decision.payday,
+            openingBalanceForNext: decision.openingBalance,
+          );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No s’ha pogut tancar el cicle: $error'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (!mounted) return;
+
+    // 3. UI Updates
     setState(() {
       _showBanner = false;
     });
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.cycleClosedMessage(activeCycle.name),
-          ),
-          backgroundColor: Colors.green,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.cycleClosedMessage(activeCycle.name),
         ),
-      );
-    }
+        backgroundColor: Colors.green,
+      ),
+    );
 
-    // 3. Confetti!
+    // 4. Confetti!
     _confettiController.play();
   }
 
@@ -113,13 +137,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildIncoherencesBadge(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
-        final count = ref.watch(incoherencesProvider).maybeWhen(
+        // Totes les comprovacions de manteniment sumen al mateix badge: són
+        // coses per revisar, i l'usuari no ha de recordar quantes llistes hi ha.
+        final int incoherences = ref.watch(incoherencesProvider).maybeWhen(
               data: (items) => items.length,
               orElse: () => 0,
             );
+        final int noAccount = ref.watch(movementsWithoutAccountCountProvider);
+        final int gridProblems = ref.watch(cycleGridProblemsProvider).length;
+        final int count = incoherences + noAccount + gridProblems;
         if (count == 0) return const SizedBox.shrink();
         return IconButton(
-          tooltip: '$count moviment${count == 1 ? '' : 's'} a revisar',
+          tooltip: '$count avís${count == 1 ? '' : 'os'} a revisar',
           icon: Badge.count(
             count: count,
             backgroundColor: Colors.orange,
@@ -259,6 +288,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             const AiInsightCard(),
                             const SizedBox(height: 16),
                             DashboardDonutChart(summary: summary),
+                            const SizedBox(height: 16),
+                            // Caixa just sota el pressupost: les dues preguntes
+                            // ("quants diners hi ha" i "on gasto") separades,
+                            // però adjacents, que és on neix la confusió.
+                            const CashFlowCard(),
                             const SizedBox(height: 16),
                             const WatchlistSection(),
                             const SizedBox(height: 16),

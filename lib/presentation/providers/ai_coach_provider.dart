@@ -191,7 +191,7 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
       buffer.writeln(
           'Despeses: ${summary.monthlyExpenses.toStringAsFixed(2)}€');
       buffer.writeln(
-          'Disponible: ${summary.availableToSpend.toStringAsFixed(2)}€');
+          'Net del cicle: ${summary.netOfCycle.toStringAsFixed(2)}€');
       buffer.writeln(
           'Estalvi: ${summary.savingsPercentage.toStringAsFixed(1)}%');
     } catch (e) {

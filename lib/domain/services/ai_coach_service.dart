@@ -184,7 +184,7 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
 
     // Savings status
     final savingsStatus = {
-      'estalvi_previst': summary.availableToSpend,
+      'estalvi_previst': summary.netOfCycle,
       'percentatge_estalvi_actual': summary.savingsPercentage.round(),
     };
 

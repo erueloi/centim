@@ -44,7 +44,7 @@ final zeroBudgetBalanceProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ZeroBudgetBalanceRef = AutoDisposeFutureProviderRef<ZeroBudgetSummary>;
-String _$budgetNotifierHash() => r'd73cfc7f29e8ee53d5e44777d612e7a3721647d7';
+String _$budgetNotifierHash() => r'c29109a0d087c0fa3465f6f283181025a5d87894';
 
 /// See also [BudgetNotifier].
 @ProviderFor(BudgetNotifier)
@@ -61,7 +61,7 @@ final budgetNotifierProvider = AutoDisposeAsyncNotifierProvider<BudgetNotifier,
 
 typedef _$BudgetNotifier = AutoDisposeAsyncNotifier<List<BudgetStatus>>;
 String _$dashboardBudgetNotifierHash() =>
-    r'd1416b33484abbdeb45f14415f6222da58e177e9';
+    r'a7fc0900c17b5500ee4524fb5ccbd33412c7dd43';
 
 /// See also [DashboardBudgetNotifier].
 @ProviderFor(DashboardBudgetNotifier)

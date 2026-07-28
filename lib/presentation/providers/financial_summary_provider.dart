@@ -45,7 +45,7 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
     // 2. Totals canònics (del ledger, sense filtrar res)
     final monthlyIncome = ledger.totalIncome;
     final monthlyExpenses = ledger.totalExpense;
-    final availableToSpend = monthlyIncome - monthlyExpenses;
+    final netOfCycle = monthlyIncome - monthlyExpenses;
 
     // Els mapes per categoria: filtrar ≤ 0 és PRESENTACIÓ (el donut no vol
     // seccions buides/negatives). Els totals de dalt NO depenen d'aquest filtre.
@@ -69,7 +69,7 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
       monthlyIncome: monthlyIncome,
       savingsWithdrawalIncome: ledger.withdrawnThisCycle,
       monthlyExpenses: monthlyExpenses,
-      availableToSpend: availableToSpend,
+      netOfCycle: netOfCycle,
       savingsPercentage: totalForBudget > 0 ? savings / totalForBudget : 0.0,
       debtPercentage:
           totalForBudget > 0 ? monthlyDebtInstallments / totalForBudget : 0.0,

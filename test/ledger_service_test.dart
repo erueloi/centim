@@ -75,6 +75,8 @@ void main() {
     expect(s.totalExpense, 0);
     expect(s.totalIncome, 0);
     expect(s.savedThisCycle, 100);
+    expect(s.savedByCategory['sav'], 100);
+    expect(s.savedBySubcategory['sav_eloi'], 100);
   });
 
   test('retirada de guardiola via savingsGoalId → withdrawn, no ingrés', () {
@@ -94,7 +96,8 @@ void main() {
     expect(s.withdrawnThisCycle, 30);
   });
 
-  test('un refund resta del gastat de la seva categoria, sense incoherència', () {
+  test('un refund resta del gastat de la seva categoria, sense incoherència',
+      () {
     final s = summarizeLedger([
       mk(amount: 50, isIncome: false, catId: 'exp', subId: 'exp_super'),
       mk(amount: 20, isIncome: true, catId: 'exp', subId: 'exp_super'),
@@ -115,7 +118,8 @@ void main() {
     expect(s.incoherences.first.type, 'tipus');
   });
 
-  test('guardiola exclosa dels totals PERÒ marcada si està mal tipada (cas 400 €)',
+  test(
+      'guardiola exclosa dels totals PERÒ marcada si està mal tipada (cas 400 €)',
       () {
     // Aportació categoritzada a "Ingrés de guardiola Eloi": categoria d'ingrés +
     // isIncome=false + subcategoria enllaçada. Exclosa dels totals I marcada.
@@ -153,8 +157,16 @@ void main() {
     final txs = [
       mk(amount: 1000, isIncome: true, catId: 'inc', subId: 'inc_bizum'),
       mk(amount: 50, isIncome: false, catId: 'exp', subId: 'exp_super'),
-      mk(amount: 20, isIncome: true, catId: 'exp', subId: 'exp_super'), // refund
-      mk(amount: 400, isIncome: false, catId: 'sav', subId: 'sav_eloi'), // guardiola
+      mk(
+          amount: 20,
+          isIncome: true,
+          catId: 'exp',
+          subId: 'exp_super'), // refund
+      mk(
+          amount: 400,
+          isIncome: false,
+          catId: 'sav',
+          subId: 'sav_eloi'), // guardiola
     ];
 
     // Dashboard i cycle_reports: sumen via summarizeLedger.
@@ -172,8 +184,7 @@ void main() {
     expect(dashboard.totalExpense, 30); // 50 − 20 refund; guardiola exclosa
 
     // Invariant: total == Σ per categoria.
-    final sumInc =
-        dashboard.incomeByCategory.values.fold(0.0, (a, b) => a + b);
+    final sumInc = dashboard.incomeByCategory.values.fold(0.0, (a, b) => a + b);
     final sumExp =
         dashboard.expenseByCategory.values.fold(0.0, (a, b) => a + b);
     expect(sumInc, dashboard.totalIncome);

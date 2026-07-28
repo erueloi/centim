@@ -22,8 +22,9 @@ class FirestoreBillingCycleRepository implements BillingCycleRepository {
   }
 
   @override
-  Future<void> addBillingCycle(BillingCycle cycle) async {
-    await _firestore.collection(_collectionName).add(_toMap(cycle));
+  Future<String> addBillingCycle(BillingCycle cycle) async {
+    final doc = await _firestore.collection(_collectionName).add(_toMap(cycle));
+    return doc.id;
   }
 
   @override
@@ -59,6 +60,47 @@ class FirestoreBillingCycleRepository implements BillingCycleRepository {
     await batch.commit();
   }
 
+  @override
+  Future<void> setOpeningBalance(
+    String cycleId,
+    double amount,
+    String source,
+  ) async {
+    // Escriptura QUIRÚRGICA: només els tres camps del saldo. Mai passa per
+    // _toMap, que no els coneix (vegeu la nota d'allà).
+    await _firestore.collection(_collectionName).doc(cycleId).update({
+      'openingBalance': amount,
+      'openingBalanceAt': Timestamp.fromDate(DateTime.now()),
+      'openingBalanceSource': source,
+    });
+  }
+
+  @override
+  Future<void> clearOpeningBalance(String cycleId) async {
+    await _firestore.collection(_collectionName).doc(cycleId).update({
+      'openingBalance': FieldValue.delete(),
+      'openingBalanceAt': FieldValue.delete(),
+      'openingBalanceSource': FieldValue.delete(),
+    });
+  }
+
+  @override
+  Future<void> setEndDateForOverlapRepair(
+    String cycleId,
+    DateTime endDate,
+  ) async {
+    // Escriptura deliberadament limitada: no passa per _toMap i no pot tocar
+    // ni l'inici del cicle següent ni cap snapshot de saldo.
+    await _firestore.collection(_collectionName).doc(cycleId).update({
+      'endDate': Timestamp.fromDate(endDate),
+    });
+  }
+
+  /// NOMÉS els camps de calendari. Els de saldo (`openingBalance`…) queden
+  /// deliberadament FORA: `update()` només toca les claus presents al mapa, i
+  /// `configureAnnualSchedule` reescriu tots els cicles futurs de cop. Si
+  /// s'afegissin aquí, aquella reescriptura els posaria a null i esborraria
+  /// snapshots ja segellats. Per escriure'ls hi ha `setOpeningBalance`.
   Map<String, dynamic> _toMap(BillingCycle cycle) {
     return {
       'groupId': cycle.groupId,
@@ -75,6 +117,9 @@ class FirestoreBillingCycleRepository implements BillingCycleRepository {
       name: data['name'] as String? ?? 'Unknown',
       startDate: (data['startDate'] as Timestamp).toDate(),
       endDate: (data['endDate'] as Timestamp).toDate(),
+      openingBalance: (data['openingBalance'] as num?)?.toDouble(),
+      openingBalanceAt: (data['openingBalanceAt'] as Timestamp?)?.toDate(),
+      openingBalanceSource: data['openingBalanceSource'] as String?,
     );
   }
 }

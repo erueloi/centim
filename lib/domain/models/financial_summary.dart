@@ -12,7 +12,12 @@ class FinancialSummary with _$FinancialSummary {
     required double monthlyIncome,
     required double savingsWithdrawalIncome, // Income from savings withdrawals
     required double monthlyExpenses,
-    required double availableToSpend,
+
+    /// Ingressos − despeses del cicle. És una xifra de PRESSUPOST, no de caixa:
+    /// no inclou el saldo de partida ni els traspassos, i per tant no quadra
+    /// amb els comptes. Es deia `availableToSpend`, i aquell nom feia pensar
+    /// que eren diners disponibles al banc.
+    required double netOfCycle,
     required double savingsPercentage,
     required double debtPercentage,
     required double livingExpensesPercentage,

@@ -56,6 +56,22 @@ class _HeatmapBody extends ConsumerWidget {
     final selectedCycles = state.allCycles
         .where((c) => state.selectedCycleIds.contains(c.id))
         .toList();
+    final cycleIdsWithData =
+        ref.watch(panoramicCycleIdsWithTransactionsProvider);
+    final selectedCycleIdsWithData = selectedCycles
+        .where((cycle) => cycleIdsWithData.contains(cycle.id))
+        .map((cycle) => cycle.id)
+        .toList();
+    final savingsCategories =
+        state.allCategories.where(isSavingsBudgetCategory).toList();
+
+    bool isSavingsRow(HeatmapRow row) {
+      return savingsCategories.any(
+        (category) =>
+            category.id == row.id ||
+            category.subcategories.any((sub) => sub.id == row.id),
+      );
+    }
 
     final horizontalController = ScrollController();
     final verticalController = ScrollController();
@@ -89,28 +105,65 @@ class _HeatmapBody extends ConsumerWidget {
                   ),
                 ),
                 ...selectedCycles.map(
-                  (cycle) => DataColumn(
-                    label: Text(
-                      dateFormat.format(cycle.endDate).toUpperCase(),
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
+                  (cycle) {
+                    final hasTransactions = cycleIdsWithData.contains(cycle.id);
+                    return DataColumn(
+                      label: Text(
+                        dateFormat.format(cycle.endDate).toUpperCase(),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: hasTransactions
+                              ? colorScheme.onSurface
+                              : colorScheme.onSurface.withValues(alpha: 0.38),
+                        ),
                       ),
-                    ),
+                    );
+                  },
+                ),
+                const DataColumn(
+                  numeric: true,
+                  label: Text(
+                    'MITJANA',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const DataColumn(
+                  numeric: true,
+                  label: Text(
+                    'ACUM.',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
               rows: state.visibleRows.map((row) {
                 final isTotalRow = row.isTotalRow;
+                final savingsRow = isSavingsRow(row);
+                final savingsSummaryRow = savingsCategories.any(
+                  (category) => category.id == row.id,
+                );
+                final averageCell = aggregateHeatmapCells(
+                  row,
+                  selectedCycleIdsWithData,
+                  average: true,
+                );
+                final accumulatedCell = aggregateHeatmapCells(
+                  row,
+                  selectedCycleIdsWithData,
+                  average: false,
+                );
                 return DataRow(
                   color: isTotalRow
                       ? WidgetStateProperty.all(
                           colorScheme.primaryContainer.withValues(alpha: 0.3))
-                      : null,
+                      : savingsRow
+                          ? WidgetStateProperty.all(
+                              Colors.green.withValues(alpha: 0.07))
+                          : null,
                   cells: [
                     DataCell(
                       _CategoryNameCell(
                         row: row,
+                        isSavingsRow: savingsRow,
                         onToggle: isTotalRow
                             ? null
                             : () => ref
@@ -121,9 +174,35 @@ class _HeatmapBody extends ConsumerWidget {
                     ...selectedCycles.map((cycle) {
                       final cell = row.cells[cycle.id];
                       return DataCell(
-                        _HeatmapCellWidget(cell: cell, isTotalRow: isTotalRow),
+                        _HeatmapCellWidget(
+                          cell: cell,
+                          isTotalRow: isTotalRow,
+                          isSavingsRow: savingsRow,
+                          isSavingsSummaryRow: savingsSummaryRow,
+                          hasTransactions: cycleIdsWithData.contains(cycle.id),
+                        ),
                       );
                     }),
+                    DataCell(
+                      _HeatmapCellWidget(
+                        cell: averageCell,
+                        isTotalRow: isTotalRow,
+                        isSavingsRow: savingsRow,
+                        isSavingsSummaryRow: savingsSummaryRow,
+                        hasTransactions: averageCell != null,
+                        isSummary: true,
+                      ),
+                    ),
+                    DataCell(
+                      _HeatmapCellWidget(
+                        cell: accumulatedCell,
+                        isTotalRow: isTotalRow,
+                        isSavingsRow: savingsRow,
+                        isSavingsSummaryRow: savingsSummaryRow,
+                        hasTransactions: accumulatedCell != null,
+                        isSummary: true,
+                      ),
+                    ),
                   ],
                 );
               }).toList(),
@@ -138,8 +217,13 @@ class _HeatmapBody extends ConsumerWidget {
 class _CategoryNameCell extends StatelessWidget {
   final HeatmapRow row;
   final VoidCallback? onToggle;
+  final bool isSavingsRow;
 
-  const _CategoryNameCell({required this.row, this.onToggle});
+  const _CategoryNameCell({
+    required this.row,
+    required this.isSavingsRow,
+    this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +252,10 @@ class _CategoryNameCell extends StatelessWidget {
             Text(
               row.name,
               style: TextStyle(
-                  color: colorScheme.onSurface.withValues(alpha: 0.7)),
+                color: isSavingsRow
+                    ? Colors.green.shade800
+                    : colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),
@@ -197,7 +284,7 @@ class _CategoryNameCell extends StatelessWidget {
           row.name,
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
+            color: isSavingsRow ? Colors.green.shade800 : colorScheme.onSurface,
           ),
         ),
       ],
@@ -208,18 +295,46 @@ class _CategoryNameCell extends StatelessWidget {
 class _HeatmapCellWidget extends StatelessWidget {
   final HeatmapCell? cell;
   final bool isTotalRow;
+  final bool isSavingsRow;
+  final bool isSavingsSummaryRow;
+  final bool hasTransactions;
+  final bool isSummary;
 
-  const _HeatmapCellWidget({this.cell, this.isTotalRow = false});
+  const _HeatmapCellWidget({
+    this.cell,
+    this.isTotalRow = false,
+    this.isSavingsRow = false,
+    this.isSavingsSummaryRow = false,
+    this.hasTransactions = true,
+    this.isSummary = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    if (cell == null) {
-      return Center(
-          child: Text('-',
-              style:
-                  TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.4))));
+    if (cell == null || !hasTransactions) {
+      return Tooltip(
+        message: isSummary
+            ? 'No hi ha mesos amb moviments.'
+            : 'Aquest cicle no té moviments.',
+        child: Container(
+          width: double.infinity,
+          height: double.infinity,
+          alignment: Alignment.center,
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '—',
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.38),
+            ),
+          ),
+        ),
+      );
     }
 
     final deviation = cell!.deviation;
@@ -230,29 +345,43 @@ class _HeatmapCellWidget extends StatelessWidget {
     Color backgroundColor = Colors.transparent;
     double opacity = 0.0;
 
-    if (budgeted == 0.0 && spent > 0.0) {
-      backgroundColor = Colors.red;
-      opacity = 0.8;
-    } else if (deviation > 0) {
-      final percentageOver = deviation / budgeted;
-      if (percentageOver > 0.20) {
-        backgroundColor = Colors.red;
-        opacity = 0.6;
-      } else {
-        backgroundColor = Colors.orange;
-        opacity = 0.6;
+    if (isSavingsRow) {
+      // Estalviar per sobre del previst és positiu; el dèficit és l'alerta.
+      if (deviation > 0 || (budgeted == 0 && spent > 0)) {
+        backgroundColor = Colors.green;
+        opacity = 0.55;
+      } else if (deviation < 0) {
+        final percentageUnder = budgeted > 0 ? deviation.abs() / budgeted : 1.0;
+        backgroundColor = percentageUnder > 0.20 ? Colors.red : Colors.orange;
+        opacity = 0.55;
       }
-    } else if (deviation < 0) {
-      backgroundColor = Colors.green;
-      opacity = 0.4;
+    } else {
+      if (budgeted == 0.0 && spent > 0.0) {
+        backgroundColor = Colors.red;
+        opacity = 0.8;
+      } else if (deviation > 0) {
+        final percentageOver = deviation / budgeted;
+        if (percentageOver > 0.20) {
+          backgroundColor = Colors.red;
+          opacity = 0.6;
+        } else {
+          backgroundColor = Colors.orange;
+          opacity = 0.6;
+        }
+      } else if (deviation < 0) {
+        backgroundColor = Colors.green;
+        opacity = 0.4;
+      }
     }
 
     final color = backgroundColor.withValues(alpha: opacity);
     final text = '${deviation > 0 ? '+' : ''}${deviation.toStringAsFixed(0)}€';
 
     return Tooltip(
-      message:
-          'Pressupostat: ${budgeted.toStringAsFixed(2)}€ | Gastat: ${spent.toStringAsFixed(2)}€',
+      message: '${isSavingsRow ? 'Previst' : 'Pressupostat'}: '
+          '${budgeted.toStringAsFixed(2)}€ | '
+          '${isSavingsSummaryRow ? 'Estalvi net' : isSavingsRow ? 'Aportat' : 'Gastat'}: '
+          '${spent.toStringAsFixed(2)}€',
       child: Container(
         width: double.infinity,
         height: double.infinity,
@@ -265,9 +394,10 @@ class _HeatmapCellWidget extends StatelessWidget {
         child: Text(
           text,
           style: TextStyle(
-            fontSize: isTotalRow ? 14 : 12,
-            fontWeight:
-                (deviation != 0 || isTotalRow) ? FontWeight.bold : FontWeight.normal,
+            fontSize: isTotalRow || isSummary ? 14 : 12,
+            fontWeight: (deviation != 0 || isTotalRow)
+                ? FontWeight.bold
+                : FontWeight.normal,
             color: opacity > 0.5 ? Colors.white : colorScheme.onSurface,
           ),
         ),
