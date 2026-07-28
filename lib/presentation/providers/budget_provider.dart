@@ -80,7 +80,7 @@ class BudgetNotifier extends _$BudgetNotifier {
         .first;
 
     // Use helper function with CYCLE dates
-    return _calculateBudgetStatus(
+    return calculateBudgetStatus(
       categories,
       transactions,
       budgetEntries,
@@ -111,7 +111,7 @@ class DashboardBudgetNotifier extends _$DashboardBudgetNotifier {
         )
         .first;
 
-    final statuses = _calculateBudgetStatus(
+    final statuses = calculateBudgetStatus(
       categories,
       transactions,
       budgetEntries,
@@ -125,8 +125,10 @@ class DashboardBudgetNotifier extends _$DashboardBudgetNotifier {
   }
 }
 
-// Helper function to avoid code duplication
-List<BudgetStatus> _calculateBudgetStatus(
+/// Calcula l'estat de pressupost per categoria. Pública per poder-la testar:
+/// aquí hi ha la regla que decideix quin cistell compta segons el tipus de
+/// categoria (una regressió hi va deixar els ingressos a zero).
+List<BudgetStatus> calculateBudgetStatus(
   List<Category> categories,
   List<Transaction> transactions,
   List<BudgetEntry> budgetEntries,
@@ -169,8 +171,18 @@ List<BudgetStatus> _calculateBudgetStatus(
       return sum + effectiveBudget;
     });
 
-    // 2. Gastat de la categoria (regles canòniques: exclou guardioles; els
-    //    refunds —isIncome=true en categoria de despesa— resten).
+    // 2. Executat de la categoria (regles canòniques: exclou guardioles i els
+    //    moviments de signe contrari resten —refund en despesa, devolució en
+    //    ingrés—).
+    //
+    //    El cistell que compta depèn del TIPUS de la categoria: a una categoria
+    //    de despesa el "gastat" és la despesa, i a una d'ingrés (p.ex. NÒMINA)
+    //    l'"executat" és l'ingrés rebut. Mirar només el cistell de despesa
+    //    deixava totes les categories d'ingrés a 0.
+    final relevantBucket = category.type == TransactionType.income
+        ? LedgerBucket.income
+        : LedgerBucket.expense;
+
     final categoryTransactions = currentCycleTransactions
         .where((t) => t.categoryId == category.id)
         .toList();
@@ -179,7 +191,7 @@ List<BudgetStatus> _calculateBudgetStatus(
     final subSpentById = <String, double>{};
     for (final t in categoryTransactions) {
       final c = classifyTransaction(t, look);
-      if (c.bucket != LedgerBucket.expense) continue;
+      if (c.bucket != relevantBucket) continue;
       spent += c.delta;
       subSpentById[t.subCategoryId] =
           (subSpentById[t.subCategoryId] ?? 0) + c.delta;

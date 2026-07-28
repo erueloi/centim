@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.2.21
+Correccio de la pestanya Detall: les categories d'ingressos (nomina) mostraven 0 euros executats perque el calcul nomes comptava el cistell de despeses.
+Ara cada categoria compta el seu tipus, mantenint l'exclusio de guardioles i els moviments de signe contrari.
 ## v1.2.20
 Refactor del model comptable: calcul unificat d'ingressos i despeses compartit per dashboard, tendencies, informes i pressupost.
 Correccio de la doble aplicacio de moviments de guardiola i de l'edicio que no ajustava el saldo.
@@ -116,6 +119,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
