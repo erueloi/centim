@@ -1,5 +1,13 @@
 # Release Notes
 
+## v1.3.0
+Nova gestió de traspassos interns amb importació, aparellament de potes, atomicitat i migració històrica controlada.
+Liquiditat configurable de guardioles i ajustos de saldo auditables.
+Flux de caixa, tancament de cicles i marge disponible fins a final de cicle millorats.
+Panoràmica unificada amb el ledger, estalvi net, mitjanes i tractament històric dels arxivats.
+Avisos de caducitat bancària i regles d’autocategorització.
+Coach migrat a Firebase AI Logic amb App Check i una interfície renovada.
+Millores generals de disseny, modals, navegació i proves de regressió.
 ## v1.2.23
 Nou estat de fluxos de caixa amb saldo inicial arrossegat, mode degradat, desglossament dels comptes liquids i guardioles, avisos de quadrament i deteccio de moviments sense compte.
 Accio controlada per corregir solapaments entre cicles.
@@ -127,4 +135,5 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 

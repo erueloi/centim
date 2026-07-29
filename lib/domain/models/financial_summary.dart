@@ -25,5 +25,7 @@ class FinancialSummary with _$FinancialSummary {
     @Default(0.0) double withdrawnThisCycle,
     @Default({}) Map<String, double> incomesByCategory,
     @Default({}) Map<String, double> expensesByCategory,
+    @Default({}) Map<String, double> savedByGoal,
+    @Default({}) Map<String, double> withdrawnByGoal,
   }) = _FinancialSummary;
 }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:intl/intl.dart';
+import '../../../domain/services/bank_consent_service.dart';
+import '../../providers/bank_consent_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../domain/models/asset.dart';
@@ -42,6 +44,7 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
         _accounts = conn.accounts;
         _state = _ConnState.connected;
       });
+      ref.invalidate(bankConnectionStateProvider);
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
       // failed-precondition (needsReauth) = encara no hi ha sessió.
@@ -174,10 +177,11 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
   }
 
   Widget _buildStatusCard() {
-    final until = _validUntil != null ? DateTime.tryParse(_validUntil!) : null;
-    final days = until?.difference(DateTime.now()).inDays;
-    final expired = days != null && days < 0;
-    final soon = days != null && days >= 0 && days <= 7;
+    final status = calculateBankConsentStatus(_validUntil);
+    final until = status.validUntil?.toLocal();
+    final days = status.daysRemaining;
+    final expired = status.state == BankConsentState.expired;
+    final soon = status.state == BankConsentState.expiring;
 
     Color color = Colors.green;
     String text;
@@ -222,12 +226,15 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(acc.name ?? acc.ibanMasked,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(acc.ibanMasked,
-                    style: const TextStyle(color: Colors.grey, fontSize: 13)),
-              ]),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(acc.name ?? acc.ibanMasked,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(acc.ibanMasked,
+                        style:
+                            const TextStyle(color: Colors.grey, fontSize: 13)),
+                  ]),
             ),
             Switch(
               value: acc.sync,

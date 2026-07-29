@@ -12,7 +12,7 @@ import '../../widgets/cash_flow_card.dart';
 import '../../widgets/close_cycle_dialog.dart';
 import '../../widgets/dashboard_savings_card.dart';
 import '../../widgets/watchlist_section.dart';
-import '../../widgets/ai_insight_card.dart';
+import '../../widgets/bank_consent_banner.dart';
 
 import '../../providers/billing_cycle_provider.dart';
 import '../../providers/incoherences_provider.dart';
@@ -20,6 +20,7 @@ import '../../providers/cash_flow_provider.dart';
 import '../settings/billing_cycles_settings_screen.dart';
 import '../settings/user_profile_screen.dart';
 import '../settings/incoherences_screen.dart';
+import 'coach_chat_screen.dart';
 import 'cycle_reports_agenda_screen.dart';
 
 import '../../../domain/services/version_check_service.dart';
@@ -132,6 +133,67 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     _confettiController.play();
   }
 
+  void _openCoach() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const Center(child: CoachChatSheet()),
+    );
+  }
+
+  ButtonStyle _appBarIconStyle(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    return IconButton.styleFrom(
+      minimumSize: Size(compact ? 40 : 48, 48),
+      maximumSize: Size(compact ? 40 : 48, 48),
+      padding: EdgeInsets.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
+  Widget _buildCoachAction(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final wide = MediaQuery.sizeOf(context).width >= 720;
+    if (!wide) {
+      return IconButton(
+        style: _appBarIconStyle(context),
+        tooltip: l10n.coachAskButton,
+        icon: const Icon(
+          Icons.smart_toy_rounded,
+          color: AppTheme.copper,
+        ),
+        onPressed: _openCoach,
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: ActionChip(
+        avatar: const Icon(
+          Icons.smart_toy_rounded,
+          color: AppTheme.copper,
+          size: 18,
+        ),
+        label: Text(
+          l10n.coachAskButton,
+          style: const TextStyle(
+            color: AppTheme.anthracite,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: AppTheme.copper.withValues(alpha: 0.10),
+        side: BorderSide(
+          color: AppTheme.copper.withValues(alpha: 0.30),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        onPressed: _openCoach,
+      ),
+    );
+  }
+
   /// Badge d'incoherències a la barra superior (estil notificació): apareix
   /// NOMÉS si n'hi ha i desapareix sol quan la llista queda a zero.
   Widget _buildIncoherencesBadge(BuildContext context) {
@@ -148,6 +210,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         final int count = incoherences + noAccount + gridProblems;
         if (count == 0) return const SizedBox.shrink();
         return IconButton(
+          style: _appBarIconStyle(context),
           tooltip: '$count avís${count == 1 ? '' : 'os'} a revisar',
           icon: Badge.count(
             count: count,
@@ -180,11 +243,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               children: [
                 Text(
                   cycle.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 18),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
                 Text(
                   '${dateFormat.format(cycle.startDate)} - ${dateFormat.format(cycle.endDate)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,
@@ -197,8 +266,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         automaticallyImplyLeading: false,
         actions: [
+          _buildCoachAction(context),
           _buildIncoherencesBadge(context),
           IconButton(
+            style: _appBarIconStyle(context),
             icon: const Icon(Icons.history),
             tooltip: AppLocalizations.of(context)!.cycleHistoryTooltip,
             onPressed: () {
@@ -211,6 +282,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
           ),
           IconButton(
+            style: _appBarIconStyle(context),
             icon: const Icon(Icons.settings),
             tooltip: AppLocalizations.of(context)!.cycleSettingsTooltip,
             onPressed: () {
@@ -223,6 +295,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
           ),
           IconButton(
+            style: _appBarIconStyle(context),
             icon: const Icon(Icons.person),
             tooltip: AppLocalizations.of(context)!.profileTooltip,
             onPressed: () {
@@ -234,7 +307,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               );
             },
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: MediaQuery.sizeOf(context).width < 600 ? 0 : 8),
         ],
       ),
       body: Stack(
@@ -274,6 +347,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     ),
                   ],
                 ),
+              const BankConsentBanner(),
               Expanded(
                 child: summaryAsync.when(
                   skipLoadingOnRefresh: true,
@@ -285,8 +359,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const AiInsightCard(),
-                            const SizedBox(height: 16),
                             DashboardDonutChart(summary: summary),
                             const SizedBox(height: 16),
                             // Caixa just sota el pressupost: les dues preguntes

@@ -116,6 +116,11 @@ TxClass classifyTransaction(Transaction tx, LedgerLookups look) {
   return TxClass(bucket, delta, incoherences: incoherences);
 }
 
+/// Guardiola efectiva del moviment. D5: el camp explícit sempre té precedència
+/// sobre l'enllaç de la subcategoria.
+String? savingsGoalIdForTransaction(Transaction tx, LedgerLookups look) =>
+    tx.savingsGoalId ?? look.linkedGoalBySubId[tx.subCategoryId];
+
 /// Resultat agregat d'un conjunt de moviments (ja filtrats per finestra pel qui
 /// crida). Invariant: totalIncome == Σ incomeByCategory, totalExpense == Σ
 /// expenseByCategory (sense filtrar res; els filtres de ≤0 són PRESENTACIÓ).
@@ -130,6 +135,8 @@ class LedgerSummary {
   final Map<String, double> withdrawnByCategory = {};
   final Map<String, double> savedBySubcategory = {};
   final Map<String, double> withdrawnBySubcategory = {};
+  final Map<String, double> savedByGoal = {};
+  final Map<String, double> withdrawnByGoal = {};
   final List<Incoherence> incoherences = [];
 
   /// Estalvi net del cicle.
@@ -144,6 +151,7 @@ LedgerSummary summarizeLedger(
   final s = LedgerSummary();
   for (final tx in txs) {
     final c = classifyTransaction(tx, look);
+    final goalId = savingsGoalIdForTransaction(tx, look);
     switch (c.bucket) {
       case LedgerBucket.income:
         s.totalIncome += c.delta;
@@ -161,6 +169,9 @@ LedgerSummary summarizeLedger(
             (s.savedByCategory[tx.categoryId] ?? 0) + c.delta;
         s.savedBySubcategory[tx.subCategoryId] =
             (s.savedBySubcategory[tx.subCategoryId] ?? 0) + c.delta;
+        if (goalId != null) {
+          s.savedByGoal[goalId] = (s.savedByGoal[goalId] ?? 0) + c.delta;
+        }
         break;
       case LedgerBucket.withdrawn:
         s.withdrawnThisCycle += c.delta;
@@ -168,6 +179,10 @@ LedgerSummary summarizeLedger(
             (s.withdrawnByCategory[tx.categoryId] ?? 0) + c.delta;
         s.withdrawnBySubcategory[tx.subCategoryId] =
             (s.withdrawnBySubcategory[tx.subCategoryId] ?? 0) + c.delta;
+        if (goalId != null) {
+          s.withdrawnByGoal[goalId] =
+              (s.withdrawnByGoal[goalId] ?? 0) + c.delta;
+        }
         break;
     }
     s.incoherences.addAll(c.incoherences);

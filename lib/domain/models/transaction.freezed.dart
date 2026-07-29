@@ -33,6 +33,8 @@ mixin _$Transaction {
       throw _privateConstructorUsedError; // Non-null if this transaction is paid FROM savings (or is a withdrawal)
   String? get accountId =>
       throw _privateConstructorUsedError; // Linked bank account / cash asset ID
+  String? get bankAccountKey =>
+      throw _privateConstructorUsedError; // Compte bancari real (pot haver-ne diversos per Asset)
   String? get source =>
       throw _privateConstructorUsedError; // Origen: 'excel' | 'enablebanking' | 'manual'
   String? get bankTxId => throw _privateConstructorUsedError;
@@ -64,6 +66,7 @@ abstract class $TransactionCopyWith<$Res> {
       bool isIncome,
       String? savingsGoalId,
       String? accountId,
+      String? bankAccountKey,
       String? source,
       String? bankTxId});
 }
@@ -96,6 +99,7 @@ class _$TransactionCopyWithImpl<$Res, $Val extends Transaction>
     Object? isIncome = null,
     Object? savingsGoalId = freezed,
     Object? accountId = freezed,
+    Object? bankAccountKey = freezed,
     Object? source = freezed,
     Object? bankTxId = freezed,
   }) {
@@ -152,6 +156,10 @@ class _$TransactionCopyWithImpl<$Res, $Val extends Transaction>
           ? _value.accountId
           : accountId // ignore: cast_nullable_to_non_nullable
               as String?,
+      bankAccountKey: freezed == bankAccountKey
+          ? _value.bankAccountKey
+          : bankAccountKey // ignore: cast_nullable_to_non_nullable
+              as String?,
       source: freezed == source
           ? _value.source
           : source // ignore: cast_nullable_to_non_nullable
@@ -186,6 +194,7 @@ abstract class _$$TransactionImplCopyWith<$Res>
       bool isIncome,
       String? savingsGoalId,
       String? accountId,
+      String? bankAccountKey,
       String? source,
       String? bankTxId});
 }
@@ -216,6 +225,7 @@ class __$$TransactionImplCopyWithImpl<$Res>
     Object? isIncome = null,
     Object? savingsGoalId = freezed,
     Object? accountId = freezed,
+    Object? bankAccountKey = freezed,
     Object? source = freezed,
     Object? bankTxId = freezed,
   }) {
@@ -272,6 +282,10 @@ class __$$TransactionImplCopyWithImpl<$Res>
           ? _value.accountId
           : accountId // ignore: cast_nullable_to_non_nullable
               as String?,
+      bankAccountKey: freezed == bankAccountKey
+          ? _value.bankAccountKey
+          : bankAccountKey // ignore: cast_nullable_to_non_nullable
+              as String?,
       source: freezed == source
           ? _value.source
           : source // ignore: cast_nullable_to_non_nullable
@@ -301,6 +315,7 @@ class _$TransactionImpl implements _Transaction {
       this.isIncome = false,
       this.savingsGoalId,
       this.accountId,
+      this.bankAccountKey,
       this.source,
       this.bankTxId});
 
@@ -338,6 +353,9 @@ class _$TransactionImpl implements _Transaction {
   final String? accountId;
 // Linked bank account / cash asset ID
   @override
+  final String? bankAccountKey;
+// Compte bancari real (pot haver-ne diversos per Asset)
+  @override
   final String? source;
 // Origen: 'excel' | 'enablebanking' | 'manual'
   @override
@@ -345,7 +363,7 @@ class _$TransactionImpl implements _Transaction {
 
   @override
   String toString() {
-    return 'Transaction(id: $id, groupId: $groupId, date: $date, amount: $amount, concept: $concept, categoryId: $categoryId, subCategoryId: $subCategoryId, categoryName: $categoryName, subCategoryName: $subCategoryName, payer: $payer, isIncome: $isIncome, savingsGoalId: $savingsGoalId, accountId: $accountId, source: $source, bankTxId: $bankTxId)';
+    return 'Transaction(id: $id, groupId: $groupId, date: $date, amount: $amount, concept: $concept, categoryId: $categoryId, subCategoryId: $subCategoryId, categoryName: $categoryName, subCategoryName: $subCategoryName, payer: $payer, isIncome: $isIncome, savingsGoalId: $savingsGoalId, accountId: $accountId, bankAccountKey: $bankAccountKey, source: $source, bankTxId: $bankTxId)';
   }
 
   @override
@@ -373,6 +391,8 @@ class _$TransactionImpl implements _Transaction {
                 other.savingsGoalId == savingsGoalId) &&
             (identical(other.accountId, accountId) ||
                 other.accountId == accountId) &&
+            (identical(other.bankAccountKey, bankAccountKey) ||
+                other.bankAccountKey == bankAccountKey) &&
             (identical(other.source, source) || other.source == source) &&
             (identical(other.bankTxId, bankTxId) ||
                 other.bankTxId == bankTxId));
@@ -394,6 +414,7 @@ class _$TransactionImpl implements _Transaction {
       isIncome,
       savingsGoalId,
       accountId,
+      bankAccountKey,
       source,
       bankTxId);
 
@@ -421,6 +442,7 @@ abstract class _Transaction implements Transaction {
       final bool isIncome,
       final String? savingsGoalId,
       final String? accountId,
+      final String? bankAccountKey,
       final String? source,
       final String? bankTxId}) = _$TransactionImpl;
 
@@ -451,6 +473,9 @@ abstract class _Transaction implements Transaction {
       get savingsGoalId; // Non-null if this transaction is paid FROM savings (or is a withdrawal)
   @override
   String? get accountId; // Linked bank account / cash asset ID
+  @override
+  String?
+      get bankAccountKey; // Compte bancari real (pot haver-ne diversos per Asset)
   @override
   String? get source; // Origen: 'excel' | 'enablebanking' | 'manual'
   @override

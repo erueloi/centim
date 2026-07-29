@@ -1,12 +1,11 @@
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+
 import '../models/financial_summary.dart';
 import '../models/billing_cycle.dart';
 import '../models/chat_message.dart';
+import 'ai_coach_config.dart';
 
 class AiCoachService {
-  final String _modelName = 'gemini-2.5-flash';
-
   /// Chat conversacional: envia una pregunta amb context financer complet.
   Future<String> askQuestion({
     required String question,
@@ -14,11 +13,8 @@ class AiCoachService {
     required List<ChatMessage> conversationHistory,
     required String userName,
   }) async {
-    final apiKey = _getApiKey();
-
-    final model = GenerativeModel(
-      model: _modelName,
-      apiKey: apiKey,
+    final model = FirebaseAI.googleAI().generativeModel(
+      model: AiCoachConfig.modelName,
       systemInstruction: Content.system('''
 Ets el 'Cèntim Coach', l'assistent financer personal de $userName. Ets un expert analitzant dades financeres personals.
 
@@ -35,21 +31,21 @@ INSTRUCCIONS:
 7. Si l'usuari no especifica un mes concret i pregunta sobre hàbits, fes una mitjana dels cicles disponibles.
 8. El to ha de ser empàtic, motivador i còmplice. Mai renyis per gastar massa.
 '''),
+      generationConfig: GenerationConfig(
+        // Els tokens interns de raonament també consumeixen aquest límit.
+        // 1.024 podia deixar la resposta visible a mitges amb Gemini 3.6.
+        maxOutputTokens: 4096,
+        temperature: 0.3,
+        thinkingConfig: ThinkingConfig.withThinkingLevel(ThinkingLevel.low),
+      ),
     );
 
-    // Construir historial de conversa per a Gemini
-    final contents = <Content>[];
-    for (final msg in conversationHistory) {
-      if (msg.isUser) {
-        contents.add(Content.text(msg.text));
-      } else {
-        contents.add(Content.model([TextPart(msg.text)]));
-      }
-    }
-    // Afegir la pregunta actual
-    contents.add(Content.text(question));
-
-    final response = await model.generateContent(contents);
+    final response = await model.generateContent(
+      buildCoachConversationContents(
+        conversationHistory: conversationHistory,
+        question: question,
+      ),
+    );
 
     return response.text?.trim() ??
         "Ho sento, no he pogut processar la teva pregunta. Prova-ho de nou! 🤔";
@@ -67,11 +63,8 @@ INSTRUCCIONS:
     required List<Map<String, dynamic>> unexpectedExpenses,
     bool isHistorical = false,
   }) async {
-    final apiKey = _getApiKey();
-
-    final model = GenerativeModel(
-      model: _modelName,
-      apiKey: apiKey,
+    final model = FirebaseAI.googleAI().generativeModel(
+      model: AiCoachConfig.modelName,
       systemInstruction: Content.system('''
 Ets el 'Cèntim Coach', l'assistent financer personal de $userName. Saps que estan enmig de la gran aventura de reformar una Masia del 1768 a la Floresta 🏡.
 
@@ -87,6 +80,12 @@ Comportament davant les dades:
 Regla d'Or (Última frase):
 La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci exactament per: "🎯 Objectiu pel cicle vinent:".
 '''),
+      generationConfig: GenerationConfig(
+        // Reserva prou espai per al raonament i el veredicte final complet.
+        maxOutputTokens: 2048,
+        temperature: 0.35,
+        thinkingConfig: ThinkingConfig.withThinkingLevel(ThinkingLevel.low),
+      ),
     );
 
     final contextJson = _prepareCycleContextJson(
@@ -103,17 +102,6 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
         [Content.text('Analitza aquestes dades financeres:\n$contextJson')]);
 
     return response.text?.trim() ?? "Ho sento, m'he quedat sense paraules!";
-  }
-
-  String _getApiKey() {
-    final apiKey = dotenv.env['GEMINI_API_KEY'];
-    if (apiKey == null ||
-        apiKey.isEmpty ||
-        apiKey == 'posa_la_teva_clau_aqui') {
-      throw Exception(
-          'API Key no configurada. Si us plau, afegeix-la al fitxer .env.');
-    }
-    return apiKey;
   }
 
   String _prepareCycleContextJson({
@@ -203,4 +191,26 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
 }
 ''';
   }
+}
+
+/// Construeix el torn conversacional una sola vegada.
+///
+/// El notifier passa només l'historial anterior a la pregunta actual. A més,
+/// limitem la conversa als darrers 12 missatges perquè el context financer,
+/// que és la font de veritat, tingui prioritat i el cost no creixi sense límit.
+List<Content> buildCoachConversationContents({
+  required List<ChatMessage> conversationHistory,
+  required String question,
+}) {
+  final recentHistory = conversationHistory.length <= 12
+      ? conversationHistory
+      : conversationHistory.sublist(conversationHistory.length - 12);
+  return [
+    for (final message in recentHistory)
+      if (message.isUser)
+        Content.text(message.text)
+      else
+        Content.model([TextPart(message.text)]),
+    Content.text(question.trim()),
+  ];
 }

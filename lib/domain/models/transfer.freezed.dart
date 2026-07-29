@@ -31,6 +31,13 @@ mixin _$Transfer {
   String get destinationId => throw _privateConstructorUsedError;
   String get destinationName => throw _privateConstructorUsedError; // Snapshot
   String? get note => throw _privateConstructorUsedError;
+  String? get concept => throw _privateConstructorUsedError;
+  String get source => throw _privateConstructorUsedError;
+  List<BankTransferLeg> get bankLegs => throw _privateConstructorUsedError;
+  bool get awaitsBankCounterpart => throw _privateConstructorUsedError;
+  int get schemaVersion => throw _privateConstructorUsedError;
+  List<Map<String, dynamic>> get migratedTransactionSnapshots =>
+      throw _privateConstructorUsedError;
 
   /// Serializes this Transfer to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -57,7 +64,13 @@ abstract class $TransferCopyWith<$Res> {
       TransferDestinationType destinationType,
       String destinationId,
       String destinationName,
-      String? note});
+      String? note,
+      String? concept,
+      String source,
+      List<BankTransferLeg> bankLegs,
+      bool awaitsBankCounterpart,
+      int schemaVersion,
+      List<Map<String, dynamic>> migratedTransactionSnapshots});
 }
 
 /// @nodoc
@@ -85,6 +98,12 @@ class _$TransferCopyWithImpl<$Res, $Val extends Transfer>
     Object? destinationId = null,
     Object? destinationName = null,
     Object? note = freezed,
+    Object? concept = freezed,
+    Object? source = null,
+    Object? bankLegs = null,
+    Object? awaitsBankCounterpart = null,
+    Object? schemaVersion = null,
+    Object? migratedTransactionSnapshots = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -127,6 +146,30 @@ class _$TransferCopyWithImpl<$Res, $Val extends Transfer>
           ? _value.note
           : note // ignore: cast_nullable_to_non_nullable
               as String?,
+      concept: freezed == concept
+          ? _value.concept
+          : concept // ignore: cast_nullable_to_non_nullable
+              as String?,
+      source: null == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String,
+      bankLegs: null == bankLegs
+          ? _value.bankLegs
+          : bankLegs // ignore: cast_nullable_to_non_nullable
+              as List<BankTransferLeg>,
+      awaitsBankCounterpart: null == awaitsBankCounterpart
+          ? _value.awaitsBankCounterpart
+          : awaitsBankCounterpart // ignore: cast_nullable_to_non_nullable
+              as bool,
+      schemaVersion: null == schemaVersion
+          ? _value.schemaVersion
+          : schemaVersion // ignore: cast_nullable_to_non_nullable
+              as int,
+      migratedTransactionSnapshots: null == migratedTransactionSnapshots
+          ? _value.migratedTransactionSnapshots
+          : migratedTransactionSnapshots // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, dynamic>>,
     ) as $Val);
   }
 }
@@ -149,7 +192,13 @@ abstract class _$$TransferImplCopyWith<$Res>
       TransferDestinationType destinationType,
       String destinationId,
       String destinationName,
-      String? note});
+      String? note,
+      String? concept,
+      String source,
+      List<BankTransferLeg> bankLegs,
+      bool awaitsBankCounterpart,
+      int schemaVersion,
+      List<Map<String, dynamic>> migratedTransactionSnapshots});
 }
 
 /// @nodoc
@@ -175,6 +224,12 @@ class __$$TransferImplCopyWithImpl<$Res>
     Object? destinationId = null,
     Object? destinationName = null,
     Object? note = freezed,
+    Object? concept = freezed,
+    Object? source = null,
+    Object? bankLegs = null,
+    Object? awaitsBankCounterpart = null,
+    Object? schemaVersion = null,
+    Object? migratedTransactionSnapshots = null,
   }) {
     return _then(_$TransferImpl(
       id: null == id
@@ -217,12 +272,37 @@ class __$$TransferImplCopyWithImpl<$Res>
           ? _value.note
           : note // ignore: cast_nullable_to_non_nullable
               as String?,
+      concept: freezed == concept
+          ? _value.concept
+          : concept // ignore: cast_nullable_to_non_nullable
+              as String?,
+      source: null == source
+          ? _value.source
+          : source // ignore: cast_nullable_to_non_nullable
+              as String,
+      bankLegs: null == bankLegs
+          ? _value._bankLegs
+          : bankLegs // ignore: cast_nullable_to_non_nullable
+              as List<BankTransferLeg>,
+      awaitsBankCounterpart: null == awaitsBankCounterpart
+          ? _value.awaitsBankCounterpart
+          : awaitsBankCounterpart // ignore: cast_nullable_to_non_nullable
+              as bool,
+      schemaVersion: null == schemaVersion
+          ? _value.schemaVersion
+          : schemaVersion // ignore: cast_nullable_to_non_nullable
+              as int,
+      migratedTransactionSnapshots: null == migratedTransactionSnapshots
+          ? _value._migratedTransactionSnapshots
+          : migratedTransactionSnapshots // ignore: cast_nullable_to_non_nullable
+              as List<Map<String, dynamic>>,
     ));
   }
 }
 
 /// @nodoc
-@JsonSerializable()
+
+@JsonSerializable(explicitToJson: true)
 class _$TransferImpl implements _Transfer {
   const _$TransferImpl(
       {required this.id,
@@ -234,7 +314,16 @@ class _$TransferImpl implements _Transfer {
       required this.destinationType,
       required this.destinationId,
       required this.destinationName,
-      this.note});
+      this.note,
+      this.concept,
+      this.source = 'manual',
+      final List<BankTransferLeg> bankLegs = const <BankTransferLeg>[],
+      this.awaitsBankCounterpart = false,
+      this.schemaVersion = 2,
+      final List<Map<String, dynamic>> migratedTransactionSnapshots =
+          const <Map<String, dynamic>>[]})
+      : _bankLegs = bankLegs,
+        _migratedTransactionSnapshots = migratedTransactionSnapshots;
 
   factory _$TransferImpl.fromJson(Map<String, dynamic> json) =>
       _$$TransferImplFromJson(json);
@@ -261,10 +350,39 @@ class _$TransferImpl implements _Transfer {
 // Snapshot
   @override
   final String? note;
+  @override
+  final String? concept;
+  @override
+  @JsonKey()
+  final String source;
+  final List<BankTransferLeg> _bankLegs;
+  @override
+  @JsonKey()
+  List<BankTransferLeg> get bankLegs {
+    if (_bankLegs is EqualUnmodifiableListView) return _bankLegs;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_bankLegs);
+  }
+
+  @override
+  @JsonKey()
+  final bool awaitsBankCounterpart;
+  @override
+  @JsonKey()
+  final int schemaVersion;
+  final List<Map<String, dynamic>> _migratedTransactionSnapshots;
+  @override
+  @JsonKey()
+  List<Map<String, dynamic>> get migratedTransactionSnapshots {
+    if (_migratedTransactionSnapshots is EqualUnmodifiableListView)
+      return _migratedTransactionSnapshots;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_migratedTransactionSnapshots);
+  }
 
   @override
   String toString() {
-    return 'Transfer(id: $id, groupId: $groupId, date: $date, amount: $amount, sourceAssetId: $sourceAssetId, sourceAssetName: $sourceAssetName, destinationType: $destinationType, destinationId: $destinationId, destinationName: $destinationName, note: $note)';
+    return 'Transfer(id: $id, groupId: $groupId, date: $date, amount: $amount, sourceAssetId: $sourceAssetId, sourceAssetName: $sourceAssetName, destinationType: $destinationType, destinationId: $destinationId, destinationName: $destinationName, note: $note, concept: $concept, source: $source, bankLegs: $bankLegs, awaitsBankCounterpart: $awaitsBankCounterpart, schemaVersion: $schemaVersion, migratedTransactionSnapshots: $migratedTransactionSnapshots)';
   }
 
   @override
@@ -286,7 +404,17 @@ class _$TransferImpl implements _Transfer {
                 other.destinationId == destinationId) &&
             (identical(other.destinationName, destinationName) ||
                 other.destinationName == destinationName) &&
-            (identical(other.note, note) || other.note == note));
+            (identical(other.note, note) || other.note == note) &&
+            (identical(other.concept, concept) || other.concept == concept) &&
+            (identical(other.source, source) || other.source == source) &&
+            const DeepCollectionEquality().equals(other._bankLegs, _bankLegs) &&
+            (identical(other.awaitsBankCounterpart, awaitsBankCounterpart) ||
+                other.awaitsBankCounterpart == awaitsBankCounterpart) &&
+            (identical(other.schemaVersion, schemaVersion) ||
+                other.schemaVersion == schemaVersion) &&
+            const DeepCollectionEquality().equals(
+                other._migratedTransactionSnapshots,
+                _migratedTransactionSnapshots));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -302,7 +430,13 @@ class _$TransferImpl implements _Transfer {
       destinationType,
       destinationId,
       destinationName,
-      note);
+      note,
+      concept,
+      source,
+      const DeepCollectionEquality().hash(_bankLegs),
+      awaitsBankCounterpart,
+      schemaVersion,
+      const DeepCollectionEquality().hash(_migratedTransactionSnapshots));
 
   /// Create a copy of Transfer
   /// with the given fields replaced by the non-null parameter values.
@@ -322,16 +456,23 @@ class _$TransferImpl implements _Transfer {
 
 abstract class _Transfer implements Transfer {
   const factory _Transfer(
-      {required final String id,
-      required final String groupId,
-      required final DateTime date,
-      required final double amount,
-      required final String sourceAssetId,
-      required final String sourceAssetName,
-      required final TransferDestinationType destinationType,
-      required final String destinationId,
-      required final String destinationName,
-      final String? note}) = _$TransferImpl;
+          {required final String id,
+          required final String groupId,
+          required final DateTime date,
+          required final double amount,
+          required final String sourceAssetId,
+          required final String sourceAssetName,
+          required final TransferDestinationType destinationType,
+          required final String destinationId,
+          required final String destinationName,
+          final String? note,
+          final String? concept,
+          final String source,
+          final List<BankTransferLeg> bankLegs,
+          final bool awaitsBankCounterpart,
+          final int schemaVersion,
+          final List<Map<String, dynamic>> migratedTransactionSnapshots}) =
+      _$TransferImpl;
 
   factory _Transfer.fromJson(Map<String, dynamic> json) =
       _$TransferImpl.fromJson;
@@ -356,6 +497,18 @@ abstract class _Transfer implements Transfer {
   String get destinationName; // Snapshot
   @override
   String? get note;
+  @override
+  String? get concept;
+  @override
+  String get source;
+  @override
+  List<BankTransferLeg> get bankLegs;
+  @override
+  bool get awaitsBankCounterpart;
+  @override
+  int get schemaVersion;
+  @override
+  List<Map<String, dynamic>> get migratedTransactionSnapshots;
 
   /// Create a copy of Transfer
   /// with the given fields replaced by the non-null parameter values.

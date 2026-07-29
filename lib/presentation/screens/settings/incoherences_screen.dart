@@ -7,7 +7,9 @@ import '../../providers/billing_cycle_provider.dart';
 import '../../providers/cash_flow_provider.dart';
 import '../../sheets/add_transaction_sheet.dart';
 import '../../../domain/services/subcategory_move_service.dart';
+import '../../../domain/services/internal_transfer_migration_service.dart';
 import 'movements_without_account_screen.dart';
+import 'internal_transfer_migration_screen.dart';
 
 /// Filtre de la pantalla: false = tot l'històric (per defecte), true = cicle actiu.
 final _cycleOnlyProvider = StateProvider.autoDispose<bool>((ref) => false);
@@ -203,8 +205,71 @@ class _MaintenanceCards extends StatelessWidget {
       children: [
         _CycleGridCard(),
         _NoAccountCard(),
+        _InternalTransfersCard(),
         _DesyncCard(),
       ],
+    );
+  }
+}
+
+/// Parelles mirall que podrien ser traspassos interns. La targeta només
+/// proposa obrir el revisor; convertir sempre requereix confirmació explícita.
+class _InternalTransfersCard extends ConsumerWidget {
+  const _InternalTransfersCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(internalTransferCandidatesProvider);
+    return async.maybeWhen(
+      orElse: () => const SizedBox.shrink(),
+      data: (items) {
+        if (items.isEmpty) return const SizedBox.shrink();
+        return Card(
+          margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+          color: Colors.blueGrey.withValues(alpha: 0.07),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.swap_horiz, color: Colors.blueGrey),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${items.length} parella${items.length == 1 ? '' : 'es'} '
+                        'podrien ser traspassos interns',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Són apunts de signe oposat, mateix import i dates properes. '
+                  'No es modificarà res sense revisar-los un a un.',
+                  style: TextStyle(fontSize: 13),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.fact_check_outlined),
+                    label: const Text('Revisar parelles'),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const InternalTransferMigrationScreen(),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

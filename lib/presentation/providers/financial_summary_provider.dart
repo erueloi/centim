@@ -51,8 +51,9 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
     // seccions buides/negatives). Els totals de dalt NO depenen d'aquest filtre.
     final incomesByCategory = Map<String, double>.from(ledger.incomeByCategory)
       ..removeWhere((k, v) => v <= 0);
-    final expensesByCategory = Map<String, double>.from(ledger.expenseByCategory)
-      ..removeWhere((k, v) => v <= 0);
+    final expensesByCategory =
+        Map<String, double>.from(ledger.expenseByCategory)
+          ..removeWhere((k, v) => v <= 0);
 
     // 3. Mètriques 10/30/60 (estalvi = el que va a guardioles aquest cicle)
     final savings = ledger.savedThisCycle;
@@ -79,6 +80,8 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
       expensesByCategory: expensesByCategory,
       savedThisCycle: ledger.savedThisCycle,
       withdrawnThisCycle: ledger.withdrawnThisCycle,
+      savedByGoal: ledger.savedByGoal,
+      withdrawnByGoal: ledger.withdrawnByGoal,
     );
   }
 }

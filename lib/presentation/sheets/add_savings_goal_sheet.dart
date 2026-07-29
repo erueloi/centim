@@ -24,6 +24,7 @@ class _AddSavingsGoalSheetState extends ConsumerState<AddSavingsGoalSheet> {
 
   late Color _selectedColor;
   late bool _hasTarget;
+  late bool _isLiquid;
 
   @override
   void initState() {
@@ -36,6 +37,7 @@ class _AddSavingsGoalSheetState extends ConsumerState<AddSavingsGoalSheet> {
     _iconController = TextEditingController(text: goal?.icon ?? '💰');
     _selectedColor = goal != null ? Color(goal.color) : Colors.green;
     _hasTarget = goal?.targetAmount != null;
+    _isLiquid = goal?.isLiquid ?? true;
 
     if (goal == null) {
       _hasTarget = true; // Default for new
@@ -67,6 +69,7 @@ class _AddSavingsGoalSheetState extends ConsumerState<AddSavingsGoalSheet> {
             icon: _iconController.text,
             targetAmount: targetAmount,
             color: _selectedColor.toARGB32(),
+            isLiquid: _isLiquid,
           );
           await ref
               .read(savingsGoalNotifierProvider.notifier)
@@ -89,6 +92,7 @@ class _AddSavingsGoalSheetState extends ConsumerState<AddSavingsGoalSheet> {
             targetAmount: targetAmount,
             color: _selectedColor.toARGB32(),
             history: [],
+            isLiquid: _isLiquid,
           );
           await ref
               .read(savingsGoalNotifierProvider.notifier)
@@ -217,6 +221,19 @@ class _AddSavingsGoalSheetState extends ConsumerState<AddSavingsGoalSheet> {
                     return null;
                   },
                 ),
+              const SizedBox(height: 16),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                activeThumbColor: AppTheme.copper,
+                value: _isLiquid,
+                onChanged: (value) => setState(() => _isLiquid = value),
+                title: const Text('Disponible immediatament'),
+                subtitle: Text(
+                  _isLiquid
+                      ? 'Compta dins del pot de caixa disponible.'
+                      : 'No és efectiu immediat (pla de pensions, dipòsit a termini…).',
+                ),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _submit,

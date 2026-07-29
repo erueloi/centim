@@ -1,0 +1,11 @@
+{
+  "parameters": {
+    "ai_coach_model": {
+      "defaultValue": {
+        "value": "gemini-3.6-flash"
+      },
+      "description": "Model estable utilitzat pel Cèntim Coach. Permet canviar-lo sense publicar una versió nova de l'app.",
+      "valueType": "STRING"
+    }
+  }
+}

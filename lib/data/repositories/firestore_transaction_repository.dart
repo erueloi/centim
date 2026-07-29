@@ -26,7 +26,14 @@ class FirestoreTransactionRepository implements TransactionRepository {
   @override
   Future<void> addTransaction(dom.Transaction transaction) async {
     final data = transactionToFirestoreMap(transaction);
-    await _firestore.collection(_collectionName).add(data);
+    if (transaction.id == null) {
+      await _firestore.collection(_collectionName).add(data);
+    } else {
+      await _firestore
+          .collection(_collectionName)
+          .doc(transaction.id)
+          .set(data);
+    }
   }
 
   @override
@@ -79,6 +86,7 @@ Map<String, dynamic> transactionToFirestoreMap(dom.Transaction transaction) {
     'isIncome': transaction.isIncome,
     'savingsGoalId': transaction.savingsGoalId,
     'accountId': transaction.accountId,
+    'bankAccountKey': transaction.bankAccountKey,
     'source': transaction.source,
     'bankTxId': transaction.bankTxId,
   };
@@ -104,6 +112,7 @@ dom.Transaction transactionFromFirestoreMap(
     isIncome: data['isIncome'] as bool? ?? false,
     savingsGoalId: data['savingsGoalId'] as String?,
     accountId: data['accountId'] as String?,
+    bankAccountKey: data['bankAccountKey'] as String?,
     source: data['source'] as String?,
     bankTxId: data['bankTxId'] as String?,
   );

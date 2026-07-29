@@ -40,6 +40,8 @@ mixin _$FinancialSummary {
       throw _privateConstructorUsedError;
   Map<String, double> get expensesByCategory =>
       throw _privateConstructorUsedError;
+  Map<String, double> get savedByGoal => throw _privateConstructorUsedError;
+  Map<String, double> get withdrawnByGoal => throw _privateConstructorUsedError;
 
   /// Create a copy of FinancialSummary
   /// with the given fields replaced by the non-null parameter values.
@@ -69,7 +71,9 @@ abstract class $FinancialSummaryCopyWith<$Res> {
       double savedThisCycle,
       double withdrawnThisCycle,
       Map<String, double> incomesByCategory,
-      Map<String, double> expensesByCategory});
+      Map<String, double> expensesByCategory,
+      Map<String, double> savedByGoal,
+      Map<String, double> withdrawnByGoal});
 }
 
 /// @nodoc
@@ -102,6 +106,8 @@ class _$FinancialSummaryCopyWithImpl<$Res, $Val extends FinancialSummary>
     Object? withdrawnThisCycle = null,
     Object? incomesByCategory = null,
     Object? expensesByCategory = null,
+    Object? savedByGoal = null,
+    Object? withdrawnByGoal = null,
   }) {
     return _then(_value.copyWith(
       totalNetWorth: null == totalNetWorth
@@ -164,6 +170,14 @@ class _$FinancialSummaryCopyWithImpl<$Res, $Val extends FinancialSummary>
           ? _value.expensesByCategory
           : expensesByCategory // ignore: cast_nullable_to_non_nullable
               as Map<String, double>,
+      savedByGoal: null == savedByGoal
+          ? _value.savedByGoal
+          : savedByGoal // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
+      withdrawnByGoal: null == withdrawnByGoal
+          ? _value.withdrawnByGoal
+          : withdrawnByGoal // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
     ) as $Val);
   }
 }
@@ -191,7 +205,9 @@ abstract class _$$FinancialSummaryImplCopyWith<$Res>
       double savedThisCycle,
       double withdrawnThisCycle,
       Map<String, double> incomesByCategory,
-      Map<String, double> expensesByCategory});
+      Map<String, double> expensesByCategory,
+      Map<String, double> savedByGoal,
+      Map<String, double> withdrawnByGoal});
 }
 
 /// @nodoc
@@ -222,6 +238,8 @@ class __$$FinancialSummaryImplCopyWithImpl<$Res>
     Object? withdrawnThisCycle = null,
     Object? incomesByCategory = null,
     Object? expensesByCategory = null,
+    Object? savedByGoal = null,
+    Object? withdrawnByGoal = null,
   }) {
     return _then(_$FinancialSummaryImpl(
       totalNetWorth: null == totalNetWorth
@@ -284,6 +302,14 @@ class __$$FinancialSummaryImplCopyWithImpl<$Res>
           ? _value._expensesByCategory
           : expensesByCategory // ignore: cast_nullable_to_non_nullable
               as Map<String, double>,
+      savedByGoal: null == savedByGoal
+          ? _value._savedByGoal
+          : savedByGoal // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
+      withdrawnByGoal: null == withdrawnByGoal
+          ? _value._withdrawnByGoal
+          : withdrawnByGoal // ignore: cast_nullable_to_non_nullable
+              as Map<String, double>,
     ));
   }
 }
@@ -306,9 +332,13 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
       this.savedThisCycle = 0.0,
       this.withdrawnThisCycle = 0.0,
       final Map<String, double> incomesByCategory = const {},
-      final Map<String, double> expensesByCategory = const {}})
+      final Map<String, double> expensesByCategory = const {},
+      final Map<String, double> savedByGoal = const {},
+      final Map<String, double> withdrawnByGoal = const {}})
       : _incomesByCategory = incomesByCategory,
-        _expensesByCategory = expensesByCategory;
+        _expensesByCategory = expensesByCategory,
+        _savedByGoal = savedByGoal,
+        _withdrawnByGoal = withdrawnByGoal;
 
   @override
   final double totalNetWorth;
@@ -365,9 +395,27 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
     return EqualUnmodifiableMapView(_expensesByCategory);
   }
 
+  final Map<String, double> _savedByGoal;
+  @override
+  @JsonKey()
+  Map<String, double> get savedByGoal {
+    if (_savedByGoal is EqualUnmodifiableMapView) return _savedByGoal;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_savedByGoal);
+  }
+
+  final Map<String, double> _withdrawnByGoal;
+  @override
+  @JsonKey()
+  Map<String, double> get withdrawnByGoal {
+    if (_withdrawnByGoal is EqualUnmodifiableMapView) return _withdrawnByGoal;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_withdrawnByGoal);
+  }
+
   @override
   String toString() {
-    return 'FinancialSummary(totalNetWorth: $totalNetWorth, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, equityRatio: $equityRatio, monthlyIncome: $monthlyIncome, savingsWithdrawalIncome: $savingsWithdrawalIncome, monthlyExpenses: $monthlyExpenses, netOfCycle: $netOfCycle, savingsPercentage: $savingsPercentage, debtPercentage: $debtPercentage, livingExpensesPercentage: $livingExpensesPercentage, savedThisCycle: $savedThisCycle, withdrawnThisCycle: $withdrawnThisCycle, incomesByCategory: $incomesByCategory, expensesByCategory: $expensesByCategory)';
+    return 'FinancialSummary(totalNetWorth: $totalNetWorth, totalAssets: $totalAssets, totalLiabilities: $totalLiabilities, equityRatio: $equityRatio, monthlyIncome: $monthlyIncome, savingsWithdrawalIncome: $savingsWithdrawalIncome, monthlyExpenses: $monthlyExpenses, netOfCycle: $netOfCycle, savingsPercentage: $savingsPercentage, debtPercentage: $debtPercentage, livingExpensesPercentage: $livingExpensesPercentage, savedThisCycle: $savedThisCycle, withdrawnThisCycle: $withdrawnThisCycle, incomesByCategory: $incomesByCategory, expensesByCategory: $expensesByCategory, savedByGoal: $savedByGoal, withdrawnByGoal: $withdrawnByGoal)';
   }
 
   @override
@@ -406,7 +454,11 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
             const DeepCollectionEquality()
                 .equals(other._incomesByCategory, _incomesByCategory) &&
             const DeepCollectionEquality()
-                .equals(other._expensesByCategory, _expensesByCategory));
+                .equals(other._expensesByCategory, _expensesByCategory) &&
+            const DeepCollectionEquality()
+                .equals(other._savedByGoal, _savedByGoal) &&
+            const DeepCollectionEquality()
+                .equals(other._withdrawnByGoal, _withdrawnByGoal));
   }
 
   @override
@@ -426,7 +478,9 @@ class _$FinancialSummaryImpl implements _FinancialSummary {
       savedThisCycle,
       withdrawnThisCycle,
       const DeepCollectionEquality().hash(_incomesByCategory),
-      const DeepCollectionEquality().hash(_expensesByCategory));
+      const DeepCollectionEquality().hash(_expensesByCategory),
+      const DeepCollectionEquality().hash(_savedByGoal),
+      const DeepCollectionEquality().hash(_withdrawnByGoal));
 
   /// Create a copy of FinancialSummary
   /// with the given fields replaced by the non-null parameter values.
@@ -454,7 +508,9 @@ abstract class _FinancialSummary implements FinancialSummary {
       final double savedThisCycle,
       final double withdrawnThisCycle,
       final Map<String, double> incomesByCategory,
-      final Map<String, double> expensesByCategory}) = _$FinancialSummaryImpl;
+      final Map<String, double> expensesByCategory,
+      final Map<String, double> savedByGoal,
+      final Map<String, double> withdrawnByGoal}) = _$FinancialSummaryImpl;
 
   @override
   double get totalNetWorth;
@@ -491,6 +547,10 @@ abstract class _FinancialSummary implements FinancialSummary {
   Map<String, double> get incomesByCategory;
   @override
   Map<String, double> get expensesByCategory;
+  @override
+  Map<String, double> get savedByGoal;
+  @override
+  Map<String, double> get withdrawnByGoal;
 
   /// Create a copy of FinancialSummary
   /// with the given fields replaced by the non-null parameter values.

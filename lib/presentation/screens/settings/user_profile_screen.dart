@@ -10,6 +10,7 @@ import '../../../data/providers/repository_providers.dart';
 import '../../providers/incoherences_provider.dart';
 import 'bank_sync_screen.dart';
 import 'incoherences_screen.dart';
+import 'import_rules_screen.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key});
@@ -251,9 +252,11 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 leading: const Icon(Icons.help_outline, color: AppTheme.copper),
                 title: Text(
                   AppLocalizations.of(context)!.howItWorks,
-                  style: const TextStyle(color: AppTheme.copper, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                      color: AppTheme.copper, fontWeight: FontWeight.w500),
                 ),
-                trailing: const Icon(Icons.chevron_right, color: AppTheme.copper),
+                trailing:
+                    const Icon(Icons.chevron_right, color: AppTheme.copper),
                 onTap: _showUserGuide,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -283,6 +286,31 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ),
               const SizedBox(height: 16),
 
+              ListTile(
+                leading: const Icon(Icons.auto_awesome, color: AppTheme.copper),
+                title: const Text(
+                  'Regles d’importació',
+                  style: TextStyle(
+                    color: AppTheme.copper,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: const Text(
+                  'Suggeriments per concepte, sempre amb confirmació',
+                ),
+                trailing:
+                    const Icon(Icons.chevron_right, color: AppTheme.copper),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ImportRulesScreen()),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey[300]!),
+                ),
+              ),
+              const SizedBox(height: 16),
+
               // Eina de manteniment (discreta): incoherències de dades.
               Consumer(
                 builder: (context, ref, _) {
@@ -295,8 +323,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     title: const Text(
                       'Incoherències',
                       style: TextStyle(
-                          color: AppTheme.copper,
-                          fontWeight: FontWeight.w500),
+                          color: AppTheme.copper, fontWeight: FontWeight.w500),
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,

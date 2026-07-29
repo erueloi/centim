@@ -294,7 +294,8 @@ class MovimentsScreen extends ConsumerWidget {
         Navigator.pop(context); // Close loading/processing
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(AppLocalizations.of(context)!.errorText(e.toString())),
+            content:
+                Text(AppLocalizations.of(context)!.errorText(e.toString())),
           ),
         );
       }
@@ -311,6 +312,7 @@ class _AllMovementsView extends ConsumerStatefulWidget {
 
 class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
   final _searchController = TextEditingController();
+  bool _showSameAssetBankTransfers = false;
 
   @override
   void dispose() {
@@ -390,6 +392,30 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                 ),
               ),
               const SizedBox(width: 8),
+              IconButton(
+                tooltip: _showSameAssetBankTransfers
+                    ? 'Amaga traspassos entre IBAN del mateix compte'
+                    : 'Mostra traspassos entre IBAN del mateix compte',
+                icon: Icon(
+                  Icons.swap_horiz,
+                  color: _showSameAssetBankTransfers
+                      ? AppTheme.copper
+                      : Colors.grey[600],
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: _showSameAssetBankTransfers
+                      ? AppTheme.copper.withValues(alpha: 0.1)
+                      : Colors.grey[100],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => setState(
+                  () => _showSameAssetBankTransfers =
+                      !_showSameAssetBankTransfers,
+                ),
+              ),
+              const SizedBox(width: 4),
               // Filter button
               Stack(
                 children: [
@@ -450,7 +476,8 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                         onRemove: () => filterNotifier.toggleCategory(id, ''),
                       )),
                   ...filter.subCategoryIds.map((id) => _FilterChip(
-                        label: filter.subCategoryNames[id] ?? AppLocalizations.of(context)!.subCategories,
+                        label: filter.subCategoryNames[id] ??
+                            AppLocalizations.of(context)!.subCategories,
                         icon: Icons.label,
                         onRemove: () =>
                             filterNotifier.toggleSubCategory(id, ''),
@@ -618,9 +645,15 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                           0,
                           0);
 
-                      return (tDay.isAtSameMomentAs(startDay) ||
+                      final inCycle = (tDay.isAtSameMomentAs(startDay) ||
                               tDay.isAfter(startDay)) &&
                           !tDay.isAfter(endDay);
+                      final hiddenSameAssetBankTransfer =
+                          t.sourceAssetId == t.destinationId &&
+                              t.bankLegs.isNotEmpty;
+                      return inCycle &&
+                          (_showSameAssetBankTransfers ||
+                              !hiddenSameAssetBankTransfer);
                     }).toList()
                   : <Transfer>[];
 
@@ -674,7 +707,8 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                       child: Row(
                         children: [
                           Text(
-                            AppLocalizations.of(context)!.resultsCount(items.length),
+                            AppLocalizations.of(context)!
+                                .resultsCount(items.length),
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 12,
@@ -799,22 +833,26 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                               return await showDialog<bool>(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
-                                  title: Text(AppLocalizations.of(context)!.deleteTransferTitle),
+                                  title: Text(AppLocalizations.of(context)!
+                                      .deleteTransferTitle),
                                   content: Text(
-                                    AppLocalizations.of(context)!.deleteTransferConfirm,
+                                    AppLocalizations.of(context)!
+                                        .deleteTransferConfirm,
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.pop(ctx, false),
-                                      child: Text(AppLocalizations.of(context)!.cancelButton),
+                                      child: Text(AppLocalizations.of(context)!
+                                          .cancelButton),
                                     ),
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx, true),
                                       style: TextButton.styleFrom(
                                         foregroundColor: Colors.red,
                                       ),
-                                      child: Text(AppLocalizations.of(context)!.deleteButton),
+                                      child: Text(AppLocalizations.of(context)!
+                                          .deleteButton),
                                     ),
                                   ],
                                 ),
@@ -828,8 +866,9 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content:
-                                          Text(AppLocalizations.of(context)!.transferDeleted),
+                                      content: Text(
+                                          AppLocalizations.of(context)!
+                                              .transferDeleted),
                                     ),
                                   );
                                 }
@@ -837,7 +876,9 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                        content: Text(AppLocalizations.of(context)!.errorText(e.toString()))),
+                                        content: Text(
+                                            AppLocalizations.of(context)!
+                                                .errorText(e.toString()))),
                                   );
                                 }
                               }
@@ -883,7 +924,9 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                                   ),
                                 ),
                                 subtitle: Text(
-                                  '${dateFormat.format(transfer.date)}${transfer.note != null ? ' • ${transfer.note}' : ''}',
+                                  '${dateFormat.format(transfer.date)}'
+                                  '${transfer.awaitsBankCounterpart ? ' • esperant l’altra pota bancària' : ''}'
+                                  '${transfer.note != null ? ' • ${transfer.note}' : ''}',
                                 ),
                                 trailing: Text(
                                   currencyFormat.format(transfer.amount),
@@ -918,13 +961,16 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                             return await showDialog<bool>(
                               context: context,
                               builder: (context) => AlertDialog(
-                                title: Text(AppLocalizations.of(context)!.deleteMovementTitle),
-                                content: Text(AppLocalizations.of(context)!.cannotBeUndone),
+                                title: Text(AppLocalizations.of(context)!
+                                    .deleteMovementTitle),
+                                content: Text(AppLocalizations.of(context)!
+                                    .cannotBeUndone),
                                 actions: [
                                   TextButton(
                                     onPressed: () =>
                                         Navigator.pop(context, false),
-                                    child: Text(AppLocalizations.of(context)!.cancelButton),
+                                    child: Text(AppLocalizations.of(context)!
+                                        .cancelButton),
                                   ),
                                   TextButton(
                                     onPressed: () =>
@@ -932,7 +978,8 @@ class _AllMovementsViewState extends ConsumerState<_AllMovementsView> {
                                     style: TextButton.styleFrom(
                                       foregroundColor: Colors.red,
                                     ),
-                                    child: Text(AppLocalizations.of(context)!.deleteButton),
+                                    child: Text(AppLocalizations.of(context)!
+                                        .deleteButton),
                                   ),
                                 ],
                               ),
@@ -1609,7 +1656,7 @@ class _RecurringExpensesView extends ConsumerWidget {
           confirmDismiss: (direction) async {
             final l10n = AppLocalizations.of(context)!;
             final messenger = ScaffoldMessenger.of(context);
-            
+
             final result = await showDialog<ConfirmFixedExpenseResult>(
               context: context,
               builder: (ctx) => ConfirmFixedExpenseDialog(
@@ -1666,7 +1713,8 @@ class _RecurringExpensesView extends ConsumerWidget {
                 initialCategory: item.category,
                 initialSubCategory: item.subCategory,
                 initialAmount: item.subCategory.monthlyBudget,
-                initialConcept: AppLocalizations.of(context)!.paymentOf(item.subCategory.name),
+                initialConcept: AppLocalizations.of(context)!
+                    .paymentOf(item.subCategory.name),
               ),
             );
           },

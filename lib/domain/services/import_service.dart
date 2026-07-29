@@ -10,8 +10,12 @@ import 'package:intl/intl.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../models/transaction.dart' as t_model;
+import '../models/transfer.dart';
+import '../models/import_category_rule.dart';
 import 'bank_sync_service.dart';
+import 'transfer_service.dart';
 
+import '../../data/providers/repository_providers.dart';
 import '../../presentation/providers/auth_providers.dart';
 
 part 'import_service.g.dart';
@@ -27,9 +31,18 @@ class ImportedTransaction {
   String? subCategoryId;
   bool selected;
   bool isDuplicate;
-  final String? bankTxId; // Id estable del banc (Enable Banking) per dedup exacte
+  final String?
+      bankTxId; // Id estable del banc (Enable Banking) per dedup exacte
   final String? source; // 'excel' | 'enablebanking' | 'manual'
   String? accountId; // Actiu de Cèntim assignat (per compte, al sync bancari)
+  final String? bankAccountKey; // Compte real Enable Banking
+  List<String> transferCandidateIds;
+  bool suggestedInternalTransfer;
+  bool importAsTransfer;
+  String? otherAssetId;
+  String? transferToCompleteId;
+  String? suggestedByRuleId;
+  String? suggestedByRuleName;
 
   ImportedTransaction({
     required this.id,
@@ -44,7 +57,25 @@ class ImportedTransaction {
     this.bankTxId,
     this.source,
     this.accountId,
+    this.bankAccountKey,
+    this.transferCandidateIds = const [],
+    this.suggestedInternalTransfer = false,
+    this.importAsTransfer = false,
+    this.otherAssetId,
+    this.transferToCompleteId,
+    this.suggestedByRuleId,
+    this.suggestedByRuleName,
   });
+
+  String? get bankIdentity {
+    if (bankAccountKey == null ||
+        bankAccountKey!.isEmpty ||
+        bankTxId == null ||
+        bankTxId!.isEmpty) {
+      return null;
+    }
+    return '$bankAccountKey\u0000$bankTxId';
+  }
 }
 
 /// Resultat d'una sincronització bancària: moviments a revisar + data màxima
@@ -162,6 +193,7 @@ class ImportService {
     final dateFormat = DateFormat('dd/MM/yyyy');
     final existingTransactions = await _fetchExistingTransactions();
     final learning = _buildLearningIndex(existingTransactions);
+    final rules = await _fetchImportRules();
 
     if (isFormatC) {
       // --- FORMAT C (Mobile) ---
@@ -236,7 +268,7 @@ class ImportService {
 
           tx.isDuplicate = _checkIsDuplicate(tx, existingTransactions);
           if (tx.isDuplicate) tx.selected = false;
-          _autoCategorize(tx, learning);
+          _autoCategorize(tx, learning, rules);
           imported.add(tx);
         } catch (e) {
           debugPrint('Error parsing row C $i: $e');
@@ -297,7 +329,7 @@ class ImportService {
 
           tx.isDuplicate = _checkIsDuplicate(tx, existingTransactions);
           if (tx.isDuplicate) tx.selected = false;
-          _autoCategorize(tx, learning);
+          _autoCategorize(tx, learning, rules);
           imported.add(tx);
         } catch (e) {
           debugPrint('Error parsing row B $i: $e');
@@ -407,7 +439,7 @@ class ImportService {
               existingTransactions,
             );
             if (transaction.isDuplicate) transaction.selected = false;
-            _autoCategorize(transaction, learning);
+            _autoCategorize(transaction, learning, rules);
 
             imported.add(transaction);
           } catch (e) {
@@ -445,6 +477,12 @@ class ImportService {
     );
     final existingTransactions = await _fetchExistingTransactions();
     final learning = _buildLearningIndex(existingTransactions);
+    final rules = await _fetchImportRules();
+    final groupId = await ref.read(currentGroupIdProvider.future);
+    final transferRepo = ref.read(transferRepositoryProvider);
+    final existingTransfers = groupId == null
+        ? <Transfer>[]
+        : await transferRepo.getTransfersOnce(groupId);
 
     final List<ImportedTransaction> imported = [];
     final Map<String, DateTime> maxDateByKey = {};
@@ -465,12 +503,46 @@ class ImportService {
           bankTxId: m.bankTxId,
           source: 'enablebanking',
           accountId: assetId,
+          bankAccountKey: account.accountKey,
           selected: true,
         );
 
-        tx.isDuplicate = _checkIsDuplicate(tx, existingTransactions);
+        final identity = tx.bankIdentity;
+        var consumedByRef = false;
+        if (groupId != null && identity != null) {
+          final refs =
+              await transferRepo.findBankImportRefs(groupId, [identity]);
+          consumedByRef = refs.containsKey(identity);
+        }
+        final consumedByLegacyTransfer = identity != null &&
+            existingTransfers.any(
+              (transfer) =>
+                  transfer.bankLegs.any((leg) => leg.identity == identity),
+            );
+
+        tx.isDuplicate = consumedByRef ||
+            consumedByLegacyTransfer ||
+            _checkIsDuplicate(tx, existingTransactions);
         if (tx.isDuplicate) tx.selected = false;
-        _autoCategorize(tx, learning);
+        if (!tx.isDuplicate && tx.bankAccountKey != null) {
+          tx.transferCandidateIds = existingTransfers
+              .where(
+                (transfer) =>
+                    tx.accountId != null &&
+                    transferMatchesBankCounterpart(
+                      transfer: transfer,
+                      bankAccountKey: tx.bankAccountKey!,
+                      signedAmount: tx.amount,
+                      date: tx.date,
+                      centimAssetId: tx.accountId!,
+                    ),
+              )
+              .map((transfer) => transfer.id)
+              .toList();
+        }
+        tx.suggestedInternalTransfer =
+            conceptSuggestsInternalTransfer(tx.concept);
+        _autoCategorize(tx, learning, rules);
         imported.add(tx);
 
         final prev = maxDateByKey[account.accountKey];
@@ -579,13 +651,33 @@ class ImportService {
     final newBankId = newTx.bankTxId;
     if (newBankId != null && newBankId.isNotEmpty) {
       for (final old in existing) {
-        if (old.bankTxId != null && old.bankTxId == newBankId) return true;
+        if (old.bankTxId == null) continue;
+        // Documents antics no tenen accountKey: mantenim el fallback pel seu
+        // bankTxId. Quan tots dos el tenen, la identitat és obligatòriament
+        // composta i dos comptes diferents no són duplicats.
+        if (isSameBankLegIdentity(
+          bankTxId: newBankId,
+          bankAccountKey: newTx.bankAccountKey,
+          oldBankTxId: old.bankTxId!,
+          oldBankAccountKey: old.bankAccountKey,
+        )) {
+          return true;
+        }
       }
     }
 
     // 2. Heurística difusa amb confiança segons el compte.
     final newConcept = _normalizeConcept(newTx.concept);
     for (final old in existing) {
+      // La direcció forma part de la identitat difusa:
+      //  - mateix signe   → possible duplicat
+      //  - signe oposat   → possible traspàs, mai duplicat
+      if (!hasSameDirection(
+        signedAmount: newTx.amount,
+        existingIsIncome: old.isIncome,
+      )) {
+        continue;
+      }
       if (_looksLikeSame(
         concept: newConcept,
         amount: newTx.amount,
@@ -664,8 +756,9 @@ class ImportService {
     }
     final conceptMatch = exact || contains || tokenOverlap;
 
-    final differentAccount =
-        accountId != null && old.accountId != null && accountId != old.accountId;
+    final differentAccount = accountId != null &&
+        old.accountId != null &&
+        accountId != old.accountId;
 
     if (differentAccount) {
       // Baixa confiança → cal senyal fort.
@@ -707,7 +800,29 @@ class ImportService {
 
   /// Proposa categoria a partir de l'històric: primer per concepte exacte i,
   /// si no n'hi ha, per concepte normalitzat (mateix comerç, referència nova).
-  void _autoCategorize(ImportedTransaction tx, _LearningIndex index) {
+  void _autoCategorize(
+    ImportedTransaction tx,
+    _LearningIndex index,
+    List<ImportCategoryRule> rules,
+  ) {
+    // Un possible traspàs té prioritat sobre qualsevol regla de categoria.
+    if (tx.transferCandidateIds.isNotEmpty || tx.suggestedInternalTransfer) {
+      return;
+    }
+    final explicit = bestMatchingImportRule(
+      rules: rules,
+      concept: tx.concept,
+      signedAmount: tx.amount,
+      bankAccountKey: tx.bankAccountKey,
+    );
+    if (explicit != null) {
+      tx.categoryId = explicit.categoryId;
+      tx.subCategoryId = explicit.subCategoryId;
+      tx.suggestedByRuleId = explicit.id;
+      tx.suggestedByRuleName = explicit.name;
+      return;
+    }
+
     final exact = index.byConcept[tx.concept];
     if (exact != null) {
       tx.categoryId = exact.categoryId;
@@ -725,6 +840,12 @@ class ImportService {
       tx.categoryId = fuzzy.categoryId;
       tx.subCategoryId = fuzzy.subCategoryId;
     }
+  }
+
+  Future<List<ImportCategoryRule>> _fetchImportRules() async {
+    final groupId = await ref.read(currentGroupIdProvider.future);
+    if (groupId == null) return const [];
+    return ref.read(importCategoryRuleRepositoryProvider).getRulesOnce(groupId);
   }
 }
 

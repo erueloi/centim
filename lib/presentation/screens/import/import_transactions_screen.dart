@@ -5,12 +5,17 @@ import 'package:uuid/uuid.dart';
 
 import '../../../domain/models/asset.dart';
 import '../../../domain/models/transaction.dart';
+import '../../../domain/models/transfer.dart';
 import '../../../domain/services/import_service.dart';
+import '../../../domain/services/transfer_service.dart';
+import '../../../data/providers/repository_providers.dart';
 import '../../providers/asset_provider.dart';
 import '../../providers/auth_providers.dart';
 import '../../providers/category_notifier.dart';
 import '../../providers/transaction_notifier.dart';
+import '../../providers/transfer_provider.dart';
 import '../../../domain/models/category.dart';
+import '../settings/import_rules_screen.dart';
 
 class ImportTransactionsScreen extends ConsumerStatefulWidget {
   final List<ImportedTransaction> transactions;
@@ -69,9 +74,92 @@ class _ImportTransactionsScreenState
 
       final categories = await ref.read(categoryNotifierProvider.future);
       final notifier = ref.read(transactionNotifierProvider.notifier);
+      final transferNotifier = ref.read(transferNotifierProvider.notifier);
+      final transferRepo = ref.read(transferRepositoryProvider);
+      final assets = await ref.read(assetNotifierProvider.future);
+      final transfers = await ref.read(transferNotifierProvider.future);
 
-      int count = 0;
+      int transactionCount = 0;
+      int transferCount = 0;
       for (final item in selected) {
+        if (item.importAsTransfer) {
+          final knownAssetId = item.accountId ?? _selectedAccountId;
+          if (knownAssetId == null) {
+            throw StateError(
+              'Assigna un compte a «${item.concept}» abans de convertir-lo.',
+            );
+          }
+          final bankLeg = item.bankAccountKey != null &&
+                  item.bankAccountKey!.isNotEmpty &&
+                  item.bankTxId != null &&
+                  item.bankTxId!.isNotEmpty
+              ? BankTransferLeg(
+                  bankAccountKey: item.bankAccountKey!,
+                  bankTxId: item.bankTxId!,
+                  signedAmount: item.amount,
+                  date: item.date,
+                  centimAssetId: knownAssetId,
+                  concept: item.concept,
+                )
+              : null;
+
+          if (item.transferToCompleteId != null) {
+            final existing = transfers.firstWhere(
+              (t) => t.id == item.transferToCompleteId,
+              orElse: () => throw StateError(
+                'El traspàs pendent seleccionat ja no existeix.',
+              ),
+            );
+            if (bankLeg == null ||
+                !transferMatchesBankCounterpart(
+                  transfer: existing,
+                  bankAccountKey: bankLeg.bankAccountKey,
+                  signedAmount: bankLeg.signedAmount,
+                  date: bankLeg.date,
+                  centimAssetId: knownAssetId,
+                )) {
+              throw StateError(
+                'La fila «${item.concept}» ja no quadra amb el traspàs pendent.',
+              );
+            }
+            await transferNotifier.updateTransfer(
+              existing.copyWith(
+                bankLegs: [...existing.bankLegs, bankLeg],
+                awaitsBankCounterpart: false,
+                concept: existing.concept ?? item.concept,
+              ),
+            );
+          } else {
+            final otherAssetId = item.otherAssetId;
+            if (otherAssetId == null) {
+              throw StateError(
+                'Selecciona l’altre compte de «${item.concept}».',
+              );
+            }
+            final known = assets.firstWhere((a) => a.id == knownAssetId);
+            final other = assets.firstWhere((a) => a.id == otherAssetId);
+            final source = item.amount < 0 ? known : other;
+            final destination = item.amount < 0 ? other : known;
+
+            await transferNotifier.addTransfer(
+              amount: item.amount.abs(),
+              sourceAssetId: source.id,
+              sourceAssetName: source.name,
+              destinationType: TransferDestinationType.asset,
+              destinationId: destination.id,
+              destinationName: destination.name,
+              date: item.date,
+              concept: item.concept,
+              note: item.concept,
+              source: item.source ?? 'import',
+              bankLegs: bankLeg == null ? const [] : [bankLeg],
+              awaitsBankCounterpart: bankLeg != null,
+            );
+          }
+          transferCount++;
+          continue;
+        }
+
         // Resolve Category Name
         String catName = 'Sense categoria';
         String subName = 'General';
@@ -134,6 +222,18 @@ class _ImportTransactionsScreenState
           // Let's fetch current user name.
         );
 
+        if (item.bankIdentity != null) {
+          final consumed = await transferRepo.findBankImportRefs(
+            groupId,
+            [item.bankIdentity!],
+          );
+          if (consumed.containsKey(item.bankIdentity)) {
+            throw StateError(
+              'La pota bancària de «${item.concept}» ja estava importada.',
+            );
+          }
+        }
+
         // Fix Amount sign: Model expects positive amount usually?
         // Checked Transaction model: `required double amount`
         // `required bool isIncome`
@@ -142,14 +242,37 @@ class _ImportTransactionsScreenState
             amount: item.amount.abs(),
             // El sync bancari assigna accountId per compte; el CSV usa el global.
             accountId: item.accountId ?? _selectedAccountId,
+            bankAccountKey: item.bankAccountKey,
             source: item.source,
             bankTxId: item.bankTxId));
-        count++;
+        if (item.bankAccountKey != null &&
+            item.bankAccountKey!.isNotEmpty &&
+            item.bankTxId != null &&
+            item.bankTxId!.isNotEmpty) {
+          await transferRepo.recordTransactionBankRef(
+            groupId: groupId,
+            leg: BankTransferLeg(
+              bankAccountKey: item.bankAccountKey!,
+              bankTxId: item.bankTxId!,
+              signedAmount: item.amount,
+              date: item.date,
+              centimAssetId: item.accountId ?? _selectedAccountId ?? '',
+              concept: item.concept,
+            ),
+            transactionId: tx.id!,
+          );
+        }
+        transactionCount++;
       }
 
       if (mounted) {
+        final parts = <String>[
+          if (transactionCount > 0) '$transactionCount moviments',
+          if (transferCount > 0) '$transferCount traspassos',
+        ];
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$count moviments importats correctament')),
+          SnackBar(
+              content: Text('${parts.join(' i ')} importats correctament')),
         );
         Navigator.pop(context, true); // Return true to indicate success
       }
@@ -167,6 +290,10 @@ class _ImportTransactionsScreenState
   @override
   Widget build(BuildContext context) {
     final categoriesAsync = ref.watch(categoryNotifierProvider);
+    final assets =
+        ref.watch(assetNotifierProvider).valueOrNull ?? const <Asset>[];
+    final transfers =
+        ref.watch(transferNotifierProvider).valueOrNull ?? const <Transfer>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -333,6 +460,8 @@ class _ImportTransactionsScreenState
                           key: Key(item.id),
                           item: item,
                           categories: categories,
+                          assets: assets,
+                          transfers: transfers,
                           onChanged: () => setState(() {}),
                         ),
                       ],
@@ -383,23 +512,28 @@ class _ImportTransactionsScreenState
   }
 }
 
-class _TransactionImportRow extends StatefulWidget {
+class _TransactionImportRow extends ConsumerStatefulWidget {
   final ImportedTransaction item;
   final List<Category> categories;
+  final List<Asset> assets;
+  final List<Transfer> transfers;
   final VoidCallback onChanged;
 
   const _TransactionImportRow({
     required Key key,
     required this.item,
     required this.categories,
+    required this.assets,
+    required this.transfers,
     required this.onChanged,
   }) : super(key: key);
 
   @override
-  State<_TransactionImportRow> createState() => _TransactionImportRowState();
+  ConsumerState<_TransactionImportRow> createState() =>
+      _TransactionImportRowState();
 }
 
-class _TransactionImportRowState extends State<_TransactionImportRow> {
+class _TransactionImportRowState extends ConsumerState<_TransactionImportRow> {
   late TextEditingController _conceptController;
   late ImportedTransaction item;
 
@@ -422,7 +556,7 @@ class _TransactionImportRowState extends State<_TransactionImportRow> {
     final categoryId = (item.categoryId != null && item.categoryId!.isNotEmpty)
         ? item.categoryId
         : null;
-    final subCategoryId =
+    String? subCategoryId =
         (item.subCategoryId != null && item.subCategoryId!.isNotEmpty)
             ? item.subCategoryId
             : null;
@@ -432,6 +566,7 @@ class _TransactionImportRowState extends State<_TransactionImportRow> {
     //  - despesa (amount <= 0): NOMÉS categories de despesa (bloqueja el mal tipat)
     final rowIsIncome = item.amount > 0;
     final allowedCategories = widget.categories.where((c) {
+      if (c.archived) return false;
       if (rowIsIncome) return true;
       return c.type == TransactionType.expense;
     }).toList();
@@ -445,6 +580,13 @@ class _TransactionImportRowState extends State<_TransactionImportRow> {
         // Categoria inexistent o NO permesa per aquest signe → reset.
         item.categoryId = null;
       }
+    }
+    if (selectedCat != null &&
+        subCategoryId != null &&
+        !selectedCat.subcategories
+            .any((sub) => !sub.archived && sub.id == subCategoryId)) {
+      item.subCategoryId = null;
+      subCategoryId = null;
     }
 
     final color = item.isDuplicate
@@ -500,56 +642,227 @@ class _TransactionImportRowState extends State<_TransactionImportRow> {
                   },
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Icon(Icons.category, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    // Category Dropdown
-                    Expanded(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: const Text('Sense Categoria'),
-                        value: selectedCat?.id,
-                        items: allowedCategories.map((c) {
-                          return DropdownMenuItem(
-                            value: c.id,
-                            child: Text('${c.icon} ${c.name}'),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          setState(() {
-                            item.categoryId = val;
-                            item.subCategoryId = null; // Reset sub
-                          });
-                          widget.onChanged();
-                        },
+                SegmentedButton<bool>(
+                  segments: const [
+                    ButtonSegment(
+                      value: false,
+                      icon: Icon(Icons.receipt_long),
+                      label: Text('Moviment'),
+                    ),
+                    ButtonSegment(
+                      value: true,
+                      icon: Icon(Icons.swap_horiz),
+                      label: Text('Traspàs intern'),
+                    ),
+                  ],
+                  selected: {item.importAsTransfer},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (selection) {
+                    setState(() {
+                      item.importAsTransfer = selection.first;
+                      if (!item.importAsTransfer) {
+                        item.otherAssetId = null;
+                        item.transferToCompleteId = null;
+                      }
+                    });
+                    widget.onChanged();
+                  },
+                ),
+                if (item.suggestedInternalTransfer ||
+                    item.transferCandidateIds.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      item.transferCandidateIds.isNotEmpty
+                          ? '⇄ Hi ha un traspàs pendent que podria ser l’altra pota.'
+                          : '⇄ El concepte suggereix un possible traspàs intern.',
+                      style: TextStyle(
+                        color: Colors.blueGrey[700],
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    // Subcategory Dropdown (if category selected)
-                    if (selectedCat != null &&
-                        selectedCat.subcategories.isNotEmpty)
+                  ),
+                ],
+                if (!item.importAsTransfer &&
+                    item.suggestedByRuleName != null) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Chip(
+                      avatar: const Icon(Icons.auto_awesome, size: 16),
+                      label: Text('Regla: ${item.suggestedByRuleName}'),
+                    ),
+                  ),
+                ],
+                if (item.importAsTransfer) ...[
+                  const SizedBox(height: 12),
+                  if (item.transferCandidateIds.isNotEmpty)
+                    DropdownButtonFormField<String?>(
+                      initialValue: item.transferToCompleteId,
+                      decoration: const InputDecoration(
+                        labelText: 'Traspàs pendent',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          value: null,
+                          child: Text('Crear un traspàs nou'),
+                        ),
+                        ...item.transferCandidateIds.map((id) {
+                          final matches =
+                              widget.transfers.where((t) => t.id == id);
+                          final label = matches.isEmpty
+                              ? 'Traspàs pendent'
+                              : '${matches.first.sourceAssetName} → '
+                                  '${matches.first.destinationName} · '
+                                  '${matches.first.amount.toStringAsFixed(2)} €';
+                          return DropdownMenuItem<String?>(
+                            value: id,
+                            child: Text(label),
+                          );
+                        }),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          item.transferToCompleteId = value;
+                          if (value != null) item.otherAssetId = null;
+                        });
+                        widget.onChanged();
+                      },
+                    ),
+                  if (item.transferCandidateIds.isNotEmpty)
+                    const SizedBox(height: 12),
+                  if (item.transferToCompleteId == null)
+                    DropdownButtonFormField<String>(
+                      initialValue: item.otherAssetId,
+                      decoration: const InputDecoration(
+                        labelText: 'Altre compte del traspàs',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: widget.assets
+                          .where(
+                            (asset) =>
+                                asset.type == AssetType.bankAccount ||
+                                asset.type == AssetType.cash,
+                          )
+                          .map(
+                            (asset) => DropdownMenuItem(
+                              value: asset.id,
+                              child: Text(asset.name),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() => item.otherAssetId = value);
+                        widget.onChanged();
+                      },
+                    ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      item.amount < 0
+                          ? 'El compte del moviment serà l’origen.'
+                          : 'El compte del moviment serà el destí.',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ),
+                ],
+                if (!item.importAsTransfer) ...[
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(Icons.category, size: 16, color: Colors.grey),
+                      const SizedBox(width: 8),
+                      // Category Dropdown
                       Expanded(
                         child: DropdownButton<String>(
                           isExpanded: true,
-                          hint: const Text('Subcategoria'),
-                          value: subCategoryId,
-                          items: selectedCat.subcategories.map((s) {
+                          hint: const Text('Sense Categoria'),
+                          value: selectedCat?.id,
+                          items: allowedCategories.map((c) {
                             return DropdownMenuItem(
-                              value: s.id,
-                              child: Text(s.name),
+                              value: c.id,
+                              child: Text('${c.icon} ${c.name}'),
                             );
                           }).toList(),
                           onChanged: (val) {
                             setState(() {
-                              item.subCategoryId = val;
+                              item.categoryId = val;
+                              item.subCategoryId = null; // Reset sub
                             });
                             widget.onChanged();
                           },
                         ),
                       ),
-                  ],
-                ),
+                      const SizedBox(width: 16),
+                      // Subcategory Dropdown (if category selected)
+                      if (selectedCat != null &&
+                          selectedCat.subcategories.isNotEmpty)
+                        Expanded(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            hint: const Text('Subcategoria'),
+                            value: selectedCat.subcategories.any(
+                              (s) => !s.archived && s.id == subCategoryId,
+                            )
+                                ? subCategoryId
+                                : null,
+                            items: selectedCat.subcategories
+                                .where((s) => !s.archived)
+                                .map((s) {
+                              return DropdownMenuItem(
+                                value: s.id,
+                                child: Text(s.name),
+                              );
+                            }).toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                item.subCategoryId = val;
+                              });
+                              widget.onChanged();
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: OutlinedButton.icon(
+                      onPressed: item.categoryId == null ||
+                              item.categoryId!.isEmpty ||
+                              item.subCategoryId == null ||
+                              item.subCategoryId!.isEmpty
+                          ? null
+                          : () async {
+                              final saved = await showImportRuleEditor(
+                                context,
+                                ref,
+                                categories: widget.categories,
+                                initialConcept: item.concept,
+                                initialCategoryId: item.categoryId,
+                                initialSubCategoryId: item.subCategoryId,
+                                initialSignedAmount: item.amount,
+                                initialBankAccountKey: item.bankAccountKey,
+                              );
+                              if (saved && context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Regla desada.'),
+                                  ),
+                                );
+                              }
+                            },
+                      icon: const Icon(Icons.auto_awesome, size: 17),
+                      label: const Text('Desa com a regla'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

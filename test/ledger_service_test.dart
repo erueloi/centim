@@ -76,6 +76,7 @@ void main() {
     expect(s.totalIncome, 0);
     expect(s.savedThisCycle, 100);
     expect(s.savedByCategory['sav'], 100);
+    expect(s.savedByGoal['goalA'], 100);
     expect(s.savedBySubcategory['sav_eloi'], 100);
   });
 
@@ -94,6 +95,7 @@ void main() {
     );
     expect(s.totalIncome, 0);
     expect(s.withdrawnThisCycle, 30);
+    expect(s.withdrawnByGoal['goalA'], 30);
   });
 
   test('un refund resta del gastat de la seva categoria, sense incoherència',

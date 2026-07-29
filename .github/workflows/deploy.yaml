@@ -46,12 +46,6 @@ jobs:
           echo "keyAlias=$KEY_ALIAS" >> android/key.properties
           echo "storeFile=upload-keystore.jks" >> android/key.properties
 
-      - name: Create .env file
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          echo "GEMINI_API_KEY=$GEMINI_API_KEY" > .env
-
       # --- Cloud Functions (Enable Banking proxy) + regles de Firestore ---
       # Es despleguen ABANS del hosting perquè l'app web nova pugui dependre'n.
       - name: Setup Node (Cloud Functions)
@@ -85,7 +79,7 @@ jobs:
         run: npm ci
         working-directory: functions
 
-      - name: Deploy Cloud Functions & Firestore rules
+      - name: Deploy Cloud Functions, Firestore rules & Remote Config
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CENTIM_162BD }}
         run: |
@@ -94,7 +88,7 @@ jobs:
           echo "$FIREBASE_SA" > "$RUNNER_TEMP/firebase-sa.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
           npx --yes firebase-tools@latest deploy \
-            --only functions,firestore \
+            --only functions,firestore,remoteconfig \
             --project centim-162bd \
             --non-interactive
           rm -f "$RUNNER_TEMP/firebase-sa.json"

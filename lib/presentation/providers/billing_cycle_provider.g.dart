@@ -39,7 +39,7 @@ final activeCycleProvider = AutoDisposeProvider<BillingCycle>.internal(
 // ignore: unused_element
 typedef ActiveCycleRef = AutoDisposeProviderRef<BillingCycle>;
 String _$billingCycleNotifierHash() =>
-    r'af38f5fd4f558d1237f0aa7a52d03efbcf407691';
+    r'cfaa663de2e487c9b5a1e0d9f2d9081fc4fab604';
 
 /// See also [BillingCycleNotifier].
 @ProviderFor(BillingCycleNotifier)

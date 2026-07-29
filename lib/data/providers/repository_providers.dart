@@ -13,6 +13,8 @@ import '../repositories/firestore_billing_cycle_repository.dart';
 import '../repositories/firestore_savings_goal_repository.dart';
 import '../repositories/transfer_repository.dart';
 import '../repositories/cycle_report_repository.dart';
+import '../repositories/balance_adjustment_repository.dart';
+import '../repositories/import_category_rule_repository.dart';
 
 final cycleReportRepositoryProvider = Provider<CycleReportRepository>((ref) {
   return CycleReportRepository();
@@ -60,4 +62,14 @@ final savingsGoalRepositoryProvider = Provider<FirestoreSavingsGoalRepository>((
 
 final transferRepositoryProvider = Provider<TransferRepository>((ref) {
   return TransferRepository();
+});
+
+final balanceAdjustmentRepositoryProvider =
+    Provider<BalanceAdjustmentRepository>((ref) {
+  return BalanceAdjustmentRepository();
+});
+
+final importCategoryRuleRepositoryProvider =
+    Provider<ImportCategoryRuleRepository>((ref) {
+  return ImportCategoryRuleRepository();
 });

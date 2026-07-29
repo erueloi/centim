@@ -7,6 +7,7 @@ import '../screens/settings/bank_sync_screen.dart';
 import '../providers/auth_providers.dart';
 import '../../domain/services/bank_callback.dart';
 import '../../domain/services/bank_sync_service.dart';
+import '../providers/bank_consent_provider.dart';
 
 class AuthWrapper extends ConsumerWidget {
   const AuthWrapper({super.key});
@@ -83,6 +84,7 @@ class _BankCallbackHandlerState extends ConsumerState<_BankCallbackHandler> {
             code: pending.code,
             state: pending.state,
           );
+      ref.invalidate(bankConnectionStateProvider);
       if (!mounted) return;
       messenger.showSnackBar(
         const SnackBar(content: Text('Banc connectat correctament.')),

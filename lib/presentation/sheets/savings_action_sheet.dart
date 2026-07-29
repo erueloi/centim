@@ -59,8 +59,7 @@ class _SavingsActionSheetState extends ConsumerState<SavingsActionSheet> {
 
   Future<void> _save() async {
     final l10n = AppLocalizations.of(context)!;
-    final amount =
-        double.tryParse(_amountController.text.replaceAll(',', '.'));
+    final amount = double.tryParse(_amountController.text.replaceAll(',', '.'));
 
     if (amount == null || (_isAdjust ? amount < 0 : amount <= 0)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -100,9 +99,11 @@ class _SavingsActionSheetState extends ConsumerState<SavingsActionSheet> {
   }
 
   Future<void> _doAdjust(double newAmount) async {
-    await ref
-        .read(savingsGoalNotifierProvider.notifier)
-        .adjustBalance(widget.goal.id, newAmount);
+    await ref.read(savingsGoalNotifierProvider.notifier).adjustBalance(
+          widget.goal.id,
+          newAmount,
+          reason: _noteController.text,
+        );
   }
 
   Future<void> _doContributeOrWithdraw(double amount) async {
@@ -113,10 +114,13 @@ class _SavingsActionSheetState extends ConsumerState<SavingsActionSheet> {
     if (groupId == null) return;
 
     // Resolve linked category/subcategory
-    String resolvedCategoryId = _isContribute ? 'expense_savings' : 'income_savings';
-    String resolvedSubCategoryId = _isContribute ? 'contribution' : 'withdrawal';
+    String resolvedCategoryId =
+        _isContribute ? 'expense_savings' : 'income_savings';
+    String resolvedSubCategoryId =
+        _isContribute ? 'contribution' : 'withdrawal';
     String resolvedCategoryName = 'Estalvi';
-    String resolvedSubCategoryName = _isContribute ? l10n.contributionLabel : l10n.withdrawFunds;
+    String resolvedSubCategoryName =
+        _isContribute ? l10n.contributionLabel : l10n.withdrawFunds;
 
     for (var cat in categories) {
       for (var sub in cat.subcategories) {
@@ -198,8 +202,8 @@ class _SavingsActionSheetState extends ConsumerState<SavingsActionSheet> {
               Expanded(
                 child: ListView(
                   controller: scrollController,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                   children: [
                     // --- HEADER ---
                     Row(
@@ -237,7 +241,7 @@ class _SavingsActionSheetState extends ConsumerState<SavingsActionSheet> {
                         if (!_isAdjust)
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: goalColor.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
@@ -260,7 +264,7 @@ class _SavingsActionSheetState extends ConsumerState<SavingsActionSheet> {
                         child: TextField(
                           controller: _amountController,
                           keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true),
+                              decimal: true),
                           textAlign: TextAlign.center,
                           autofocus: true,
                           style: Theme.of(context)
@@ -311,38 +315,43 @@ class _SavingsActionSheetState extends ConsumerState<SavingsActionSheet> {
 
                     const SizedBox(height: 24),
 
-                    // --- NOTE (not for adjust) ---
-                    if (!_isAdjust) ...[
-                      TextField(
-                        controller: _noteController,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          hintText: l10n.savingsNotePlaceholder,
-                          filled: true,
-                          fillColor: Colors.white,
-                          prefixIcon: const Icon(
-                            Icons.edit_note,
-                            color: Colors.grey,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: accentColor,
-                              width: 2,
-                            ),
+                    // --- NOTE ---
+                    TextField(
+                      controller: _noteController,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: _isAdjust
+                            ? 'Motiu recomanat: què estàs reconciliant?'
+                            : l10n.savingsNotePlaceholder,
+                        helperText: _isAdjust
+                            ? 'No és obligatori, però et serà útil quan revisis les fuites.'
+                            : null,
+                        filled: true,
+                        fillColor: Colors.white,
+                        prefixIcon: const Icon(
+                          Icons.edit_note,
+                          color: Colors.grey,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: accentColor,
+                            width: 2,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                    ),
+                    const SizedBox(height: 16),
 
+                    if (!_isAdjust) ...[
                       // --- DATE PICKER ---
                       ListTile(
                         tileColor: Colors.white,
@@ -424,7 +433,7 @@ class _SavingsActionSheetState extends ConsumerState<SavingsActionSheet> {
                                     ...liquidAssets.map((a) => DropdownMenuItem(
                                           value: a.id,
                                           child: Text(
-                                            '${a.name} (${a.amount.toStringAsFixed(2)} €)'),
+                                              '${a.name} (${a.amount.toStringAsFixed(2)} €)'),
                                         )),
                                   ],
                                   onChanged: (v) =>

@@ -10,6 +10,7 @@ import 'financial_summary_provider.dart';
 import 'savings_goal_provider.dart';
 import 'transaction_notifier.dart';
 import 'transfer_provider.dart';
+import 'balance_adjustment_provider.dart';
 
 /// Estat de caixa del cicle seleccionat. `null` mentre falti alguna dada.
 ///
@@ -25,6 +26,8 @@ final cashFlowStatusProvider = Provider<CashFlowStatus?>((ref) {
   final transfers = ref.watch(transferNotifierProvider).valueOrNull ?? const [];
   final assets = ref.watch(assetNotifierProvider).valueOrNull ?? const [];
   final goals = ref.watch(savingsGoalNotifierProvider).valueOrNull ?? const [];
+  final adjustments =
+      ref.watch(balanceAdjustmentsProvider).valueOrNull ?? const [];
 
   // La comparació contra els comptes només val al cicle en curs: els saldos
   // dels actius i de les guardioles són l'estat d'ARA.
@@ -37,12 +40,15 @@ final cashFlowStatusProvider = Provider<CashFlowStatus?>((ref) {
     transfers: transfers,
     assets: assets,
     goals: goals,
+    savedByGoal: summary.savedByGoal,
+    withdrawnByGoal: summary.withdrawnByGoal,
     isActiveCycle: isActive,
+    balanceAdjustments: adjustments,
   );
 });
 
-/// El pot ARA mateix (actius líquids + guardioles). El fa servir el diàleg de
-/// tancament per proposar el saldo inicial del cicle següent.
+/// El pot ARA mateix (actius líquids + guardioles líquides). El fa servir el
+/// diàleg de tancament per proposar el saldo inicial del cicle següent.
 final currentPotProvider = Provider<double?>((ref) {
   final assets = ref.watch(assetNotifierProvider).valueOrNull;
   final goals = ref.watch(savingsGoalNotifierProvider).valueOrNull;
@@ -55,7 +61,8 @@ final currentPotProvider = Provider<double?>((ref) {
 /// això trenca la cadena de saldos inicials. Cal corregir-ho a mà, editant les
 /// dates del cicle.
 final cycleGridProblemsProvider = Provider<List<CycleGridProblem>>((ref) {
-  final cycles = ref.watch(billingCycleNotifierProvider).valueOrNull ?? const [];
+  final cycles =
+      ref.watch(billingCycleNotifierProvider).valueOrNull ?? const [];
   return findCycleGridProblems(cycles);
 });
 

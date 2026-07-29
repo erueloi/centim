@@ -1,14 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum SavingsEntryType { movement, adjustment, reversal }
+
 class SavingsEntry {
   final DateTime date;
   final double amount;
   final String note;
+  final SavingsEntryType type;
+  final String? adjustmentId;
+  final String? reversesAdjustmentId;
 
-  SavingsEntry({required this.date, required this.amount, required this.note});
+  SavingsEntry({
+    required this.date,
+    required this.amount,
+    required this.note,
+    this.type = SavingsEntryType.movement,
+    this.adjustmentId,
+    this.reversesAdjustmentId,
+  });
 
   Map<String, dynamic> toMap() {
-    return {'date': Timestamp.fromDate(date), 'amount': amount, 'note': note};
+    return {
+      'date': Timestamp.fromDate(date),
+      'amount': amount,
+      'note': note,
+      'type': type.name,
+      'adjustmentId': adjustmentId,
+      'reversesAdjustmentId': reversesAdjustmentId,
+    };
   }
 
   factory SavingsEntry.fromMap(Map<String, dynamic> map) {
@@ -16,6 +35,12 @@ class SavingsEntry {
       date: (map['date'] as Timestamp).toDate(),
       amount: (map['amount'] as num).toDouble(),
       note: map['note'] as String? ?? '',
+      type: SavingsEntryType.values.firstWhere(
+        (value) => value.name == map['type'],
+        orElse: () => SavingsEntryType.movement,
+      ),
+      adjustmentId: map['adjustmentId'] as String?,
+      reversesAdjustmentId: map['reversesAdjustmentId'] as String?,
     );
   }
 }
@@ -29,6 +54,7 @@ class SavingsGoal {
   final double? targetAmount; // Null if it's an open-ended fund
   final int color; // Color value (int)
   final List<SavingsEntry> history;
+  final bool isLiquid;
 
   SavingsGoal({
     required this.id,
@@ -39,6 +65,7 @@ class SavingsGoal {
     this.targetAmount,
     required this.color,
     required this.history,
+    this.isLiquid = true,
   });
 
   SavingsGoal copyWith({
@@ -50,6 +77,7 @@ class SavingsGoal {
     double? targetAmount,
     int? color,
     List<SavingsEntry>? history,
+    bool? isLiquid,
   }) {
     return SavingsGoal(
       id: id ?? this.id,
@@ -60,6 +88,7 @@ class SavingsGoal {
       targetAmount: targetAmount ?? this.targetAmount,
       color: color ?? this.color,
       history: history ?? this.history,
+      isLiquid: isLiquid ?? this.isLiquid,
     );
   }
 }

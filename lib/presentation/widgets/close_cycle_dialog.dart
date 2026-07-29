@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/format_utils.dart';
-import '../../domain/models/asset.dart';
+import '../../core/theme/app_theme.dart';
 import '../../domain/models/billing_cycle.dart';
 import '../../domain/services/cash_flow_service.dart';
 import '../../domain/services/cycle_integrity_service.dart';
@@ -84,10 +84,10 @@ class _CloseCycleDialogState extends ConsumerState<_CloseCycleDialog> {
     final goalsValue = ref.watch(savingsGoalNotifierProvider).valueOrNull;
     final assets = assetsValue ?? const [];
     final goals = goalsValue ?? const [];
-    final liquid = assets.where(isLiquidAsset).toList();
-    final pot = assetsValue != null && goalsValue != null
-        ? totalPot(assets, goals)
+    final potBreakdown = assetsValue != null && goalsValue != null
+        ? buildCashPotBreakdown(assets, goals)
         : null;
+    final pot = potBreakdown?.total;
     if (!_initialPotLoaded && pot != null) {
       _controller.text = editableAmountText(pot);
       _initialPotLoaded = true;
@@ -106,27 +106,58 @@ class _CloseCycleDialogState extends ConsumerState<_CloseCycleDialog> {
     final canSubmit = canClose && (!_seal || pot != null);
 
     return AlertDialog(
-      title: Text('Tancar ${widget.cycle.name}?'),
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      title: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppTheme.copper.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.payments_outlined,
+              color: AppTheme.anthracite,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Tancar ${widget.cycle.name}?',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppTheme.anthracite,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+        ],
+      ),
       content: SizedBox(
-        width: double.maxFinite,
+        width: 520,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Aquest és el pot que arrossegaràs al cicle nou. Comprova\'l '
+              const _BankCheckNotice(
+                'Aquest és el pot que arrossegaràs al cicle nou. Comprova’l '
                 'contra els saldos reals de CaixaBank abans de segellar-lo.',
-                style: TextStyle(fontSize: 13),
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
 
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.event),
-                title: const Text('Quin dia has cobrat?'),
-                subtitle: Text(dateFormat.format(_payday)),
-                trailing: const Icon(Icons.edit_calendar),
+              _PaydayCard(
+                payday: dateFormat.format(_payday),
+                boundaryText: '${widget.cycle.name} acabarà el '
+                    '${dateFormat.format(boundary.currentEndDate)} · el cicle '
+                    'nou començarà el '
+                    '${dateFormat.format(boundary.nextStartDate)}',
                 onTap: canClose
                     ? () async {
                         final picked = await showDatePicker(
@@ -142,33 +173,55 @@ class _CloseCycleDialogState extends ConsumerState<_CloseCycleDialog> {
                       }
                     : null,
               ),
-              Text(
-                '${widget.cycle.name} acabarà el '
-                '${dateFormat.format(boundary.currentEndDate)} i el cicle nou '
-                'començarà el ${dateFormat.format(boundary.nextStartDate)}.',
-                style: const TextStyle(fontSize: 12),
-              ),
 
               if (isLateClose) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 const _Info(
                   'Has triat una data anterior a avui. El desglossament de sota '
                   'és el pot registrat ara, no el que hi havia el dia del '
                   'cobrament. Revisa i ajusta el saldo abans de segellar-lo.',
                 ),
               ],
-              const SizedBox(height: 14),
+              const SizedBox(height: 18),
 
               // ── Desglossament, per poder-lo comparar compte a compte ──
-              if (pot == null)
+              if (potBreakdown == null)
                 const Center(child: CircularProgressIndicator())
               else ...[
-                for (final a in liquid)
-                  _Row(a.name, currency.format(a.amount), icon: _iconFor(a)),
-                for (final g in goals)
-                  _Row(g.name, currency.format(g.currentAmount), icon: g.icon),
-                const Divider(height: 20),
-                _Row('Pot total', currency.format(pot), bold: true),
+                const _SectionLabel('Comptes líquids'),
+                for (final account in potBreakdown.liquidAccounts)
+                  _BalanceRow(
+                    account.name,
+                    currency.format(account.amount),
+                    icon: '🏦',
+                  ),
+                if (potBreakdown.liquidSavings.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  const _SectionLabel('Guardioles disponibles'),
+                  for (final goal in potBreakdown.liquidSavings)
+                    _BalanceRow(
+                      goal.name,
+                      currency.format(goal.amount),
+                      icon: '🐷',
+                    ),
+                ],
+                if (potBreakdown.nonLiquidSavings.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  const _SectionLabel(
+                    'No disponibles immediatament',
+                    muted: true,
+                  ),
+                  for (final goal in potBreakdown.nonLiquidSavings)
+                    _BalanceRow(
+                      goal.name,
+                      currency.format(goal.amount),
+                      icon: '🔒',
+                      note: 'Fora del pot',
+                      muted: true,
+                    ),
+                ],
+                const SizedBox(height: 14),
+                _PotTotalCard(amount: currency.format(pot)),
               ],
 
               if (noAccount > 0) ...[
@@ -188,20 +241,34 @@ class _CloseCycleDialogState extends ConsumerState<_CloseCycleDialog> {
               ],
 
               const SizedBox(height: 14),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                value: _seal,
-                onChanged: (v) => setState(() => _seal = v ?? false),
-                title: const Text('Segellar el saldo inicial del cicle nou',
-                    style: TextStyle(fontSize: 13)),
-                subtitle: const Text(
-                  'Si el desmarques, el cicle nou queda sense saldo inicial i '
-                  'el pots introduir més tard.',
-                  style: TextStyle(fontSize: 11),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.sand.withValues(alpha: 0.24),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: CheckboxListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  dense: true,
+                  activeColor: AppTheme.copper,
+                  checkColor: Colors.white,
+                  value: _seal,
+                  onChanged: (v) => setState(() => _seal = v ?? false),
+                  title: const Text(
+                    'Segellar el saldo inicial del cicle nou',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.anthracite,
+                    ),
+                  ),
+                  subtitle: const Text(
+                    'Si el desmarques, el podràs introduir més tard.',
+                    style: TextStyle(fontSize: 11),
+                  ),
                 ),
               ),
-              if (_seal)
+              if (_seal) ...[
+                const SizedBox(height: 12),
                 TextField(
                   controller: _controller,
                   keyboardType:
@@ -213,6 +280,7 @@ class _CloseCycleDialogState extends ConsumerState<_CloseCycleDialog> {
                     isDense: true,
                   ),
                 ),
+              ],
               const SizedBox(height: 10),
               const Text(
                 'Pots cancel·lar ara sense canviar res. Un cop confirmat, '
@@ -227,6 +295,7 @@ class _CloseCycleDialogState extends ConsumerState<_CloseCycleDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(foregroundColor: AppTheme.anthracite),
           child: const Text('Cancel·lar'),
         ),
         FilledButton(
@@ -246,41 +315,260 @@ class _CloseCycleDialogState extends ConsumerState<_CloseCycleDialog> {
                   );
                 }
               : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.copper,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
           child: const Text('Tancar cicle'),
         ),
       ],
     );
   }
-
-  String _iconFor(Asset a) => a.type == AssetType.cash ? '💵' : '🏦';
 }
 
-class _Row extends StatelessWidget {
+class _BalanceRow extends StatelessWidget {
   final String label;
   final String value;
   final String? icon;
-  final bool bold;
+  final String? note;
+  final bool muted;
 
-  const _Row(this.label, this.value, {this.icon, this.bold = false});
+  const _BalanceRow(
+    this.label,
+    this.value, {
+    this.icon,
+    this.note,
+    this.muted = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final style = TextStyle(
-      fontSize: bold ? 15 : 13,
-      fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-    );
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (icon != null) ...[
             Text(icon!, style: const TextStyle(fontSize: 14)),
             const SizedBox(width: 6),
           ],
           Expanded(
-              child: Text(label,
-                  style: style, maxLines: 1, overflow: TextOverflow.ellipsis)),
-          Text(value, style: style),
+            child: Text(
+              label,
+              maxLines: 2,
+              softWrap: true,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.2,
+                color: muted ? Colors.grey[600] : AppTheme.anthracite,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: muted ? Colors.grey[600] : AppTheme.anthracite,
+                ),
+              ),
+              if (note != null)
+                Text(
+                  note!,
+                  style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  final bool muted;
+
+  const _SectionLabel(this.text, {this.muted = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 3),
+      child: Text(
+        text.toUpperCase(),
+        style: TextStyle(
+          fontSize: 10,
+          letterSpacing: 0.8,
+          fontWeight: FontWeight.w700,
+          color: muted ? Colors.grey[500] : AppTheme.copper,
+        ),
+      ),
+    );
+  }
+}
+
+class _PotTotalCard extends StatelessWidget {
+  final String amount;
+
+  const _PotTotalCard({required this.amount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppTheme.anthracite,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'POT DISPONIBLE',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 11,
+                letterSpacing: 0.9,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Text(
+            amount,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaydayCard extends StatelessWidget {
+  final String payday;
+  final String boundaryText;
+  final VoidCallback? onTap;
+
+  const _PaydayCard({
+    required this.payday,
+    required this.boundaryText,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppTheme.sand.withValues(alpha: 0.32),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.calendar_month_outlined,
+                  color: AppTheme.copper,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'DATA DE COBRAMENT',
+                      style: TextStyle(
+                        fontSize: 10,
+                        letterSpacing: 0.7,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.copper,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      payday,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.anthracite,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      boundaryText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        height: 1.25,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppTheme.anthracite),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BankCheckNotice extends StatelessWidget {
+  final String text;
+
+  const _BankCheckNotice(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.copper.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.copper.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.account_balance_outlined,
+            size: 18,
+            color: AppTheme.copper,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                color: AppTheme.anthracite,
+              ),
+            ),
+          ),
         ],
       ),
     );

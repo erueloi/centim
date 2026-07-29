@@ -3,7 +3,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' hide Transaction;
 import '../../domain/models/transaction.dart';
 import '../../domain/models/savings_goal.dart';
-import '../../domain/models/category.dart';
+import '../../domain/services/transaction_effects_service.dart';
 import '../../data/providers/repository_providers.dart';
 
 import 'auth_providers.dart';
@@ -13,32 +13,6 @@ import 'asset_provider.dart';
 import 'debt_provider.dart';
 
 part 'transaction_notifier.g.dart';
-
-/// Efecte d'un moviment sobre UNA guardiola.
-///
-/// Precedència D5: `savingsGoalId` explícit mana sobre l'enllaç de la
-/// subcategoria. És pura perquè el round-trip Firestore i aquesta precedència
-/// es puguin provar junts.
-({String goalId, double delta})? goalEffectForTransaction(
-  Transaction tx,
-  List<Category> categories,
-) {
-  if (tx.savingsGoalId != null) {
-    return (goalId: tx.savingsGoalId!, delta: -tx.amount);
-  }
-  for (final category in categories) {
-    for (final subcategory in category.subcategories) {
-      if (subcategory.id == tx.subCategoryId &&
-          subcategory.linkedSavingsGoalId != null) {
-        return (
-          goalId: subcategory.linkedSavingsGoalId!,
-          delta: tx.isIncome ? -tx.amount : tx.amount,
-        );
-      }
-    }
-  }
-  return null;
-}
 
 @riverpod
 class TransactionNotifier extends _$TransactionNotifier {
@@ -128,7 +102,7 @@ class TransactionNotifier extends _$TransactionNotifier {
         }
       }
 
-      final links = _linksFor(tx.subCategoryId, categories);
+      final links = linksForSubcategory(tx.subCategoryId, categories);
 
       // 2. Deute enllaçat (despesa redueix el deute; ingrés l'augmenta).
       if (links.debtId != null) {
@@ -157,20 +131,6 @@ class TransactionNotifier extends _$TransactionNotifier {
     for (final e in debtDeltas.entries) {
       await _writeDebtDelta(e.key, e.value);
     }
-  }
-
-  ({String? goalId, String? debtId}) _linksFor(
-    String subCategoryId,
-    List<Category> categories,
-  ) {
-    for (final cat in categories) {
-      for (final sub in cat.subcategories) {
-        if (sub.id == subCategoryId) {
-          return (goalId: sub.linkedSavingsGoalId, debtId: sub.linkedDebtId);
-        }
-      }
-    }
-    return (goalId: null, debtId: null);
   }
 
   /// Aplica un delta NET a una guardiola amb UNA sola entrada de log.

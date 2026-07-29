@@ -19,6 +19,19 @@ _$TransferImpl _$$TransferImplFromJson(Map<String, dynamic> json) =>
       destinationId: json['destinationId'] as String,
       destinationName: json['destinationName'] as String,
       note: json['note'] as String?,
+      concept: json['concept'] as String?,
+      source: json['source'] as String? ?? 'manual',
+      bankLegs: (json['bankLegs'] as List<dynamic>?)
+              ?.map((e) => BankTransferLeg.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <BankTransferLeg>[],
+      awaitsBankCounterpart: json['awaitsBankCounterpart'] as bool? ?? false,
+      schemaVersion: (json['schemaVersion'] as num?)?.toInt() ?? 2,
+      migratedTransactionSnapshots:
+          (json['migratedTransactionSnapshots'] as List<dynamic>?)
+                  ?.map((e) => e as Map<String, dynamic>)
+                  .toList() ??
+              const <Map<String, dynamic>>[],
     );
 
 Map<String, dynamic> _$$TransferImplToJson(_$TransferImpl instance) =>
@@ -34,6 +47,12 @@ Map<String, dynamic> _$$TransferImplToJson(_$TransferImpl instance) =>
       'destinationId': instance.destinationId,
       'destinationName': instance.destinationName,
       'note': instance.note,
+      'concept': instance.concept,
+      'source': instance.source,
+      'bankLegs': instance.bankLegs.map((e) => e.toJson()).toList(),
+      'awaitsBankCounterpart': instance.awaitsBankCounterpart,
+      'schemaVersion': instance.schemaVersion,
+      'migratedTransactionSnapshots': instance.migratedTransactionSnapshots,
     };
 
 const _$TransferDestinationTypeEnumMap = {

@@ -45,10 +45,12 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
   Future<void> sendMessage(String question) async {
     if (question.trim().isEmpty) return;
 
+    final previousMessages = state.messages;
+
     // Afegir missatge de l'usuari
     final userMessage = ChatMessage(text: question.trim(), isUser: true);
     state = state.copyWith(
-      messages: [...state.messages, userMessage],
+      messages: [...previousMessages, userMessage],
       isLoading: true,
       clearError: true,
     );
@@ -66,7 +68,9 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
       final response = await service.askQuestion(
         question: question.trim(),
         financialContext: financialContext,
-        conversationHistory: state.messages,
+        // La pregunta actual s'afegeix dins del servei. Passar `state.messages`
+        // aquí la duplicava al prompt.
+        conversationHistory: previousMessages,
         userName: userName,
       );
 
@@ -82,7 +86,8 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
       if (mounted) {
         // Afegir missatge d'error com a resposta de la IA
         final errorMessage = ChatMessage(
-          text: "Ho sento, hi ha hagut un error: ${e.toString().replaceAll('Exception: ', '')} 😔",
+          text:
+              "Ho sento, hi ha hagut un error: ${e.toString().replaceAll('Exception: ', '')} 😔",
           isUser: false,
         );
         state = state.copyWith(
@@ -105,8 +110,7 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
 
     try {
       // 1. Cicles de facturació
-      final cycles =
-          _ref.read(billingCycleNotifierProvider).valueOrNull ?? [];
+      final cycles = _ref.read(billingCycleNotifierProvider).valueOrNull ?? [];
       final sortedCycles = List.from(cycles)
         ..sort((a, b) => b.startDate.compareTo(a.startDate));
       final recentCycles = sortedCycles.take(12).toList();
@@ -123,8 +127,7 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
           '\n=== CICLE ACTIU: ${activeCycle.name} (${_formatDate(activeCycle.startDate)} → ${_formatDate(activeCycle.endDate)}) ===');
 
       // 3. Categories i pressupostos
-      final categories =
-          await _ref.read(categoryNotifierProvider.future);
+      final categories = await _ref.read(categoryNotifierProvider.future);
       buffer.writeln('\n=== CATEGORIES I PRESSUPOSTOS ===');
       for (final cat in categories) {
         if (cat.type == TransactionType.income) {
@@ -184,16 +187,15 @@ class AiCoachNotifier extends StateNotifier<AiCoachState> {
       }
 
       // 5. Resum financer actual
-      final summary =
-          await _ref.read(financialSummaryNotifierProvider.future);
+      final summary = await _ref.read(financialSummaryNotifierProvider.future);
       buffer.writeln('\n=== RESUM FINANCER CICLE ACTIU ===');
       buffer.writeln('Ingressos: ${summary.monthlyIncome.toStringAsFixed(2)}€');
-      buffer.writeln(
-          'Despeses: ${summary.monthlyExpenses.toStringAsFixed(2)}€');
-      buffer.writeln(
-          'Net del cicle: ${summary.netOfCycle.toStringAsFixed(2)}€');
-      buffer.writeln(
-          'Estalvi: ${summary.savingsPercentage.toStringAsFixed(1)}%');
+      buffer
+          .writeln('Despeses: ${summary.monthlyExpenses.toStringAsFixed(2)}€');
+      buffer
+          .writeln('Net del cicle: ${summary.netOfCycle.toStringAsFixed(2)}€');
+      buffer
+          .writeln('Estalvi: ${summary.savingsPercentage.toStringAsFixed(1)}%');
     } catch (e) {
       buffer.writeln('\n[Error recollint context: $e]');
     }

@@ -2,7 +2,7 @@ import 'package:centim/data/repositories/firestore_transaction_repository.dart';
 import 'package:centim/domain/models/category.dart';
 import 'package:centim/domain/models/transaction.dart';
 import 'package:centim/domain/services/ledger_service.dart';
-import 'package:centim/presentation/providers/transaction_notifier.dart';
+import 'package:centim/domain/services/transaction_effects_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -63,5 +63,19 @@ void main() {
       classified.incoherences.any((item) => item.type == 'guardiola-creuada'),
       isTrue,
     );
+  });
+
+  test('bankAccountKey persisteix junt amb bankTxId', () {
+    final original = transaction.copyWith(
+      bankAccountKey: 'account-key-1',
+      bankTxId: 'bank-tx-1',
+    );
+    final restored = transactionFromFirestoreMap(
+      transactionToFirestoreMap(original),
+      'tx-bank',
+    );
+
+    expect(restored.bankAccountKey, 'account-key-1');
+    expect(restored.bankTxId, 'bank-tx-1');
   });
 }

@@ -20,7 +20,8 @@ void main() {
           [AssetType type = AssetType.bankAccount]) =>
       Asset(id: id, name: id, amount: amount, type: type);
 
-  SavingsGoal goal(String id, double amount) => SavingsGoal(
+  SavingsGoal goal(String id, double amount, {bool isLiquid = true}) =>
+      SavingsGoal(
         id: id,
         groupId: 'g',
         name: id,
@@ -28,6 +29,7 @@ void main() {
         currentAmount: amount,
         color: 0,
         history: const [],
+        isLiquid: isLiquid,
       );
 
   Transfer transfer({
@@ -54,6 +56,8 @@ void main() {
     List<Transfer> transfers = const [],
     List<Asset> assets = const [],
     List<SavingsGoal> goals = const [],
+    Map<String, double> savedByGoal = const {},
+    Map<String, double> withdrawnByGoal = const {},
     bool isActive = true,
   }) =>
       buildCashFlowStatus(
@@ -63,6 +67,8 @@ void main() {
         transfers: transfers,
         assets: assets,
         goals: goals,
+        savedByGoal: savedByGoal,
+        withdrawnByGoal: withdrawnByGoal,
         isActiveCycle: isActive,
       );
 
@@ -104,6 +110,22 @@ void main() {
         closeTo(s.registeredAccountsTotal, 0.001),
       );
     });
+
+    test('exclou una guardiola no líquida del pot: 8,52 → −65,41', () {
+      final s = build(
+        assets: [asset('comptes', -65.41)],
+        goals: [goal('pla-jubilacio', 73.93, isLiquid: false)],
+      );
+      expect(s.registeredAccountsTotal, closeTo(-65.41, 0.001));
+      expect(s.savingsAccounts, isEmpty);
+      expect(s.nonLiquidSavingsAccounts.single.id, 'pla-jubilacio');
+      expect(
+          totalPot(
+            [asset('comptes', -65.41)],
+            [goal('pla-jubilacio', 73.93, isLiquid: false)],
+          ),
+          closeTo(-65.41, 0.001));
+    });
   });
 
   group('traspassos', () {
@@ -125,6 +147,31 @@ void main() {
       );
       expect(s.transfersNet, -400);
       expect(s.closingBalance, 600);
+    });
+
+    test('aportar a guardiola no líquida surt per Traspassos', () {
+      final s = build(
+        opening: 1000,
+        assets: [asset('cc', 870)],
+        goals: [goal('pensions', 130, isLiquid: false)],
+        savedByGoal: const {'pensions': 130},
+      );
+      expect(s.transfersNet, -130);
+      expect(s.closingBalance, 870);
+      expect(s.registeredAccountsTotal, 870);
+      expect(s.reconciles, isTrue);
+    });
+
+    test('retirar de guardiola no líquida entra per Traspassos', () {
+      final s = build(
+        opening: 870,
+        assets: [asset('cc', 1000)],
+        goals: [goal('pensions', 0, isLiquid: false)],
+        withdrawnByGoal: const {'pensions': 130},
+      );
+      expect(s.transfersNet, 130);
+      expect(s.closingBalance, 1000);
+      expect(s.reconciles, isTrue);
     });
 
     test('els traspassos de fora del cicle no compten', () {

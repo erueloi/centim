@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../providers/budget_provider.dart';
+import '../../providers/cycle_spending_margin_provider.dart';
 
 import '../../providers/date_provider.dart';
 import '../../../domain/models/category.dart';
@@ -32,6 +36,7 @@ class BudgetControlScreen extends ConsumerStatefulWidget {
 
 class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
   TransactionType _selectedType = TransactionType.expense;
+  final _marginCardKey = GlobalKey<_CycleSpendingMarginCardState>();
 
   @override
   Widget build(BuildContext context) {
@@ -117,37 +122,50 @@ class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
                             .where((s) => s.category.type == _selectedType)
                             .toList();
 
-                        if (filteredStatuses.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'No hi ha dades de ${_selectedType == TransactionType.expense ? "despesa" : "ingrés"}',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          );
-                        }
-
                         return Column(
                           children: [
                             Expanded(
-                              child: ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                itemCount: filteredStatuses.length,
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                  final status = filteredStatuses[index];
-                                  return _BudgetCard(
-                                    status: status,
-                                    type: _selectedType,
-                                    isReadOnly: widget.isReadOnly,
-                                  );
-                                },
-                              ),
+                              child: filteredStatuses.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        'No hi ha dades de ${_selectedType == TransactionType.expense ? "despesa" : "ingrés"}',
+                                        style:
+                                            TextStyle(color: Colors.grey[600]),
+                                      ),
+                                    )
+                                  : NotificationListener<
+                                      UserScrollNotification>(
+                                      onNotification: (notification) {
+                                        if (notification.direction !=
+                                            ScrollDirection.idle) {
+                                          _marginCardKey.currentState
+                                              ?.collapse();
+                                        }
+                                        return false;
+                                      },
+                                      child: ListView.separated(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          0,
+                                          16,
+                                          16,
+                                        ),
+                                        itemCount: filteredStatuses.length,
+                                        separatorBuilder: (context, index) =>
+                                            const SizedBox(height: 12),
+                                        itemBuilder: (context, index) {
+                                          final status =
+                                              filteredStatuses[index];
+                                          return _BudgetCard(
+                                            status: status,
+                                            type: _selectedType,
+                                            isReadOnly: widget.isReadOnly,
+                                          );
+                                        },
+                                      ),
+                                    ),
                             ),
-                            _GlobalBudgetSummary(
-                              statuses: filteredStatuses,
-                              type: _selectedType,
-                            ),
+                            _CycleSpendingMarginCard(key: _marginCardKey),
                           ],
                         );
                       },
@@ -927,134 +945,413 @@ class _CategoryTrendsCharts extends ConsumerWidget {
   }
 }
 
-class _GlobalBudgetSummary extends StatelessWidget {
-  final List<BudgetStatus> statuses;
-  final TransactionType type;
+class _CycleSpendingMarginCard extends ConsumerStatefulWidget {
+  const _CycleSpendingMarginCard({super.key});
 
-  const _GlobalBudgetSummary({required this.statuses, required this.type});
+  @override
+  ConsumerState<_CycleSpendingMarginCard> createState() =>
+      _CycleSpendingMarginCardState();
+}
+
+class _CycleSpendingMarginCardState
+    extends ConsumerState<_CycleSpendingMarginCard> {
+  static const _expandedPreferenceKey = 'cycle_spending_margin_expanded';
+
+  SharedPreferencesAsync? _preferences;
+  bool _expanded = false;
+  bool _hasInteracted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreExpandedState();
+  }
+
+  Future<void> _restoreExpandedState() async {
+    try {
+      final preferences = _preferences ??= SharedPreferencesAsync();
+      final expanded = await preferences.getBool(_expandedPreferenceKey);
+      if (!mounted || _hasInteracted || expanded == null) return;
+      setState(() => _expanded = expanded);
+    } catch (_) {
+      // És una preferència d'UX no crítica: el fallback segur és col·lapsat.
+    }
+  }
+
+  Future<void> _toggleExpanded() async {
+    await _setExpanded(!_expanded);
+  }
+
+  Future<void> collapse() async {
+    await _setExpanded(false);
+  }
+
+  Future<void> _setExpanded(bool expanded) async {
+    _hasInteracted = true;
+    if (_expanded != expanded) {
+      setState(() => _expanded = expanded);
+    }
+    try {
+      final preferences = _preferences ??= SharedPreferencesAsync();
+      await preferences.setBool(_expandedPreferenceKey, expanded);
+    } catch (_) {
+      // La barra continua funcionant durant la sessió encara que falli el disc.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    double totalBudget = 0.0;
-    for (final s in statuses) {
-      for (final sub in s.subcategoryStatuses) {
-        if (sub.subcategory.linkedSavingsGoalId == null) {
-          totalBudget += sub.budget;
-        }
-      }
-    }
-    double totalSpent = 0.0;
-    for (final s in statuses) {
-      for (final sub in s.subcategoryStatuses) {
-        if (sub.subcategory.linkedSavingsGoalId == null) {
-          totalSpent += sub.spent;
-        }
-      }
-    }
-    final remaining = totalBudget - totalSpent;
-    final isExpense = type == TransactionType.expense;
+    final projection = ref.watch(cycleSpendingMarginProvider);
+    if (projection == null) return const SizedBox.shrink();
 
-    if (totalBudget == 0 && totalSpent == 0) return const SizedBox.shrink();
+    final currency = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
 
-    final isNegative = remaining < 0;
-    
-    Color panelColor = AppTheme.anthracite;
-    Color onPanelColor = Colors.white;
-    if (isExpense && isNegative) {
-       panelColor = const Color(0xFFB71C1C); 
-    } else if (!isExpense && isNegative) {
-       panelColor = const Color(0xFF2E7D32); 
-    }
-    
-    final percentage = totalBudget > 0 ? (totalSpent / totalBudget).clamp(0.0, 1.0) : (totalSpent > 0 ? 1.0 : 0.0);
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: panelColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: SafeArea(
+    if (!projection.isCurrentCycle) {
+      return SafeArea(
         top: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  isExpense ? 'MARGE LLIURE GLOBAL' : 'PENDENT D\'INGRESSAR',
-                  style: TextStyle(
-                    color: onPanelColor.withValues(alpha: 0.7),
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                Text(
-                  '${totalSpent.toStringAsFixed(2).replaceAll('.', ',')}€ / ${totalBudget.toStringAsFixed(2).replaceAll('.', ',')}€',
-                  style: TextStyle(
-                    color: onPanelColor.withValues(alpha: 0.7),
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    isExpense 
-                      ? (isNegative ? '${remaining.toStringAsFixed(2).replaceAll('.', ',')}€' : '${remaining.toStringAsFixed(2).replaceAll('.', ',')}€ restants')
-                      : (isNegative ? '+${remaining.abs().toStringAsFixed(2).replaceAll('.', ',')}€ extra!' : '${remaining.toStringAsFixed(2).replaceAll('.', ',')}€ restants'),
-                    style: TextStyle(
-                      color: onPanelColor,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                if (isNegative)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      isExpense ? 'Pressupost superat' : 'Objectiu superat',
-                      style: TextStyle(
-                        color: onPanelColor,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: percentage,
-                backgroundColor: Colors.white.withValues(alpha: 0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isExpense && isNegative ? Colors.redAccent : (isExpense ? AppTheme.copper : Colors.greenAccent),
-                ),
-                minHeight: 6,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+          decoration: _marginDecoration(),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                Icons.account_balance_wallet_outlined,
+                size: 19,
+                color: AppTheme.anthracite,
               ),
-            ),
-          ],
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'El marge de caixa només es pot calcular per al cicle actual: '
+                  'els saldos dels comptes són l’estat d’ara.',
+                  style: TextStyle(
+                    color: AppTheme.anthracite,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final isNegative = projection.margin < 0;
+    final marginColor =
+        isNegative ? Colors.red.shade700 : Colors.green.shade700;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        decoration: _marginDecoration(
+          borderColor: isNegative
+              ? Colors.red.withValues(alpha: 0.42)
+              : AppTheme.copper.withValues(alpha: 0.28),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              InkWell(
+                onTap: _toggleExpanded,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'MARGE FINS A FI DE CICLE',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: AppTheme.anthracite,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.55,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            currency.format(projection.margin),
+                            style: TextStyle(
+                              color: marginColor,
+                              fontSize: 19,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (!projection.hasOpeningBalance) ...[
+                            const SizedBox(width: 5),
+                            Tooltip(
+                              message: 'Falta el saldo inicial del cicle',
+                              child: Icon(
+                                Icons.warning_amber_rounded,
+                                size: 17,
+                                color: AppTheme.copper.withValues(alpha: 0.85),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(width: 3),
+                          AnimatedRotation(
+                            turns: _expanded ? 0.5 : 0,
+                            duration: const Duration(milliseconds: 180),
+                            child: const Icon(
+                              Icons.keyboard_arrow_up_rounded,
+                              size: 23,
+                              color: AppTheme.anthracite,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        remainingDaysSummary(
+                          projection.daysRemaining,
+                          projection.perDay,
+                          currency,
+                        ),
+                        style: TextStyle(
+                          color: marginColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: !_expanded
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Divider(height: 1),
+                            const SizedBox(height: 8),
+                            _MarginLine(
+                              label: 'Disponible ara',
+                              value: currency.format(projection.availableNow),
+                            ),
+                            if (projection.pendingIncome > 0) ...[
+                              _MarginLine(
+                                label: '+  Ingressos pendents',
+                                value:
+                                    currency.format(projection.pendingIncome),
+                                color: Colors.green.shade700,
+                              ),
+                              _PendingItemsBreakdown(
+                                items: projection.pendingIncomeItems,
+                                currency: currency,
+                              ),
+                            ],
+                            if (projection.pendingFixedExpenses > 0) ...[
+                              _MarginLine(
+                                label: '−  Despeses fixes pendents',
+                                value: currency
+                                    .format(projection.pendingFixedExpenses),
+                                color: Colors.red.shade700,
+                              ),
+                              _PendingItemsBreakdown(
+                                items: projection.pendingFixedExpenseItems,
+                                currency: currency,
+                              ),
+                            ],
+                            const SizedBox(height: 6),
+                            Text(
+                              'Desviació del pressupost: '
+                              '${_signedCurrency(currency, projection.budgetDeviation)}',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 11,
+                              ),
+                            ),
+                            if (!projection.hasOpeningBalance) ...[
+                              const SizedBox(height: 9),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      AppTheme.copper.withValues(alpha: 0.10),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text(
+                                  'Mode degradat: falta el saldo inicial. El '
+                                  'marge usa el pot registrat d’ara, però no es '
+                                  'pot validar la cadena de caixa.',
+                                  style: TextStyle(
+                                    color: AppTheme.anthracite,
+                                    fontSize: 11,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+String remainingDaysSummary(
+  int daysRemaining,
+  double? perDay,
+  NumberFormat currency,
+) {
+  if (daysRemaining <= 0) return 'Últim dia del cicle';
+  final dayLabel = daysRemaining == 1 ? 'dia restant' : 'dies restants';
+  return '$daysRemaining $dayLabel · ${currency.format(perDay)}/dia';
+}
+
+class _MarginLine extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color? color;
+
+  const _MarginLine({
+    required this.label,
+    required this.value,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey[700], fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            value,
+            style: TextStyle(
+              color: color ?? AppTheme.anthracite,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingItemsBreakdown extends StatelessWidget {
+  static const _maxVisibleItems = 3;
+
+  final List<CyclePendingItem> items;
+  final NumberFormat currency;
+
+  const _PendingItemsBreakdown({
+    required this.items,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleItems = items.take(_maxVisibleItems).toList();
+    final hiddenCount = items.length - visibleItems.length;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 1, 0, 5),
+      child: Column(
+        children: [
+          for (final item in visibleItems)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 1),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      item.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    currency.format(item.amount),
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (hiddenCount > 0)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  '+$hiddenCount més',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+BoxDecoration _marginDecoration({Color? borderColor}) {
+  return BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(
+      color: borderColor ?? Colors.grey.withValues(alpha: 0.25),
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.08),
+        blurRadius: 10,
+        offset: const Offset(0, -3),
+      ),
+    ],
+  );
+}
+
+String _signedCurrency(NumberFormat currency, double value) {
+  if (value > 0) return '+ ${currency.format(value)}';
+  if (value < 0) return '− ${currency.format(value.abs())}';
+  return currency.format(0);
 }

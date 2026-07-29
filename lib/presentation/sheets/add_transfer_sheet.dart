@@ -310,7 +310,8 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                           (a) =>
                               (a.type == AssetType.bankAccount ||
                                   a.type == AssetType.cash) &&
-                              a.id != _sourceAssetId,
+                              (a.id != _sourceAssetId ||
+                                  a.id == widget.transferToEdit?.destinationId),
                         )
                         .toList();
                     if (liquidAssets.isEmpty) {
@@ -435,6 +436,63 @@ class _AddTransferSheetState extends ConsumerState<AddTransferSheet> {
                   fillColor: Colors.grey[50],
                 ),
               ),
+              if (widget.transferToEdit?.bankLegs.isNotEmpty == true) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.blueGrey.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.account_balance,
+                            size: 18,
+                            color: Colors.blueGrey,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Potes bancàries '
+                            '(${widget.transferToEdit!.bankLegs.length})',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      for (final leg in widget.transferToEdit!.bankLegs)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            '${leg.signedAmount >= 0 ? '+' : ''}'
+                            '${leg.signedAmount.toStringAsFixed(2)} € · '
+                            '${leg.date.day}/${leg.date.month}/${leg.date.year}'
+                            '${leg.concept == null ? '' : ' · ${leg.concept}'}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      if (widget.transferToEdit!.awaitsBankCounterpart)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Esperant una pota de signe oposat d’un altre '
+                            'compte bancari.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 32),
 
               // --- Save Button ---

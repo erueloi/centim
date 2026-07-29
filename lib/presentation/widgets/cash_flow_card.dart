@@ -83,6 +83,11 @@ class CashFlowCard extends ConsumerWidget {
                     currency.format(status.transfersNet.abs()),
                 color: Colors.grey[700],
               ),
+            if (status.balanceAdjustments.isNotEmpty)
+              _BalanceAdjustmentsBreakdown(
+                status: status,
+                currency: currency,
+              ),
 
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
@@ -138,52 +143,13 @@ class CashFlowCard extends ConsumerWidget {
 
     final amount = await showDialog<double>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Saldo inicial de ${cycle.name}'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'El pot total (comptes líquids + guardioles) amb què va obrir '
-              'aquest cicle. Comprova\'l contra els saldos reals del banc '
-              'abans de desar-lo.',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
-                labelText: 'Import',
-                suffixText: '€',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            if (pot != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                'De referència, el pot d\'ara mateix és ${currency.format(pot)}.',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel·lar'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(ctx, parseEditableAmount(controller.text)),
-            child: const Text('Desar'),
-          ),
-        ],
+      builder: (_) => _OpeningBalanceDialog(
+        cycleName: cycle.name,
+        controller: controller,
+        currentPot: pot == null ? null : currency.format(pot),
       ),
     );
+    controller.dispose();
 
     if (amount == null) return;
     await ref
@@ -191,6 +157,221 @@ class CashFlowCard extends ConsumerWidget {
         .setOpeningBalance(cycle.id, amount, 'manual');
     messenger.showSnackBar(
       SnackBar(content: Text('Saldo inicial de ${cycle.name} desat.')),
+    );
+  }
+}
+
+class _OpeningBalanceDialog extends StatefulWidget {
+  final String cycleName;
+  final TextEditingController controller;
+  final String? currentPot;
+
+  const _OpeningBalanceDialog({
+    required this.cycleName,
+    required this.controller,
+    required this.currentPot,
+  });
+
+  @override
+  State<_OpeningBalanceDialog> createState() => _OpeningBalanceDialogState();
+}
+
+class _OpeningBalanceDialogState extends State<_OpeningBalanceDialog> {
+  double? get _amount => parseEditableAmount(widget.controller.text);
+
+  void _save() {
+    final amount = _amount;
+    if (amount != null) Navigator.pop(context, amount);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canSave = _amount != null;
+
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+      contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+      title: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppTheme.copper.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.account_balance_wallet_outlined,
+              color: AppTheme.anthracite,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Saldo inicial de ${widget.cycleName}',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppTheme.anthracite,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 500,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.copper.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.copper.withValues(alpha: 0.24),
+                  ),
+                ),
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.account_balance_outlined,
+                      size: 18,
+                      color: AppTheme.copper,
+                    ),
+                    SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'Introdueix el pot total amb què va obrir el cicle: '
+                        'comptes líquids més guardioles disponibles. '
+                        'Comprova’l contra els saldos reals del banc abans '
+                        'de desar-lo.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.35,
+                          color: AppTheme.anthracite,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.currentPot != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.anthracite,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'POT ACTUAL DE REFERÈNCIA',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
+                                letterSpacing: 0.8,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: 3),
+                            Text(
+                              'És el pot registrat ara, no necessàriament '
+                              'el de l’inici del cicle.',
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 10,
+                                height: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        widget.currentPot!,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 18),
+              const Text(
+                'SALDO AMB QUÈ VA OBRIR EL CICLE',
+                style: TextStyle(
+                  fontSize: 10,
+                  letterSpacing: 0.8,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.copper,
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: widget.controller,
+                autofocus: true,
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.done,
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (_) {
+                  if (canSave) _save();
+                },
+                decoration: const InputDecoration(
+                  labelText: 'Saldo inicial',
+                  hintText: '0,00',
+                  suffixText: '€',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Pots cancel·lar sense canviar res.',
+                style: TextStyle(fontSize: 11, color: Colors.black54),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          style: TextButton.styleFrom(foregroundColor: AppTheme.anthracite),
+          child: const Text('Cancel·lar'),
+        ),
+        FilledButton.icon(
+          onPressed: canSave ? _save : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.copper,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          icon: const Icon(Icons.lock_outline, size: 17),
+          label: const Text('Desar saldo'),
+        ),
+      ],
     );
   }
 }
@@ -227,6 +408,84 @@ class _Line extends StatelessWidget {
           Text(value, style: style),
         ],
       ),
+    );
+  }
+}
+
+class _BalanceAdjustmentsBreakdown extends StatefulWidget {
+  final CashFlowStatus status;
+  final NumberFormat currency;
+
+  const _BalanceAdjustmentsBreakdown({
+    required this.status,
+    required this.currency,
+  });
+
+  @override
+  State<_BalanceAdjustmentsBreakdown> createState() =>
+      _BalanceAdjustmentsBreakdownState();
+}
+
+class _BalanceAdjustmentsBreakdownState
+    extends State<_BalanceAdjustmentsBreakdown> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final net = widget.status.balanceAdjustmentsNet;
+    final color = Colors.blueGrey[700]!;
+    return Column(
+      children: [
+        InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Ajustos de saldo',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[800]),
+                  ),
+                ),
+                Text(
+                  '${net < 0 ? '−' : '+'} '
+                  '${widget.currency.format(net.abs())}',
+                  style: TextStyle(fontSize: 14, color: color),
+                ),
+                const SizedBox(width: 4),
+                AnimatedRotation(
+                  turns: _expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  child: Icon(Icons.expand_more, size: 18, color: color),
+                ),
+              ],
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 180),
+          child: !_expanded
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.only(
+                    top: 4,
+                    left: 12,
+                    right: 22,
+                  ),
+                  child: Column(
+                    children: [
+                      for (final adjustment in widget.status.balanceAdjustments)
+                        _AccountDetailLine(
+                          account: adjustment,
+                          currency: widget.currency,
+                        ),
+                    ],
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }
@@ -335,6 +594,33 @@ class _RegisteredAccountsBreakdownState
                             currency: widget.currency,
                           ),
                       ],
+                      if (status.nonLiquidSavingsAccounts.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 5),
+                          child: Row(
+                            children: [
+                              Expanded(child: Divider(height: 1)),
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8),
+                                child: Text(
+                                  'No líquides · fora del pot',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Divider(height: 1)),
+                            ],
+                          ),
+                        ),
+                        for (final account in status.nonLiquidSavingsAccounts)
+                          _AccountDetailLine(
+                            account: account,
+                            currency: widget.currency,
+                            muted: true,
+                          ),
+                      ],
                     ],
                   ),
                 ),
@@ -347,10 +633,12 @@ class _RegisteredAccountsBreakdownState
 class _AccountDetailLine extends StatelessWidget {
   final RegisteredAccountBalance account;
   final NumberFormat currency;
+  final bool muted;
 
   const _AccountDetailLine({
     required this.account,
     required this.currency,
+    this.muted = false,
   });
 
   @override
@@ -362,12 +650,19 @@ class _AccountDetailLine extends StatelessWidget {
           Expanded(
             child: Text(
               account.name,
-              style: TextStyle(fontSize: 12, color: Colors.grey[800]),
+              maxLines: 2,
+              style: TextStyle(
+                fontSize: 12,
+                color: muted ? Colors.grey[500] : Colors.grey[800],
+              ),
             ),
           ),
           Text(
             currency.format(account.amount),
-            style: const TextStyle(fontSize: 12, color: AppTheme.anthracite),
+            style: TextStyle(
+              fontSize: 12,
+              color: muted ? Colors.grey[500] : AppTheme.anthracite,
+            ),
           ),
         ],
       ),

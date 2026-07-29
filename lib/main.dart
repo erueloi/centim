@@ -7,24 +7,20 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:centim/l10n/app_localizations.dart';
 
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+import 'core/firebase/app_check_bootstrap.dart';
 import 'firebase_options.dart';
 import 'domain/services/bank_callback.dart';
+import 'domain/services/ai_coach_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await initializeAppCheck();
+  await AiCoachConfig.initialize();
 
   // Captura el retorn de l'SCA bancària (web: /bank-callback?code&state).
   BankCallback.captureFromUri(Uri.base);
-
-  try {
-    await dotenv.load(fileName: ".env");
-    debugPrint('✅ .env loaded. GEMINI_API_KEY present: ${dotenv.env.containsKey('GEMINI_API_KEY')}');
-  } catch (e) {
-    debugPrint('⚠️ .env load error: ${e.runtimeType} - $e');
-  }
 
   runApp(const ProviderScope(child: MyApp()));
 }

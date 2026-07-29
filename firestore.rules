@@ -90,6 +90,23 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && isGroupMember(groupId);
     }
 
+    // Índex d'idempotència de potes bancàries importades. No conté imports ni
+    // conceptes: només la identitat bancària i el moviment/traspàs que la va
+    // consumir.
+    match /groups/{groupId}/bank_import_refs/{refId} {
+      allow read, write: if isAuthenticated() && isGroupMember(groupId);
+    }
+
+    // Ajustos manuals de reconciliació de guardioles.
+    match /groups/{groupId}/balance_adjustments/{adjustmentId} {
+      allow read, write: if isAuthenticated() && isGroupMember(groupId);
+    }
+
+    // Regles explícites de suggeriment per a la importació.
+    match /groups/{groupId}/import_rules/{ruleId} {
+      allow read, write: if isAuthenticated() && isGroupMember(groupId);
+    }
+
     // BUDGET ENTRIES (subcollection under groups)
     match /groups/{groupId}/budget_entries/{entryId} {
       allow read, write: if isAuthenticated() && isGroupMember(groupId);

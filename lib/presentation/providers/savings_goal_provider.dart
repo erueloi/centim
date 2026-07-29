@@ -102,30 +102,20 @@ class SavingsGoalNotifier extends _$SavingsGoalNotifier {
     await transactionRepo.addTransaction(transaction);
   }
 
-  Future<void> adjustBalance(String goalId, double newAmount) async {
+  Future<void> adjustBalance(
+    String goalId,
+    double newAmount, {
+    String? reason,
+  }) async {
     final groupId = await ref.read(currentGroupIdProvider.future);
     if (groupId == null) return;
-
-    final repo = ref.read(savingsGoalRepositoryProvider);
-    final goals = await future;
-    final goal = goals.firstWhere((g) => g.id == goalId);
-
-    if (newAmount == goal.currentAmount) return;
-
-    final difference = newAmount - goal.currentAmount;
-
-    // 1. Update Goal
-    final newEntry = SavingsEntry(
-      date: DateTime.now(),
-      amount: difference,
-      note: 'Ajust de saldo',
-    );
-    final history = [...goal.history, newEntry];
-    final updatedGoal = goal.copyWith(
-      currentAmount: newAmount,
-      history: history,
-    );
-    await repo.updateSavingsGoal(updatedGoal);
-
+    await ref
+        .read(balanceAdjustmentRepositoryProvider)
+        .adjustSavingsGoalBalance(
+          groupId: groupId,
+          goalId: goalId,
+          newAmount: newAmount,
+          reason: reason,
+        );
   }
 }

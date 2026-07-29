@@ -6,7 +6,7 @@ part of 'panoramic_heatmap_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$panoramicHeatmapHash() => r'21140c2f5584b3d9f1bb182cc06f460e9e8e5b3f';
+String _$panoramicHeatmapHash() => r'c720d498578fc9a1a426dbc2d5f9cf2ceedb1f27';
 
 /// See also [PanoramicHeatmap].
 @ProviderFor(PanoramicHeatmap)
