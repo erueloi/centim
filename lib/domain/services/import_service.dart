@@ -12,6 +12,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/transaction.dart' as t_model;
 import '../models/transfer.dart';
 import '../models/import_category_rule.dart';
+import 'concept_normalizer.dart';
 import 'bank_sync_service.dart';
 import 'transfer_service.dart';
 
@@ -667,7 +668,7 @@ class ImportService {
     }
 
     // 2. Heurística difusa amb confiança segons el compte.
-    final newConcept = _normalizeConcept(newTx.concept);
+    final newConcept = normalizeTransactionConcept(newTx.concept);
     for (final old in existing) {
       // La direcció forma part de la identitat difusa:
       //  - mateix signe   → possible duplicat
@@ -701,7 +702,7 @@ class ImportService {
     String? excludeId,
   }) async {
     final existing = await _fetchExistingTransactions();
-    final norm = _normalizeConcept(concept);
+    final norm = normalizeTransactionConcept(concept);
     for (final old in existing) {
       if (excludeId != null && old.id == excludeId) continue;
       if (_looksLikeSame(
@@ -716,9 +717,6 @@ class ImportService {
     }
     return null;
   }
-
-  String _normalizeConcept(String s) =>
-      s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
   /// Decideix si `old` és probablement el mateix moviment que el nou.
   ///
@@ -741,7 +739,7 @@ class ImportService {
     final dayDiff = old.date.difference(date).inDays.abs();
     if (dayDiff > dayWindow) return false;
 
-    final oldConcept = _normalizeConcept(old.concept);
+    final oldConcept = normalizeTransactionConcept(old.concept);
     final exact = oldConcept == concept;
     final contains =
         concept.contains(oldConcept) || oldConcept.contains(concept);
@@ -771,14 +769,6 @@ class ImportService {
   ///
   /// Treu dígits, referències i puntuació: "Canva* 04948-1940" i
   /// "Canva* 05012-2231" donen tots dos "canva", i per tant s'aprenen junts.
-  String _conceptKey(String concept) {
-    return concept
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-zà-öø-ÿ]+'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-  }
-
   /// Construeix l'índex de categories apreses de l'històric.
   ///
   /// Com que `existing` ve ordenat per data descendent, `putIfAbsent` es queda
@@ -790,7 +780,7 @@ class ImportService {
     for (final t in existing) {
       if (t.categoryId.isEmpty) continue;
       byConcept.putIfAbsent(t.concept, () => t);
-      final key = _conceptKey(t.concept);
+      final key = transactionConceptKey(t.concept);
       if (key.length >= _kMinConceptKeyLength) {
         byKey.putIfAbsent(key, () => t);
       }
@@ -830,16 +820,27 @@ class ImportService {
       return;
     }
 
-    final key = _conceptKey(tx.concept);
+    final key = transactionConceptKey(tx.concept);
     // Claus massa curtes (p.ex. "co", de "363768235 1136 CO") són massa
     // genèriques i categoritzarien malament: val més deixar-ho a l'usuari.
     if (key.length < _kMinConceptKeyLength) return;
 
-    final fuzzy = index.byKey[key];
+    final fuzzy = index.byKey[key] ?? _unambiguousMerchantMatch(index, key);
     if (fuzzy != null) {
       tx.categoryId = fuzzy.categoryId;
       tx.subCategoryId = fuzzy.subCategoryId;
     }
+  }
+
+  t_model.Transaction? _unambiguousMerchantMatch(
+    _LearningIndex index,
+    String key,
+  ) {
+    return unambiguousMerchantCandidate(
+      key: key,
+      candidates: index.byKey,
+      targetKey: (tx) => '${tx.categoryId}\u0000${tx.subCategoryId}',
+    );
   }
 
   Future<List<ImportCategoryRule>> _fetchImportRules() async {

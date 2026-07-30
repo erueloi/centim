@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.3.1
+Millores al Detall: agrupacio dinamica dels moviments per comerc i concepte, amb percentatges, imports i acces als moviments individuals.
+Recuperat l'acces als moviments des de les subcategories, corregida la capcalera duplicada de Nous Moviments i ajustada la configuracio Android de Play Integrity per al Centim Coach.
 ## v1.3.0
 Nova gestió de traspassos interns amb importació, aparellament de potes, atomicitat i migració històrica controlada.
 Liquiditat configurable de guardioles i ajustos de saldo auditables.
@@ -135,5 +138,6 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 

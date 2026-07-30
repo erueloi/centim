@@ -6,7 +6,9 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../domain/services/subcategory_movement_grouping_service.dart';
 import '../../providers/budget_provider.dart';
+import '../../providers/category_notifier.dart';
 import '../../providers/cycle_spending_margin_provider.dart';
 
 import '../../providers/date_provider.dart';
@@ -37,11 +39,18 @@ class BudgetControlScreen extends ConsumerStatefulWidget {
 class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
   TransactionType _selectedType = TransactionType.expense;
   final _marginCardKey = GlobalKey<_CycleSpendingMarginCardState>();
+  final Map<String, _CachedMovementGrouping> _movementGroupingCache = {};
+  String? _movementGroupingCacheCycleId;
 
   @override
   Widget build(BuildContext context) {
     final budgetStatusAsync = ref.watch(budgetNotifierProvider);
+    final activeCycleId = ref.watch(activeCycleProvider).id;
     final l10n = AppLocalizations.of(context)!;
+    if (_movementGroupingCacheCycleId != activeCycleId) {
+      _movementGroupingCache.clear();
+      _movementGroupingCacheCycleId = activeCycleId;
+    }
 
     return DefaultTabController(
       length: 2,
@@ -160,6 +169,8 @@ class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
                                             status: status,
                                             type: _selectedType,
                                             isReadOnly: widget.isReadOnly,
+                                            movementGroupingCache:
+                                                _movementGroupingCache,
                                           );
                                         },
                                       ),
@@ -191,11 +202,13 @@ class _BudgetCard extends ConsumerWidget {
   final BudgetStatus status;
   final TransactionType type;
   final bool isReadOnly;
+  final Map<String, _CachedMovementGrouping> movementGroupingCache;
 
   const _BudgetCard({
     required this.status,
     required this.type,
     required this.isReadOnly,
+    required this.movementGroupingCache,
   });
 
   Color _getProgressColor(double percentage) {
@@ -229,6 +242,7 @@ class _BudgetCard extends ConsumerWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: ExpansionTile(
+        maintainState: true,
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         childrenPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
         leading: Container(
@@ -324,10 +338,13 @@ class _BudgetCard extends ConsumerWidget {
           else
             ...status.subcategoryStatuses.map((subStatus) {
               return _SubcategoryRow(
+                key: ValueKey(subStatus.subcategory.id),
                 subStatus: subStatus,
                 category: status.category,
                 type: type, // Pass type
                 isReadOnly: isReadOnly,
+                cycleId: ref.watch(activeCycleProvider).id,
+                groupingCache: movementGroupingCache,
               );
             }),
 
@@ -348,24 +365,56 @@ class _BudgetCard extends ConsumerWidget {
   }
 }
 
-class _SubcategoryRow extends ConsumerWidget {
+class _SubcategoryRow extends ConsumerStatefulWidget {
   final SubcategoryBudgetStatus subStatus;
   final Category category;
   final TransactionType type;
   final bool isReadOnly;
+  final String cycleId;
+  final Map<String, _CachedMovementGrouping> groupingCache;
 
   const _SubcategoryRow({
+    super.key,
     required this.subStatus,
     required this.category,
     required this.type,
     required this.isReadOnly,
+    required this.cycleId,
+    required this.groupingCache,
   });
 
-  Color _getProgressColor(double percentage) {
-    if (category.color != null) {
-      return Color(category.color!);
+  @override
+  ConsumerState<_SubcategoryRow> createState() => _SubcategoryRowState();
+}
+
+class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
+  bool _expanded = false;
+  bool _loading = false;
+  String? _error;
+  int _requestId = 0;
+  SubcategoryMovementGrouping? _grouping;
+
+  @override
+  void didUpdateWidget(covariant _SubcategoryRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.cycleId != widget.cycleId) {
+      _grouping = null;
+      if (_expanded) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _loadGroups());
+      }
+    } else if (oldWidget.subStatus.spent != widget.subStatus.spent &&
+        _expanded) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _loadGroups(force: true),
+      );
     }
-    if (type == TransactionType.expense) {
+  }
+
+  Color _getProgressColor(double percentage) {
+    if (widget.category.color != null) {
+      return Color(widget.category.color!);
+    }
+    if (widget.type == TransactionType.expense) {
       // Expense: Green -> Red
       if (percentage >= 1.0) return Colors.red;
       if (percentage >= 0.75) return AppTheme.copper;
@@ -379,93 +428,283 @@ class _SubcategoryRow extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final progressColor = _getProgressColor(subStatus.percentage);
-    final isBudgetZero = subStatus.budget == 0;
-    final isSpentZero = subStatus.spent == 0;
+  Widget build(BuildContext context) {
+    final progressColor = _getProgressColor(widget.subStatus.percentage);
+    final isBudgetZero = widget.subStatus.budget == 0;
+    final isSpentZero = widget.subStatus.spent == 0;
 
-    return InkWell(
-      onTap: () {
-        ref.read(transactionFilterNotifierProvider.notifier).setSubCategory(
-              category.id,
-              category.name,
-              subStatus.subcategory.id,
-              subStatus.subcategory.name,
-            );
-        ref.read(selectedIndexProvider.notifier).state = 2;
-        // Pop back if we're in a nested navigator
-        if (Navigator.of(context).canPop()) {
-          Navigator.of(context).pop();
-        }
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Row(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: _expanded
+              ? AppTheme.copper.withValues(alpha: 0.045)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
           children: [
-            // Subcategory name
-            Expanded(
-              flex: 3,
-              child: Text(
-                subStatus.subcategory.name,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.anthracite,
+            InkWell(
+              onTap: _toggleExpanded,
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    AnimatedRotation(
+                      turns: _expanded ? 0.25 : 0,
+                      duration: const Duration(milliseconds: 160),
+                      child: Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Expanded(
+                      flex: 3,
+                      child: InkWell(
+                        onTap: _openSubcategoryMovements,
+                        child: Text(
+                          widget.subStatus.subcategory.name,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppTheme.anthracite,
+                            decoration: TextDecoration.underline,
+                            decorationColor: AppTheme.copper,
+                            decorationStyle: TextDecorationStyle.dotted,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 4,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(3),
+                        child: LinearProgressIndicator(
+                          value: isBudgetZero
+                              ? (isSpentZero ? 0 : 1)
+                              : (widget.subStatus.spent /
+                                      widget.subStatus.budget)
+                                  .clamp(0.0, 1.0),
+                          backgroundColor:
+                              AppTheme.anthracite.withValues(alpha: 0.1),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(progressColor),
+                          minHeight: 6,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    SizedBox(
+                      width: 85,
+                      child: Text(
+                        '${widget.subStatus.spent.toStringAsFixed(2).replaceAll('.', ',')}€/${widget.subStatus.budget.toStringAsFixed(2).replaceAll('.', ',')}€',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    if (!widget.isReadOnly)
+                      SizedBox(
+                        width: 32,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.edit,
+                            size: 16,
+                            color: Colors.grey[500],
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () => _showQuickBudgetDialog(context),
+                        ),
+                      )
+                    else
+                      const SizedBox(width: 32),
+                  ],
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-            // Progress bar
-            Expanded(
-              flex: 4,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(3),
-                child: LinearProgressIndicator(
-                  value: isBudgetZero
-                      ? (isSpentZero ? 0 : 1)
-                      : (subStatus.spent / subStatus.budget).clamp(0.0, 1.0),
-                  backgroundColor: AppTheme.anthracite.withValues(alpha: 0.1),
-                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
-                  minHeight: 6,
-                ),
-              ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: !_expanded
+                  ? const SizedBox.shrink()
+                  : Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 2, 4, 8),
+                      child: _buildGroupingContent(),
+                    ),
             ),
-            const SizedBox(width: 8),
-            // Amount display
-            SizedBox(
-              width: 85,
-              child: Text(
-                '${subStatus.spent.toStringAsFixed(2).replaceAll('.', ',')}€/${subStatus.budget.toStringAsFixed(2).replaceAll('.', ',')}€',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                textAlign: TextAlign.right,
-              ),
-            ),
-            // Edit button
-            if (!isReadOnly)
-              SizedBox(
-                width: 32,
-                child: IconButton(
-                  icon: Icon(Icons.edit, size: 16, color: Colors.grey[500]),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  onPressed: () => _showQuickBudgetDialog(context, ref),
-                ),
-              )
-            else
-              const SizedBox(width: 32), // Placeholder to keep alignment
           ],
         ),
       ),
     );
   }
 
-  Future<void> _showQuickBudgetDialog(
-    BuildContext context,
-    WidgetRef ref,
-  ) async {
+  Widget _buildGroupingContent() {
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 8),
+            Text(
+              'Agrupant moviments…',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_error != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          _error!,
+          style: TextStyle(fontSize: 12, color: Colors.red[700]),
+        ),
+      );
+    }
+
+    final grouping = _grouping;
+    if (grouping == null || grouping.groups.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          'Cap moviment comptabilitzat en aquest cicle.',
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+      );
+    }
+
+    return _MovementGroupList(
+      groups: grouping.groups,
+      categoryColor: widget.category.color == null
+          ? AppTheme.copper
+          : Color(widget.category.color!),
+    );
+  }
+
+  void _toggleExpanded() {
+    setState(() => _expanded = !_expanded);
+    if (_expanded) _loadGroups();
+  }
+
+  void _openSubcategoryMovements() {
+    ref.read(transactionFilterNotifierProvider.notifier).setSubCategory(
+          widget.category.id,
+          widget.category.name,
+          widget.subStatus.subcategory.id,
+          widget.subStatus.subcategory.name,
+        );
+    ref.read(selectedIndexProvider.notifier).state = 2;
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  Future<void> _loadGroups({bool force = false}) async {
+    final transactions = ref.read(transactionNotifierProvider).valueOrNull;
+    final categories = ref.read(categoryNotifierProvider).valueOrNull;
+    final cycle = ref.read(activeCycleProvider);
+    if (transactions == null || categories == null) {
+      setState(() {
+        _loading = false;
+        _error = 'Els moviments encara no estan disponibles.';
+      });
+      return;
+    }
+
+    final cycleTransactions = transactionsInBillingCycle(transactions, cycle);
+    final relevantTransactions = cycleTransactions
+        .where(
+          (transaction) =>
+              transaction.categoryId == widget.category.id &&
+              transaction.subCategoryId == widget.subStatus.subcategory.id,
+        )
+        .toList();
+    final fingerprint = Object.hashAll(
+      relevantTransactions.map(
+        (transaction) => Object.hash(
+          transaction.id,
+          transaction.date,
+          transaction.amount,
+          transaction.concept,
+          transaction.isIncome,
+          transaction.savingsGoalId,
+          transaction.categoryId,
+          transaction.subCategoryId,
+        ),
+      ),
+    );
+
+    final cacheKey =
+        '${cycle.id}\u0000${widget.category.id}\u0000${widget.subStatus.subcategory.id}';
+    final cached = widget.groupingCache[cacheKey];
+    if (!force && cached?.fingerprint == fingerprint) {
+      if (_grouping != cached!.grouping) {
+        setState(() {
+          _grouping = cached.grouping;
+          _error = null;
+          _loading = false;
+        });
+      }
+      return;
+    }
+
+    final requestId = ++_requestId;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    // Deixa pintar l'estat de càrrega abans del càlcul síncron en memòria.
+    await Future<void>.delayed(Duration.zero);
+
+    try {
+      final grouping = groupSubcategoryMovements(
+        cycleTransactions: cycleTransactions,
+        categories: categories,
+        category: widget.category,
+        subcategoryId: widget.subStatus.subcategory.id,
+        expectedTotal: widget.subStatus.spent,
+      );
+      if (!grouping.matchesExpectedTotal) {
+        throw StateError(
+          'Els grups (${grouping.total}) no quadren amb el ledger '
+          '(${grouping.expectedTotal}).',
+        );
+      }
+      if (!mounted || requestId != _requestId) return;
+      widget.groupingCache[cacheKey] = _CachedMovementGrouping(
+        fingerprint: fingerprint,
+        grouping: grouping,
+      );
+      setState(() {
+        _grouping = grouping;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted || requestId != _requestId) return;
+      setState(() {
+        _loading = false;
+        _error = 'No s’ha pogut quadrar l’agrupació amb el total del ledger.';
+      });
+    }
+  }
+
+  Future<void> _showQuickBudgetDialog(BuildContext context) async {
     final budgetController = TextEditingController(
-      text: subStatus.budget.toStringAsFixed(2).replaceAll('.', ','),
+      text: widget.subStatus.budget.toStringAsFixed(2).replaceAll('.', ','),
     );
 
     await showDialog(
@@ -478,7 +717,7 @@ class _SubcategoryRow extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              subStatus.subcategory.name,
+              widget.subStatus.subcategory.name,
               style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
             const SizedBox(height: 16),
@@ -515,16 +754,16 @@ class _SubcategoryRow extends ConsumerWidget {
 
               final repo = ref.read(budgetEntryRepositoryProvider);
               final entryId =
-                  '${subStatus.subcategory.id}_${selectedDate.year}_${selectedDate.month}';
+                  '${widget.subStatus.subcategory.id}_${selectedDate.year}_${selectedDate.month}';
 
               // If new budget matches the base budget, remove the exception
-              if (newBudget == subStatus.subcategory.monthlyBudget) {
+              if (newBudget == widget.subStatus.subcategory.monthlyBudget) {
                 await repo.deleteEntry(groupId, entryId);
               } else {
                 // Otherwise set/update the exception
                 final entry = BudgetEntry(
                   id: entryId,
-                  subCategoryId: subStatus.subcategory.id,
+                  subCategoryId: widget.subStatus.subcategory.id,
                   year: selectedDate.year,
                   month: selectedDate.month,
                   amount: newBudget,
@@ -545,6 +784,261 @@ class _SubcategoryRow extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CachedMovementGrouping {
+  final int fingerprint;
+  final SubcategoryMovementGrouping grouping;
+
+  const _CachedMovementGrouping({
+    required this.fingerprint,
+    required this.grouping,
+  });
+}
+
+class _MovementGroupList extends StatefulWidget {
+  final List<MovementConceptGroup> groups;
+  final Color categoryColor;
+
+  const _MovementGroupList({
+    required this.groups,
+    required this.categoryColor,
+  });
+
+  @override
+  State<_MovementGroupList> createState() => _MovementGroupListState();
+}
+
+class _MovementGroupListState extends State<_MovementGroupList> {
+  final Set<String> _expandedKeys = {};
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (final group in widget.groups) _buildGroup(group, prefix: 'top'),
+      ],
+    );
+  }
+
+  Widget _buildGroup(
+    MovementConceptGroup group, {
+    required String prefix,
+    bool nested = false,
+  }) {
+    final key = '$prefix:${group.name}';
+    final expanded = _expandedKeys.contains(key);
+
+    return Column(
+      children: [
+        _MovementGroupRow(
+          group: group,
+          expanded: expanded,
+          nested: nested,
+          categoryColor: widget.categoryColor,
+          onTap: () {
+            setState(() {
+              if (expanded) {
+                _expandedKeys.remove(key);
+              } else {
+                _expandedKeys.add(key);
+              }
+            });
+          },
+        ),
+        if (expanded)
+          Padding(
+            padding: EdgeInsets.only(left: nested ? 12 : 16, bottom: 4),
+            child: group.isOther
+                ? Column(
+                    children: [
+                      for (final child in group.children)
+                        _buildGroup(
+                          child,
+                          prefix: key,
+                          nested: true,
+                        ),
+                    ],
+                  )
+                : _MovementRows(movements: group.movements),
+          ),
+      ],
+    );
+  }
+}
+
+class _MovementGroupRow extends StatelessWidget {
+  final MovementConceptGroup group;
+  final bool expanded;
+  final bool nested;
+  final Color categoryColor;
+  final VoidCallback onTap;
+
+  const _MovementGroupRow({
+    required this.group,
+    required this.expanded,
+    required this.nested,
+    required this.categoryColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
+    final progress = (group.percentage / 100).clamp(0.0, 1.0);
+    final color = group.amount < 0 ? Colors.teal[700]! : categoryColor;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 520;
+        final movementLabel = wide
+            ? ' (${group.movementCount} moviments)'
+            : ' (${group.movementCount})';
+
+        return InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(7),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(nested ? 6 : 0, 5, 0, 5),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: wide ? 4 : 3,
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          group.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: nested ? 11 : 12,
+                            fontWeight: group.isOther
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            color: AppTheme.anthracite,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        movementLabel,
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: nested ? 10 : 11,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  flex: 2,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor:
+                          AppTheme.anthracite.withValues(alpha: 0.09),
+                      valueColor: AlwaysStoppedAnimation<Color>(color),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                SizedBox(
+                  width: 38,
+                  child: Text(
+                    '${group.displayPercentage}%',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: group.amount < 0 ? color : Colors.grey[700],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                SizedBox(
+                  width: wide ? 86 : 72,
+                  child: Text(
+                    currency.format(group.amount),
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: color,
+                    ),
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MovementRows extends StatelessWidget {
+  final List<GroupedMovement> movements;
+
+  const _MovementRows({required this.movements});
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
+    final date = DateFormat('dd/MM');
+
+    return Column(
+      children: [
+        for (final movement in movements)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 3),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 38,
+                  child: Text(
+                    date.format(movement.transaction.date),
+                    style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    movement.transaction.concept,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 10, color: Colors.grey[700]),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  currency.format(movement.ledgerDelta),
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: movement.ledgerDelta < 0
+                        ? Colors.teal[700]
+                        : Colors.grey[700],
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

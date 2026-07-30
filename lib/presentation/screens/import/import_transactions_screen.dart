@@ -454,8 +454,6 @@ class _ImportTransactionsScreenState
                           ),
                         if (showNewHeader)
                           _buildSectionHeader('✅ Nous Moviments', Colors.green),
-                        if (showNewHeader)
-                          _buildSectionHeader('✅ Nous Moviments', Colors.green),
                         _TransactionImportRow(
                           key: Key(item.id),
                           item: item,
