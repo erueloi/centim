@@ -74,6 +74,54 @@ class BudgetStatus with _$BudgetStatus {
   }) = _BudgetStatus;
 }
 
+/// Projecció d'UX per als objectius d'estalvi. No substitueix `spent` ni entra
+/// en cap total de despesa: només presenta els cistells canònics del ledger.
+class SavingsBudgetProgress {
+  final double saved;
+  final double withdrawn;
+
+  const SavingsBudgetProgress({
+    required this.saved,
+    required this.withdrawn,
+  });
+
+  double get net => saved - withdrawn;
+
+  factory SavingsBudgetProgress.forCycle(LedgerSummary ledger) =>
+      SavingsBudgetProgress(
+        saved: ledger.savedThisCycle,
+        withdrawn: ledger.withdrawnThisCycle,
+      );
+
+  factory SavingsBudgetProgress.forSubcategory(
+    SubCategory subcategory,
+    LedgerSummary ledger,
+  ) {
+    final goalId = subcategory.linkedSavingsGoalId;
+    if (goalId == null) {
+      return const SavingsBudgetProgress(saved: 0, withdrawn: 0);
+    }
+    return SavingsBudgetProgress(
+      saved: ledger.savedByGoal[goalId] ?? 0,
+      withdrawn: ledger.withdrawnByGoal[goalId] ?? 0,
+    );
+  }
+}
+
+/// Ledger del cicle actiu per a projeccions de presentació. Reutilitza les
+/// categories i els moviments que Riverpod ja manté en memòria; no obre cap
+/// lectura addicional a Firestore.
+final activeCycleLedgerSummaryProvider =
+    FutureProvider.autoDispose<LedgerSummary>((ref) async {
+  final categories = await ref.watch(categoryNotifierProvider.future);
+  final transactions = await ref.watch(transactionNotifierProvider.future);
+  final cycle = ref.watch(activeCycleProvider);
+  return summarizeLedger(
+    transactionsInBillingCycle(transactions, cycle),
+    LedgerLookups.from(categories),
+  );
+});
+
 @riverpod
 class BudgetNotifier extends _$BudgetNotifier {
   @override

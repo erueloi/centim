@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:centim/domain/models/billing_cycle.dart';
 import 'package:centim/domain/models/category.dart';
 import 'package:centim/domain/models/transaction.dart';
+import 'package:centim/domain/services/ledger_service.dart';
 import 'package:centim/presentation/providers/budget_provider.dart';
 
 void main() {
@@ -40,6 +41,7 @@ void main() {
     required String catId,
     required String subId,
     DateTime? date,
+    String? savingsGoalId,
   }) =>
       Transaction(
         id: 'x',
@@ -53,6 +55,7 @@ void main() {
         subCategoryName: '',
         payer: 'p',
         isIncome: isIncome,
+        savingsGoalId: savingsGoalId,
       );
 
   BudgetStatus statusOf(List<Transaction> txs, String catId) =>
@@ -109,6 +112,79 @@ void main() {
       ),
     ], 'inc');
     expect(s.spent, 0);
+  });
+
+  test(
+      'la projecció d’estalvi mostra el net del ledger sense canviar les despeses',
+      () {
+    const goalId = 'fons-masia';
+    final savings = Category(
+      id: 'sav',
+      name: 'Estalvi Menusal',
+      icon: '🐷',
+      subcategories: const [
+        SubCategory(
+          id: 'sav-masia',
+          name: 'Aportació Fons Masia',
+          monthlyBudget: 100,
+          linkedSavingsGoalId: goalId,
+        ),
+      ],
+    );
+    final savingsIncome = Category(
+      id: 'sav-income',
+      name: 'Ingressos',
+      icon: '💰',
+      type: TransactionType.income,
+      subcategories: const [
+        SubCategory(
+          id: 'withdraw-masia',
+          name: 'Ingrés Fons Masia',
+          monthlyBudget: 0,
+          linkedSavingsGoalId: goalId,
+        ),
+      ],
+    );
+    final categories = [savings, savingsIncome];
+    final transactions = [
+      tx(
+        amount: 100,
+        isIncome: false,
+        catId: 'sav',
+        subId: 'sav-masia',
+      ),
+      tx(
+        amount: 35,
+        isIncome: true,
+        catId: 'sav-income',
+        subId: 'withdraw-masia',
+      ),
+    ];
+
+    final budgetStatus = calculateBudgetStatus(
+      categories,
+      transactions,
+      const [],
+      cycle,
+    ).firstWhere((status) => status.category.id == 'sav');
+    final ledger = summarizeLedger(
+      transactionsInBillingCycle(transactions, cycle),
+      LedgerLookups.from(categories),
+    );
+    final categoryProgress = SavingsBudgetProgress.forCycle(ledger);
+    final subcategoryProgress = SavingsBudgetProgress.forSubcategory(
+      savings.subcategories.single,
+      ledger,
+    );
+
+    expect(isSavingsBudgetCategory(savings), isTrue);
+    expect(budgetStatus.spent, 0); // continua fora del total de despeses
+    expect(budgetStatus.subcategoryStatuses.single.spent, 0);
+    expect(categoryProgress.saved, 100);
+    expect(categoryProgress.withdrawn, 35);
+    expect(categoryProgress.net, 65);
+    expect(subcategoryProgress.net, 65);
+    expect(ledger.netSavedForGoal(goalId), 65);
   });
 
   test('l’editor actiu continua excloent categories i subcategories arxivades',

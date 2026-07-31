@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.3.2
+Millora de la categoria Estalvi Menusal a la pantalla Detall: les barres mostren l'estalvi net aportat contra el pressupost, incloent els rescats, sense alterar les despeses del cicle.
+El detall diferencia correctament els moviments de guardiola exclosos del pressupost.
 ## v1.3.1
 Millores al Detall: agrupacio dinamica dels moviments per comerc i concepte, amb percentatges, imports i acces als moviments individuals.
 Recuperat l'acces als moviments des de les subcategories, corregida la capcalera duplicada de Nous Moviments i ajustada la configuracio Android de Play Integrity per al Centim Coach.
@@ -138,6 +141,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

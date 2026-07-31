@@ -14,17 +14,6 @@ import '../../data/providers/repository_providers.dart';
 
 part 'panoramic_heatmap_provider.g.dart';
 
-/// Categoria que representa aportacions a guardioles, no despesa de vida.
-///
-/// No depèn del nom: ha de ser de despesa i TOTES les seves subcategories han
-/// d'estar vinculades a una guardiola. Això identifica "Estalvi Menusal" sense
-/// confondre-la amb "Ingressos", que és una categoria mixta.
-bool isSavingsBudgetCategory(Category category) =>
-    category.type == TransactionType.expense &&
-    category.subcategories.isNotEmpty &&
-    category.subcategories
-        .every((subcategory) => subcategory.linkedSavingsGoalId != null);
-
 /// Cicles que contenen almenys un moviment real, sigui de la categoria que
 /// sigui. És el criteri visual per distingir dades de simples pressupostos.
 Set<String> cycleIdsWithTransactions(

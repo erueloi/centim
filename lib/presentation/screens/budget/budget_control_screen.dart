@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../domain/services/ledger_service.dart';
 import '../../../domain/services/subcategory_movement_grouping_service.dart';
 import '../../providers/budget_provider.dart';
 import '../../providers/category_notifier.dart';
@@ -45,6 +46,8 @@ class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
   @override
   Widget build(BuildContext context) {
     final budgetStatusAsync = ref.watch(budgetNotifierProvider);
+    final ledgerSummary =
+        ref.watch(activeCycleLedgerSummaryProvider).valueOrNull;
     final activeCycleId = ref.watch(activeCycleProvider).id;
     final l10n = AppLocalizations.of(context)!;
     if (_movementGroupingCacheCycleId != activeCycleId) {
@@ -169,6 +172,7 @@ class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
                                             status: status,
                                             type: _selectedType,
                                             isReadOnly: widget.isReadOnly,
+                                            ledgerSummary: ledgerSummary,
                                             movementGroupingCache:
                                                 _movementGroupingCache,
                                           );
@@ -202,20 +206,22 @@ class _BudgetCard extends ConsumerWidget {
   final BudgetStatus status;
   final TransactionType type;
   final bool isReadOnly;
+  final LedgerSummary? ledgerSummary;
   final Map<String, _CachedMovementGrouping> movementGroupingCache;
 
   const _BudgetCard({
     required this.status,
     required this.type,
     required this.isReadOnly,
+    required this.ledgerSummary,
     required this.movementGroupingCache,
   });
 
-  Color _getProgressColor(double percentage) {
+  Color _getProgressColor(double percentage, {required bool isSavings}) {
     if (status.category.color != null) {
       return Color(status.category.color!);
     }
-    if (type == TransactionType.expense) {
+    if (type == TransactionType.expense && !isSavings) {
       // Expense: Green -> Red (Bad if high)
       if (percentage >= 1.0) return Colors.red;
       if (percentage >= 0.75) return AppTheme.copper;
@@ -230,8 +236,23 @@ class _BudgetCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final progressColor = _getProgressColor(status.percentage);
-    final isSpentZero = status.spent == 0;
+    final isSavings = isSavingsBudgetCategory(status.category);
+    final savingsProgress = ledgerSummary == null
+        ? null
+        : SavingsBudgetProgress.forCycle(ledgerSummary!);
+    final displayedAmount = isSavings ? savingsProgress?.net : status.spent;
+    final percentage = displayedAmount == null
+        ? 0.0
+        : status.total > 0
+            ? displayedAmount / status.total
+            : displayedAmount > 0
+                ? 1.0
+                : 0.0;
+    final progressColor = _getProgressColor(
+      percentage,
+      isSavings: isSavings,
+    );
+    final isDisplayedZero = displayedAmount == null || displayedAmount == 0;
     final isTotalZero = status.total == 0;
 
     return Card(
@@ -289,8 +310,8 @@ class _BudgetCard extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: isTotalZero
-                          ? (isSpentZero ? 0 : 1)
-                          : (status.spent / status.total).clamp(0.0, 1.0),
+                          ? (isDisplayedZero ? 0 : 1)
+                          : percentage.clamp(0.0, 1.0),
                       backgroundColor: AppTheme.anthracite.withValues(
                         alpha: 0.1,
                       ),
@@ -300,18 +321,32 @@ class _BudgetCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  '${status.spent.toStringAsFixed(2).replaceAll('.', ',')}€ / ${status.total.toStringAsFixed(2).replaceAll('.', ',')}€',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color:
-                        status.isOverBudget ? Colors.red : AppTheme.anthracite,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    if (isSavings)
+                      Text(
+                        'Aportat net',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    Text(
+                      '${displayedAmount == null ? '…' : _formatBudgetAmount(displayedAmount)}€ / ${_formatBudgetAmount(status.total)}€',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: !isSavings && status.isOverBudget
+                            ? Colors.red
+                            : AppTheme.anthracite,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            if (status.isOverBudget && status.total > 0)
+            if (!isSavings && status.isOverBudget && status.total > 0)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
@@ -344,6 +379,8 @@ class _BudgetCard extends ConsumerWidget {
                 type: type, // Pass type
                 isReadOnly: isReadOnly,
                 cycleId: ref.watch(activeCycleProvider).id,
+                isSavingsCategory: isSavings,
+                ledgerSummary: ledgerSummary,
                 groupingCache: movementGroupingCache,
               );
             }),
@@ -371,6 +408,8 @@ class _SubcategoryRow extends ConsumerStatefulWidget {
   final TransactionType type;
   final bool isReadOnly;
   final String cycleId;
+  final bool isSavingsCategory;
+  final LedgerSummary? ledgerSummary;
   final Map<String, _CachedMovementGrouping> groupingCache;
 
   const _SubcategoryRow({
@@ -380,6 +419,8 @@ class _SubcategoryRow extends ConsumerStatefulWidget {
     required this.type,
     required this.isReadOnly,
     required this.cycleId,
+    required this.isSavingsCategory,
+    required this.ledgerSummary,
     required this.groupingCache,
   });
 
@@ -399,7 +440,7 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.cycleId != widget.cycleId) {
       _grouping = null;
-      if (_expanded) {
+      if (_expanded && !widget.isSavingsCategory) {
         WidgetsBinding.instance.addPostFrameCallback((_) => _loadGroups());
       }
     } else if (oldWidget.subStatus.spent != widget.subStatus.spent &&
@@ -427,11 +468,38 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
     }
   }
 
+  Color _getSavingsProgressColor(double percentage) {
+    if (widget.category.color != null) {
+      return Color(widget.category.color!);
+    }
+    if (percentage >= 1.0) return Colors.green[700]!;
+    if (percentage >= 0.75) return AppTheme.copper;
+    return Colors.red;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final progressColor = _getProgressColor(widget.subStatus.percentage);
+    final savingsProgress = widget.ledgerSummary == null
+        ? null
+        : SavingsBudgetProgress.forSubcategory(
+            widget.subStatus.subcategory,
+            widget.ledgerSummary!,
+          );
+    final displayedAmount = widget.isSavingsCategory
+        ? savingsProgress?.net
+        : widget.subStatus.spent;
+    final percentage = displayedAmount == null
+        ? 0.0
+        : widget.subStatus.budget > 0
+            ? displayedAmount / widget.subStatus.budget
+            : displayedAmount > 0
+                ? 1.0
+                : 0.0;
+    final progressColor = widget.isSavingsCategory
+        ? _getSavingsProgressColor(percentage)
+        : _getProgressColor(widget.subStatus.percentage);
     final isBudgetZero = widget.subStatus.budget == 0;
-    final isSpentZero = widget.subStatus.spent == 0;
+    final isDisplayedZero = displayedAmount == null || displayedAmount == 0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -485,10 +553,8 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
                         borderRadius: BorderRadius.circular(3),
                         child: LinearProgressIndicator(
                           value: isBudgetZero
-                              ? (isSpentZero ? 0 : 1)
-                              : (widget.subStatus.spent /
-                                      widget.subStatus.budget)
-                                  .clamp(0.0, 1.0),
+                              ? (isDisplayedZero ? 0 : 1)
+                              : percentage.clamp(0.0, 1.0),
                           backgroundColor:
                               AppTheme.anthracite.withValues(alpha: 0.1),
                           valueColor:
@@ -499,11 +565,27 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
                     ),
                     const SizedBox(width: 8),
                     SizedBox(
-                      width: 85,
-                      child: Text(
-                        '${widget.subStatus.spent.toStringAsFixed(2).replaceAll('.', ',')}€/${widget.subStatus.budget.toStringAsFixed(2).replaceAll('.', ',')}€',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        textAlign: TextAlign.right,
+                      width: widget.isSavingsCategory ? 92 : 85,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          if (widget.isSavingsCategory)
+                            Text(
+                              'Aportat net',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          Text(
+                            '${displayedAmount == null ? '…' : _formatBudgetAmount(displayedAmount)}€/${_formatBudgetAmount(widget.subStatus.budget)}€',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                            textAlign: TextAlign.right,
+                          ),
+                        ],
                       ),
                     ),
                     if (!widget.isReadOnly)
@@ -544,6 +626,10 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
   }
 
   Widget _buildGroupingContent() {
+    if (widget.isSavingsCategory) {
+      return _buildSavingsContent();
+    }
+
     if (_loading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 10),
@@ -596,7 +682,59 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
 
   void _toggleExpanded() {
     setState(() => _expanded = !_expanded);
-    if (_expanded) _loadGroups();
+    if (_expanded && !widget.isSavingsCategory) _loadGroups();
+  }
+
+  Widget _buildSavingsContent() {
+    final ledger = widget.ledgerSummary;
+    if (ledger == null) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          'Calculant l’estalvi del cicle…',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+      );
+    }
+
+    final progress = SavingsBudgetProgress.forSubcategory(
+      widget.subStatus.subcategory,
+      ledger,
+    );
+    final String message;
+    if (progress.saved == 0 && progress.withdrawn == 0) {
+      message = 'Cap aportació ni rescat en aquest cicle · els moviments de '
+          'guardiola no compten al pressupost.';
+    } else if (progress.withdrawn == 0) {
+      message = '${_formatBudgetAmount(progress.saved)} € aportats · els '
+          'moviments de guardiola no compten al pressupost.';
+    } else {
+      message = 'Net ${_formatBudgetAmount(progress.net)} € · '
+          '${_formatBudgetAmount(progress.saved)} € aportats − '
+          '${_formatBudgetAmount(progress.withdrawn)} € rescatats · els '
+          'moviments de guardiola no compten al pressupost.';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.savings_outlined,
+            size: 16,
+            color: Colors.green[700],
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openSubcategoryMovements() {
@@ -613,6 +751,7 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
   }
 
   Future<void> _loadGroups({bool force = false}) async {
+    if (widget.isSavingsCategory) return;
     final transactions = ref.read(transactionNotifierProvider).valueOrNull;
     final categories = ref.read(categoryNotifierProvider).valueOrNull;
     final cycle = ref.read(activeCycleProvider);
@@ -1849,3 +1988,6 @@ String _signedCurrency(NumberFormat currency, double value) {
   if (value < 0) return '− ${currency.format(value.abs())}';
   return currency.format(0);
 }
+
+String _formatBudgetAmount(double value) =>
+    value.toStringAsFixed(2).replaceAll('.', ',');

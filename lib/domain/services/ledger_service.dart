@@ -19,6 +19,14 @@ import '../models/category.dart';
 /// quines regles es van generar (els vells, sense el camp, es llegeixen com a 0).
 const int kLedgerSchemaVersion = 1;
 
+/// Categoria que representa objectius d'aportació a guardioles, no despesa de
+/// vida. El criteri és estructural perquè el nom visible es pot editar.
+bool isSavingsBudgetCategory(Category category) =>
+    category.type == TransactionType.expense &&
+    category.subcategories.isNotEmpty &&
+    category.subcategories
+        .every((subcategory) => subcategory.linkedSavingsGoalId != null);
+
 enum LedgerBucket { income, expense, saved, withdrawn }
 
 class Incoherence {
@@ -141,6 +149,11 @@ class LedgerSummary {
 
   /// Estalvi net del cicle.
   double get netSaved => savedThisCycle - withdrawnThisCycle;
+
+  /// Estalvi net d'una guardiola concreta. Les aportacions i els rescats poden
+  /// viure sota categories diferents; el goal és l'únic extrem compartit.
+  double netSavedForGoal(String goalId) =>
+      (savedByGoal[goalId] ?? 0) - (withdrawnByGoal[goalId] ?? 0);
 }
 
 /// Suma un conjunt de moviments amb les regles canòniques.
