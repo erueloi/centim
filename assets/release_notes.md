@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.3.3
+Millora del marge fins a fi de cicle: les despeses fixes pendents es calculen per import realment cobert, admeten pagaments parcials i es separen entre vencudes i per venir.
+Els residus inferiors a max(1 euro, 1% del pressupost) es consideren coberts.
+La pestanya Fixes mostra quant falta per pagar i la pantalla Detall incorpora percentatges de consum coherents amb el pressupost i l'estalvi net.
 ## v1.3.2
 Millora de la categoria Estalvi Menusal a la pantalla Detall: les barres mostren l'estalvi net aportat contra el pressupost, incloent els rescats, sense alterar les despeses del cicle.
 El detall diferencia correctament els moviments de guardiola exclosos del pressupost.
@@ -141,6 +145,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

@@ -1,7 +1,9 @@
 import 'package:centim/domain/models/billing_cycle.dart';
 import 'package:centim/domain/models/category.dart';
+import 'package:centim/domain/services/ledger_service.dart';
 import 'package:centim/presentation/providers/budget_provider.dart';
 import 'package:centim/presentation/providers/cycle_spending_margin_provider.dart';
+import 'package:centim/presentation/providers/fixed_expenses_provider.dart';
 import 'package:centim/presentation/screens/budget/budget_control_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -15,8 +17,7 @@ void main() {
     endDate: DateTime(2026, 7, 30),
   );
 
-  test('projecta pot + ingressos pendents - fixos que encara no han caigut',
-      () {
+  test('projecta pot + ingressos pendents - fixos encara no coberts', () {
     final statuses = [
       _status(
         type: TransactionType.income,
@@ -55,9 +56,17 @@ void main() {
       ),
     ];
 
+    final fixedExpenses = calculateFixedExpenseItems(
+      statuses: statuses,
+      ledger: LedgerSummary(),
+      goals: const [],
+      cycle: cycle,
+      today: DateTime(2026, 7, 15),
+    );
     final result = calculateCycleSpendingMargin(
       availableNow: 100,
       statuses: statuses,
+      fixedExpenses: fixedExpenses,
       cycle: cycle,
       today: DateTime(2026, 7, 15),
       hasOpeningBalance: true,
@@ -70,15 +79,28 @@ void main() {
       ['salary'],
     );
     expect(result.pendingIncomeItems.single.amount, 500);
-    expect(result.pendingFixedExpenses, 300);
+    expect(result.pendingFixedExpenses, 500);
     expect(
       result.pendingFixedExpenseItems.map((item) => item.name),
-      ['future-fixed'],
+      ['past-fixed', 'future-fixed'],
     );
-    expect(result.pendingFixedExpenseItems.single.amount, 300);
-    expect(result.margin, 300);
+    expect(result.pendingFixedExpenseItems.first.isOverdue, isTrue);
+    expect(result.pendingFixedExpenseItems.last.isOverdue, isFalse);
+    final overdue = result.pendingFixedExpenseItems
+        .where((item) => item.isOverdue)
+        .toList();
+    final upcoming = result.pendingFixedExpenseItems
+        .where((item) => !item.isOverdue)
+        .toList();
+    expect(overdue.length + upcoming.length,
+        result.pendingFixedExpenseItems.length);
+    expect(
+      [...overdue, ...upcoming].fold(0.0, (sum, item) => sum + item.amount),
+      closeTo(result.pendingFixedExpenses, 0.001),
+    );
+    expect(result.margin, 100);
     expect(result.daysRemaining, 15);
-    expect(result.perDay, 20);
+    expect(result.perDay, closeTo(6.6667, 0.0001));
   });
 
   test('ordena els conceptes pendents de més gran a més petit', () {
@@ -97,6 +119,7 @@ void main() {
     final result = calculateCycleSpendingMargin(
       availableNow: 0,
       statuses: statuses,
+      fixedExpenses: const [],
       cycle: cycle,
       today: DateTime(2026, 7, 15),
       hasOpeningBalance: true,
@@ -110,22 +133,31 @@ void main() {
   });
 
   test('un fix pagat abans del venciment no es reserva dues vegades', () {
+    final statuses = [
+      _status(
+        type: TransactionType.expense,
+        subcategories: [
+          _subStatus(
+            id: 'paid-early',
+            budget: 50,
+            spent: 50,
+            isFixed: true,
+            paymentDay: 25,
+          ),
+        ],
+      ),
+    ];
+    final fixedExpenses = calculateFixedExpenseItems(
+      statuses: statuses,
+      ledger: LedgerSummary(),
+      goals: const [],
+      cycle: cycle,
+      today: DateTime(2026, 7, 15),
+    );
     final result = calculateCycleSpendingMargin(
       availableNow: 80,
-      statuses: [
-        _status(
-          type: TransactionType.expense,
-          subcategories: [
-            _subStatus(
-              id: 'paid-early',
-              budget: 50,
-              spent: 50,
-              isFixed: true,
-              paymentDay: 25,
-            ),
-          ],
-        ),
-      ],
+      statuses: statuses,
+      fixedExpenses: fixedExpenses,
       cycle: cycle,
       today: DateTime(2026, 7, 15),
       hasOpeningBalance: true,
@@ -133,6 +165,7 @@ void main() {
     );
 
     expect(result.pendingFixedExpenses, 0);
+    expect(fixedExpenses, isEmpty);
     expect(result.margin, 80);
   });
 
@@ -165,6 +198,7 @@ void main() {
           ],
         ),
       ],
+      fixedExpenses: const [],
       cycle: cycle,
       today: DateTime(2026, 7, 15),
       hasOpeningBalance: false,
@@ -178,7 +212,7 @@ void main() {
     expect(result.hasOpeningBalance, isFalse);
   });
 
-  test('respecta primer i últim dia laborable del mes pressupostari', () {
+  test('resol primer i últim dia laborable dins del cicle', () {
     const first = SubCategory(
       id: 'first',
       name: 'Primer',
@@ -195,7 +229,7 @@ void main() {
     );
 
     expect(scheduledPaymentDate(first, cycle), DateTime(2026, 7, 1));
-    expect(scheduledPaymentDate(last, cycle), DateTime(2026, 7, 31));
+    expect(scheduledPaymentDate(last, cycle), DateTime(2026, 6, 30));
   });
 
   test('clampa el dia 31 al darrer dia del mes', () {

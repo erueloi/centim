@@ -5,11 +5,12 @@ import '../../domain/models/category.dart';
 import 'billing_cycle_provider.dart';
 import 'budget_provider.dart';
 import 'cash_flow_provider.dart';
+import 'fixed_expenses_provider.dart';
 
 /// Projecció de caixa fins al final del cicle.
 ///
-/// No classifica ni suma transaccions: consumeix els [BudgetStatus] que ja ha
-/// calculat `budget_provider` amb el ledger canònic, i el pot líquid que
+/// No classifica ni suma transaccions: consumeix els [BudgetStatus], les
+/// obligacions fixes ja resoltes per import i el pot líquid que
 /// `cash_flow_service` exposa a través de [currentPotProvider].
 class CycleSpendingMargin {
   final double availableNow;
@@ -42,10 +43,12 @@ class CycleSpendingMargin {
 class CyclePendingItem {
   final String name;
   final double amount;
+  final bool isOverdue;
 
   const CyclePendingItem({
     required this.name,
     required this.amount,
+    this.isOverdue = false,
   });
 }
 
@@ -53,7 +56,13 @@ final cycleSpendingMarginProvider = Provider<CycleSpendingMargin?>((ref) {
   final statuses = ref.watch(budgetNotifierProvider).valueOrNull;
   final cashFlow = ref.watch(cashFlowStatusProvider);
   final currentPot = ref.watch(currentPotProvider);
-  if (statuses == null || cashFlow == null || currentPot == null) return null;
+  final fixedExpenses = ref.watch(fixedExpenseObligationsProvider);
+  if (statuses == null ||
+      cashFlow == null ||
+      currentPot == null ||
+      fixedExpenses == null) {
+    return null;
+  }
 
   final cycle = ref.watch(activeCycleProvider);
   final currentCycle = ref.watch(currentCycleProvider);
@@ -61,6 +70,7 @@ final cycleSpendingMarginProvider = Provider<CycleSpendingMargin?>((ref) {
   return calculateCycleSpendingMargin(
     availableNow: currentPot,
     statuses: statuses,
+    fixedExpenses: fixedExpenses,
     cycle: cycle,
     today: DateTime.now(),
     hasOpeningBalance: cashFlow.openingBalance != null,
@@ -71,6 +81,7 @@ final cycleSpendingMarginProvider = Provider<CycleSpendingMargin?>((ref) {
 CycleSpendingMargin calculateCycleSpendingMargin({
   required double availableNow,
   required List<BudgetStatus> statuses,
+  required List<FixedExpenseItem> fixedExpenses,
   required BillingCycle cycle,
   required DateTime today,
   required bool hasOpeningBalance,
@@ -109,29 +120,28 @@ CycleSpendingMargin calculateCycleSpendingMargin({
 
       expenseBudget += subStatus.budget;
       expenseSpent += subStatus.spent;
-
-      if (!sub.isFixed) continue;
-      final paymentDate = scheduledPaymentDate(sub, cycle);
-      if (paymentDate == null ||
-          !paymentDate.isAfter(todayDay) ||
-          paymentDate.isAfter(cycleEnd)) {
-        continue;
-      }
-
-      // Si ja s'ha pagat abans del dia previst, no el reservem dues vegades.
-      final pending =
-          (subStatus.budget - subStatus.spent).clamp(0.0, double.infinity);
-      pendingFixedExpenses += pending;
-      if (pending > 0) {
-        pendingFixedExpenseItems.add(
-          CyclePendingItem(name: sub.name, amount: pending),
-        );
-      }
     }
   }
 
+  // La data només etiqueta vençut/per venir. L'import pendent prové de la
+  // mateixa obligació que consumeix la pestanya Fixes i no desapareix fins que
+  // queda cobert. Les guardioles líquides i els ingressos no afecten el pot.
+  for (final item in fixedExpenses.where((item) => item.affectsPot)) {
+    pendingFixedExpenses += item.remaining;
+    pendingFixedExpenseItems.add(
+      CyclePendingItem(
+        name: item.subCategory.name,
+        amount: item.remaining,
+        isOverdue: item.isOverdue,
+      ),
+    );
+  }
+
   pendingIncomeItems.sort((a, b) => b.amount.compareTo(a.amount));
-  pendingFixedExpenseItems.sort((a, b) => b.amount.compareTo(a.amount));
+  pendingFixedExpenseItems.sort((a, b) {
+    if (a.isOverdue != b.isOverdue) return a.isOverdue ? -1 : 1;
+    return b.amount.compareTo(a.amount);
+  });
 
   final daysRemaining =
       cycleEnd.isAfter(todayDay) ? cycleEnd.difference(todayDay).inDays : 0;
@@ -149,41 +159,6 @@ CycleSpendingMargin calculateCycleSpendingMargin({
     hasOpeningBalance: hasOpeningBalance,
     isCurrentCycle: isCurrentCycle,
   );
-}
-
-/// Data prevista dins del mes pressupostari del cicle.
-///
-/// Respecta també els dos modes de dia laborable que ja ofereix l'editor de
-/// subcategories. Un dia 31 en un mes més curt es clampa al darrer dia.
-DateTime? scheduledPaymentDate(
-  SubCategory subcategory,
-  BillingCycle cycle,
-) {
-  final budgetMonth = budgetMonthForCycle(cycle);
-  final firstDay = DateTime(budgetMonth.year, budgetMonth.month, 1);
-  final lastDay = DateTime(budgetMonth.year, budgetMonth.month + 1, 0);
-
-  switch (subcategory.paymentTiming) {
-    case PaymentTiming.specificDay:
-      final paymentDay = subcategory.paymentDay;
-      if (paymentDay == null) return null;
-      final clampedDay = paymentDay.clamp(1, lastDay.day);
-      return DateTime(budgetMonth.year, budgetMonth.month, clampedDay);
-    case PaymentTiming.firstBusinessDay:
-      var day = firstDay;
-      while (
-          day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
-        day = day.add(const Duration(days: 1));
-      }
-      return day;
-    case PaymentTiming.lastBusinessDay:
-      var day = lastDay;
-      while (
-          day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
-        day = day.subtract(const Duration(days: 1));
-      }
-      return day;
-  }
 }
 
 DateTime _dateOnly(DateTime value) =>

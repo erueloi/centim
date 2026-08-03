@@ -1653,6 +1653,10 @@ class _RecurringExpensesView extends ConsumerWidget {
           subCategory: item.subCategory,
           categoryIcon: item.category.icon,
           isIncome: isIncome,
+          budget: item.budget,
+          remaining: item.remaining,
+          scheduledDate: item.scheduledDate,
+          isOverdue: item.isOverdue,
           confirmDismiss: (direction) async {
             final l10n = AppLocalizations.of(context)!;
             final messenger = ScaffoldMessenger.of(context);
@@ -1661,7 +1665,7 @@ class _RecurringExpensesView extends ConsumerWidget {
               context: context,
               builder: (ctx) => ConfirmFixedExpenseDialog(
                 expenseName: item.subCategory.name,
-                amount: item.subCategory.monthlyBudget,
+                amount: item.remaining,
                 isIncome: isIncome,
               ),
             );
@@ -1676,7 +1680,7 @@ class _RecurringExpensesView extends ConsumerWidget {
             final transaction = Transaction(
               groupId: groupId,
               date: result.date,
-              amount: item.subCategory.monthlyBudget,
+              amount: item.remaining,
               concept: l10n.paymentOf(item.subCategory.name),
               categoryId: item.category.id,
               subCategoryId: item.subCategory.id,
@@ -1712,7 +1716,7 @@ class _RecurringExpensesView extends ConsumerWidget {
               builder: (_) => AddTransactionSheet(
                 initialCategory: item.category,
                 initialSubCategory: item.subCategory,
-                initialAmount: item.subCategory.monthlyBudget,
+                initialAmount: item.remaining,
                 initialConcept: AppLocalizations.of(context)!
                     .paymentOf(item.subCategory.name),
               ),

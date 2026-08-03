@@ -10,6 +10,7 @@ import '../providers/billing_cycle_provider.dart';
 import '../providers/auth_providers.dart';
 import '../providers/transaction_filter_provider.dart';
 import '../widgets/main_scaffold.dart';
+import 'budget_progress_style.dart';
 import '../../data/providers/repository_providers.dart';
 
 class WatchlistSection extends ConsumerWidget {
@@ -158,10 +159,7 @@ class WatchlistSection extends ConsumerWidget {
 
   Widget _buildAlertRow(_WatchlistItemData item, WidgetRef ref) {
     final fmt = NumberFormat('#,##0.00', 'ca_ES');
-    bool isOver = item.ratio >= 1.0;
-    Color indicatorColor = isOver
-        ? Colors.red
-        : (item.ratio >= 0.8 ? Colors.orange : Colors.green);
+    final indicatorColor = budgetConsumptionColor(item.ratio);
 
     return InkWell(
       borderRadius: BorderRadius.circular(8),

@@ -23,6 +23,7 @@ import '../../providers/transaction_notifier.dart';
 import '../../providers/billing_cycle_provider.dart';
 import '../../../domain/models/budget_entry.dart';
 import '../../widgets/cycle_selector.dart';
+import '../../widgets/budget_progress_style.dart';
 import '../../widgets/trends_tab.dart'; // Import TrendsTab
 import '../../providers/transaction_filter_provider.dart';
 import '../../widgets/main_scaffold.dart';
@@ -252,6 +253,9 @@ class _BudgetCard extends ConsumerWidget {
       percentage,
       isSavings: isSavings,
     );
+    final percentageColor = isSavings || type == TransactionType.income
+        ? budgetAchievementColor(percentage)
+        : budgetConsumptionColor(percentage);
     final isDisplayedZero = displayedAmount == null || displayedAmount == 0;
     final isTotalZero = status.total == 0;
 
@@ -332,14 +336,29 @@ class _BudgetCard extends ConsumerWidget {
                           color: Colors.grey[600],
                         ),
                       ),
-                    Text(
-                      '${displayedAmount == null ? '…' : _formatBudgetAmount(displayedAmount)}€ / ${_formatBudgetAmount(status.total)}€',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: !isSavings && status.isOverBudget
-                            ? Colors.red
-                            : AppTheme.anthracite,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text.rich(
+                        TextSpan(
+                          text:
+                              '${displayedAmount == null ? '…' : _formatBudgetAmount(displayedAmount)}€ / ${_formatBudgetAmount(status.total)}€',
+                          children: [
+                            if (displayedAmount != null && status.total > 0)
+                              TextSpan(
+                                text:
+                                    ' · ${(percentage * 100).toStringAsFixed(0)}%',
+                                style: TextStyle(color: percentageColor),
+                              ),
+                          ],
+                        ),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: !isSavings && status.isOverBudget
+                              ? Colors.red
+                              : AppTheme.anthracite,
+                        ),
                       ),
                     ),
                   ],
@@ -498,6 +517,10 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
     final progressColor = widget.isSavingsCategory
         ? _getSavingsProgressColor(percentage)
         : _getProgressColor(widget.subStatus.percentage);
+    final percentageColor =
+        widget.isSavingsCategory || widget.type == TransactionType.income
+            ? budgetAchievementColor(percentage)
+            : budgetConsumptionColor(percentage);
     final isBudgetZero = widget.subStatus.budget == 0;
     final isDisplayedZero = displayedAmount == null || displayedAmount == 0;
 
@@ -565,7 +588,7 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
                     ),
                     const SizedBox(width: 8),
                     SizedBox(
-                      width: widget.isSavingsCategory ? 92 : 85,
+                      width: widget.isSavingsCategory ? 118 : 110,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
@@ -577,13 +600,29 @@ class _SubcategoryRowState extends ConsumerState<_SubcategoryRow> {
                                 color: Colors.grey[500],
                               ),
                             ),
-                          Text(
-                            '${displayedAmount == null ? '…' : _formatBudgetAmount(displayedAmount)}€/${_formatBudgetAmount(widget.subStatus.budget)}€',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text.rich(
+                              TextSpan(
+                                text:
+                                    '${displayedAmount == null ? '…' : _formatBudgetAmount(displayedAmount)}€/${_formatBudgetAmount(widget.subStatus.budget)}€',
+                                children: [
+                                  if (displayedAmount != null &&
+                                      widget.subStatus.budget > 0)
+                                    TextSpan(
+                                      text:
+                                          ' · ${(percentage * 100).toStringAsFixed(0)}%',
+                                      style: TextStyle(color: percentageColor),
+                                    ),
+                                ],
+                              ),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                              textAlign: TextAlign.right,
                             ),
-                            textAlign: TextAlign.right,
                           ),
                         ],
                       ),
@@ -1799,7 +1838,7 @@ class _CycleSpendingMarginCardState
                                     .format(projection.pendingFixedExpenses),
                                 color: Colors.red.shade700,
                               ),
-                              _PendingItemsBreakdown(
+                              _PendingFixedItemsBreakdown(
                                 items: projection.pendingFixedExpenseItems,
                                 currency: currency,
                               ),
@@ -1960,6 +1999,81 @@ class _PendingItemsBreakdown extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PendingFixedItemsBreakdown extends StatelessWidget {
+  final List<CyclePendingItem> items;
+  final NumberFormat currency;
+
+  const _PendingFixedItemsBreakdown({
+    required this.items,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final overdue = items.where((item) => item.isOverdue).toList();
+    final upcoming = items.where((item) => !item.isOverdue).toList();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 2, 0, 5),
+      child: Column(
+        children: [
+          if (overdue.isNotEmpty)
+            _buildGroup(
+              label: 'Vençudes',
+              items: overdue,
+              color: Colors.red.shade700,
+            ),
+          if (upcoming.isNotEmpty)
+            _buildGroup(
+              label: 'Per venir',
+              items: upcoming,
+              color: AppTheme.anthracite,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroup({
+    required String label,
+    required List<CyclePendingItem> items,
+    required Color color,
+  }) {
+    final total = items.fold(0.0, (sum, item) => sum + item.amount);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 3),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$label (${items.length})',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                currency.format(total),
+                style: TextStyle(
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          _PendingItemsBreakdown(items: items, currency: currency),
         ],
       ),
     );

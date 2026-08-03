@@ -7,6 +7,10 @@ class RecurrentExpenseCard extends StatelessWidget {
   final SubCategory subCategory;
   final String categoryIcon; // Emoji or IconData string
   final bool isIncome;
+  final double budget;
+  final double remaining;
+  final DateTime? scheduledDate;
+  final bool isOverdue;
   final Future<bool?> Function(DismissDirection)? confirmDismiss;
   final VoidCallback onPay;
   final VoidCallback onTap;
@@ -16,6 +20,10 @@ class RecurrentExpenseCard extends StatelessWidget {
     required this.subCategory,
     required this.categoryIcon,
     required this.isIncome,
+    required this.budget,
+    required this.remaining,
+    required this.scheduledDate,
+    required this.isOverdue,
     this.confirmDismiss,
     required this.onPay,
     required this.onTap,
@@ -24,6 +32,17 @@ class RecurrentExpenseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(locale: 'ca_ES', symbol: '€');
+    final covered = (budget - remaining).clamp(0.0, budget);
+    final hasPartialPayment = covered > 0.005;
+    final amountLabel = hasPartialPayment
+        ? 'Falten ${currencyFormat.format(remaining)} de '
+            '${currencyFormat.format(budget)}'
+        : 'Pendent ${currencyFormat.format(remaining)}';
+    final dateLabel = scheduledDate == null
+        ? 'sense data prevista'
+        : isOverdue
+            ? 'vençut el ${DateFormat('dd/MM', 'ca_ES').format(scheduledDate!)}'
+            : 'previst el ${DateFormat('dd/MM', 'ca_ES').format(scheduledDate!)}';
 
     return Dismissible(
       key: Key(subCategory.id),
@@ -73,13 +92,13 @@ class RecurrentExpenseCard extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           subtitle: Text(
-            subCategory.paymentDay != null
-                ? 'Previst el dia ${subCategory.paymentDay}'
-                : 'Pagament recurrent',
-            style: TextStyle(color: Colors.grey[600]),
+            '$amountLabel · $dateLabel',
+            style: TextStyle(
+              color: isOverdue ? Colors.red[700] : Colors.grey[600],
+            ),
           ),
           trailing: Text(
-            '${isIncome ? '+' : '-'}${currencyFormat.format(subCategory.monthlyBudget)}',
+            '${isIncome ? '+' : '-'}${currencyFormat.format(remaining)}',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
