@@ -18,7 +18,7 @@ class BankConsentBanner extends ConsumerStatefulWidget {
 class _BankConsentBannerState extends ConsumerState<BankConsentBanner> {
   bool _starting = false;
 
-  Future<void> _reconnect() async {
+  Future<void> _reconnect(String connectionId) async {
     if (!kIsWeb) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -33,6 +33,7 @@ class _BankConsentBannerState extends ConsumerState<BankConsentBanner> {
     try {
       final start = await ref.read(bankSyncServiceProvider).startAuth(
             redirectUrl: '${Uri.base.origin}/bank-callback',
+            connectionId: connectionId,
           );
       await launchUrl(Uri.parse(start.authUrl), webOnlyWindowName: '_self');
     } catch (error) {
@@ -48,17 +49,18 @@ class _BankConsentBannerState extends ConsumerState<BankConsentBanner> {
 
   @override
   Widget build(BuildContext context) {
-    final status = ref.watch(bankConsentStatusProvider).valueOrNull;
-    if (status == null || !status.needsAttention) {
+    final alert = ref.watch(bankConsentAlertProvider).valueOrNull;
+    if (alert == null) {
       return const SizedBox.shrink();
     }
+    final status = alert.status;
     final expired = status.state == BankConsentState.expired;
     final color = expired ? Colors.red : Colors.orange;
     final until = status.validUntil?.toLocal();
     final date = until == null ? '' : DateFormat('dd/MM/yyyy').format(until);
     final text = expired
-        ? 'L’accés al banc ha caducat. Cal reconnectar.'
-        : 'L’accés al banc caduca en ${status.daysRemaining} '
+        ? '${alert.connection.label}: l’accés ha caducat. Cal reconnectar.'
+        : '${alert.connection.label}: l’accés caduca en ${status.daysRemaining} '
             'dia${status.daysRemaining == 1 ? '' : 's'} ($date).';
 
     return Container(
@@ -80,7 +82,9 @@ class _BankConsentBannerState extends ConsumerState<BankConsentBanner> {
             ),
           ),
           TextButton(
-            onPressed: _starting ? null : _reconnect,
+            onPressed: _starting
+                ? null
+                : () => _reconnect(alert.connection.connectionId),
             child: _starting
                 ? const SizedBox(
                     width: 18,

@@ -7,4 +7,5 @@ export { startBankAuth } from "./startBankAuth.js";
 export { finalizeBankSession } from "./finalizeBankSession.js";
 export { fetchBankTransactions } from "./fetchBankTransactions.js";
 export { listBankAccounts } from "./listBankAccounts.js";
+export { inspectBankSessionAccounts } from "./inspectBankSessionAccounts.js";
 export { updateBankAccountConfig } from "./updateBankAccountConfig.js";

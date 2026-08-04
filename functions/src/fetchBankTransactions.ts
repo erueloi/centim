@@ -7,7 +7,6 @@ import {
   ASPSP_NAME,
   ASPSP_COUNTRY,
   aspspSlug,
-  bankConnectionDoc,
   ALL_EB_SECRETS,
   resolveEbCredentials,
 } from "./config.js";
@@ -23,6 +22,7 @@ import {
   maskIban,
   accountKeyOf,
 } from "./ebAccounts.js";
+import { listBankConnectionDocs } from "./bankConnections.js";
 
 // Finestra de dates per defecte i límits de paginació.
 const DEFAULT_LOOKBACK_DAYS = 90;
@@ -151,12 +151,9 @@ export const fetchBankTransactions = onCall(
     // Peticions per compte: [{ key, dateFrom? }]. Si no se'n passen, es baixen
     // tots els comptes amb la finestra per defecte (comportament legacy).
     const perAccount =
-      (request.data?.accounts as { key: string; dateFrom?: string }[] | undefined) ??
-      null;
-    const requestedByKey = new Map<string, string | undefined>();
-    if (perAccount) {
-      for (const a of perAccount) requestedByKey.set(a.key, a.dateFrom);
-    }
+      (request.data?.accounts as
+        | { key: string; connectionId?: string; dateFrom?: string }[]
+        | undefined) ?? null;
 
     const ibanSuffix = (request.data?.ibanSuffix as string | undefined)?.trim();
     const defaultDateFrom =
@@ -168,10 +165,11 @@ export const fetchBankTransactions = onCall(
     const slug = aspspSlug(ASPSP_NAME.value());
 
     const db = getFirestore();
-    const docRef = db.doc(bankConnectionDoc(uid, slug));
-    const snap = await docRef.get();
-    const sessionId = snap.get("sessionId") as string | undefined;
-    if (!sessionId) {
+    const { docs } = await listBankConnectionDocs(db, uid, slug);
+    const connected = docs.filter(
+      (doc) => !!(doc.get("sessionId") as string | undefined)
+    );
+    if (connected.length === 0) {
       throw new HttpsError(
         "failed-precondition",
         "No hi ha cap sessió bancària. Connecta el banc primer.",
@@ -180,145 +178,164 @@ export const fetchBankTransactions = onCall(
     }
 
     const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
-
-    // Capçaleres PSU: marquen la consulta com a feta AMB EL CLIENT PRESENT
-    // (l'usuari acaba de prémer "Sincronitza"), que és el que evita la quota
-    // d'accés desatès (~4/dia). Cal saber quines exigeix el banc: es desen a
-    // startBankAuth, i per a connexions anteriors les resolem un cop aquí.
-    let requiredPsuHeaders = snap.get("requiredPsuHeaders") as
-      | string[]
-      | undefined;
-    if (requiredPsuHeaders === undefined) {
-      try {
-        const catalog = await enableBankingFetch<{
-          aspsps?: { name: string; required_psu_headers?: string[] }[];
-        }>("/aspsps", {
-          method: "GET",
-          jwt,
-          baseUrl: creds.baseUrl,
-          query: { country: ASPSP_COUNTRY.value() },
-        });
-        const target = ASPSP_NAME.value().toLowerCase();
-        requiredPsuHeaders =
-          (catalog.aspsps ?? []).find(
-            (a) => a.name.toLowerCase() === target
-          )?.required_psu_headers ?? [];
-        await docRef.set({ requiredPsuHeaders }, { merge: true });
-      } catch {
-        requiredPsuHeaders = [];
-      }
-    }
-
-    const psuHeaders = buildPsuHeaders(request.rawRequest, requiredPsuHeaders);
-    const ctx: EbCtx = { jwt, baseUrl: creds.baseUrl, psuHeaders };
-
-    // La PSD2 limita les consultes AIS sense el client present (~4 per compte i
-    // dia). Per no malgastar-ne cap: comprovem la caducitat amb el validUntil
-    // desat (sense cridar GET /sessions) i les metadades dels comptes surten de
-    // la caché escrita a finalize. Si la sessió s'hagués revocat, la crida de
-    // moviments retornarà 401 i el propagarem com a "cal reconnectar".
-    const validUntilStr = snap.get("validUntil") as string | undefined;
-    if (validUntilStr) {
-      const validUntil = new Date(validUntilStr);
-      if (!Number.isNaN(validUntil.getTime()) && validUntil < new Date()) {
-        throw new HttpsError(
-          "failed-precondition",
-          "El consentiment del banc ha caducat. Torna a connectar el banc.",
-          { needsReauth: true }
-        );
-      }
-    }
-
-    const storedAccounts =
-      (snap.get("accounts") as EbAccount[] | undefined) ?? [];
-
     const accountsOut = [];
     let txTotal = 0;
+    const usedConnections = new Set<string>();
+    const sentPsuHeaders = new Set<string>();
+    let catalogPsuHeaders: string[] | undefined;
 
-    for (const acc of storedAccounts) {
-      const accUid = acc.uid;
-      if (!accUid) continue;
-      const key = accountKeyOf(acc);
-      const ibans = ibansOf(acc);
+    for (const snap of connected) {
+      const storedAccounts =
+        (snap.get("accounts") as EbAccount[] | undefined) ?? [];
+      const selected = storedAccounts
+        .map((account) => {
+          const key = accountKeyOf(account);
+          const explicit = perAccount?.find(
+            (candidate) =>
+              candidate.key === key &&
+              (!candidate.connectionId || candidate.connectionId === snap.id)
+          );
+          return { account, key, explicit };
+        })
+        .filter(({ account, explicit }) => {
+          if (perAccount && !explicit) return false;
+          const ibans = ibansOf(account);
+          return !ibanSuffix || ibans.some((iban) => iban.endsWith(ibanSuffix));
+        });
+      if (selected.length === 0) continue;
 
-      // Filtres d'inclusió: per petició explícita (perAccount) o per ibanSuffix.
-      if (perAccount && !requestedByKey.has(key)) continue;
-      if (ibanSuffix && !ibans.some((ib) => ib.endsWith(ibanSuffix))) continue;
-
-      const accDateFrom = perAccount
-        ? requestedByKey.get(key) ?? defaultDateFrom
-        : defaultDateFrom;
-
-      // El banc (Redsys) limita l'històric recuperable. Si rebutja el dateFrom,
-      // no fem petar tot el sync: marquem un avís i retornem el compte sense
-      // moviments perquè l'usuari en pugui triar un de més recent.
-      let transactions: NormalizedTx[] = [];
-      let warning: string | null = null;
-      try {
-        const rawTx = await fetchAllTransactions(
-          ctx,
-          accUid,
-          accDateFrom,
-          dateTo
-        );
-        transactions = rawTx
-          .map(normalizeTx)
-          .filter((t): t is NormalizedTx => t !== null);
-      } catch (e) {
-        // Els errors que l'usuari ha d'entendre tal qual (límit de consultes,
-        // autorització revocada) NO s'amaguen darrere d'un avís: es propaguen.
-        if (
-          e instanceof HttpsError &&
-          (e.code === "resource-exhausted" || e.code === "permission-denied")
-        ) {
-          throw e;
+      // La data només invalida la connexió propietària del compte seleccionat;
+      // una altra sessió caducada no bloqueja la resta de comptes del grup.
+      const validUntilStr = snap.get("validUntil") as string | undefined;
+      if (validUntilStr) {
+        const validUntil = new Date(validUntilStr);
+        if (!Number.isNaN(validUntil.getTime()) && validUntil < new Date()) {
+          throw new HttpsError(
+            "failed-precondition",
+            "El consentiment d'aquest compte ha caducat. Reconnecta'l.",
+            { needsReauth: true, connectionId: snap.id }
+          );
         }
-        const status =
-          e instanceof HttpsError &&
-          e.details &&
-          typeof e.details === "object" &&
-          "status" in e.details
-            ? (e.details as { status?: number }).status
-            : undefined;
-        // 400/422 solen indicar rang de dates no admès; la resta, error genèric.
-        warning =
-          status === 400 || status === 422
-            ? "El banc no permet recuperar moviments des d'aquesta data. Prova una data d'inici més recent."
-            : `No s'han pogut recuperar els moviments d'aquest compte${
-                status != null ? ` (error ${status})` : ""
-              }.`;
-        logger.warn("Error baixant moviments d'un compte", {
-          uid,
-          env: creds.env,
+      }
+
+      // Capçaleres PSU per connexió. Les antigues les resolen una vegada i les
+      // desen al seu document, sense alterar les altres sessions.
+      let requiredPsuHeaders = snap.get("requiredPsuHeaders") as
+        | string[]
+        | undefined;
+      if (requiredPsuHeaders === undefined) {
+        if (catalogPsuHeaders === undefined) {
+          try {
+            const catalog = await enableBankingFetch<{
+              aspsps?: { name: string; required_psu_headers?: string[] }[];
+            }>("/aspsps", {
+              method: "GET",
+              jwt,
+              baseUrl: creds.baseUrl,
+              query: { country: ASPSP_COUNTRY.value() },
+            });
+            const target = ASPSP_NAME.value().toLowerCase();
+            catalogPsuHeaders =
+              (catalog.aspsps ?? []).find(
+                (aspsp) => aspsp.name.toLowerCase() === target
+              )?.required_psu_headers ?? [];
+          } catch {
+            catalogPsuHeaders = [];
+          }
+        }
+        requiredPsuHeaders = catalogPsuHeaders;
+        await snap.ref.set({ requiredPsuHeaders }, { merge: true });
+      }
+      const psuHeaders = buildPsuHeaders(
+        request.rawRequest,
+        requiredPsuHeaders
+      );
+      Object.keys(psuHeaders).forEach((header) => sentPsuHeaders.add(header));
+      const ctx: EbCtx = { jwt, baseUrl: creds.baseUrl, psuHeaders };
+      usedConnections.add(snap.id);
+
+      for (const { account: acc, key, explicit } of selected) {
+        const accUid = acc.uid;
+        if (!accUid) continue;
+        const ibans = ibansOf(acc);
+        const accDateFrom = explicit?.dateFrom ?? defaultDateFrom;
+
+        // El banc limita l'històric recuperable. Un rang rebutjat avisa però
+        // no trenca la revisió de la resta de comptes.
+        let transactions: NormalizedTx[] = [];
+        let warning: string | null = null;
+        try {
+          const rawTx = await fetchAllTransactions(
+            ctx,
+            accUid,
+            accDateFrom,
+            dateTo
+          );
+          transactions = rawTx
+            .map(normalizeTx)
+            .filter((tx): tx is NormalizedTx => tx !== null);
+        } catch (e) {
+          if (
+            e instanceof HttpsError &&
+            (e.code === "resource-exhausted" || e.code === "permission-denied")
+          ) {
+            throw e;
+          }
+          const status =
+            e instanceof HttpsError &&
+            e.details &&
+            typeof e.details === "object" &&
+            "status" in e.details
+              ? (e.details as { status?: number }).status
+              : undefined;
+          warning =
+            status === 400 || status === 422
+              ? "El banc no permet recuperar moviments des d'aquesta data. Prova una data d'inici més recent."
+              : `No s'han pogut recuperar els moviments d'aquest compte${
+                  status != null ? ` (error ${status})` : ""
+                }.`;
+          logger.warn("Error baixant moviments d'un compte", {
+            uid,
+            env: creds.env,
+            connectionId: snap.id,
+            accountKey: key,
+            status: status ?? null,
+            dateFrom: accDateFrom,
+          });
+        }
+        txTotal += transactions.length;
+
+        accountsOut.push({
+          connectionId: snap.id,
           accountKey: key,
-          status: status ?? null,
+          ibanMasked: maskIban(ibans[0] ?? ""),
+          name: acc.name ?? null,
+          currency: acc.currency ?? null,
           dateFrom: accDateFrom,
+          transactionCount: transactions.length,
+          transactions,
+          warning,
         });
       }
-      txTotal += transactions.length;
+    }
 
-      accountsOut.push({
-        accountKey: key,
-        ibanMasked: maskIban(ibans[0] ?? ""),
-        name: acc.name ?? null,
-        currency: acc.currency ?? null,
-        dateFrom: accDateFrom,
-        transactionCount: transactions.length,
-        transactions,
-        warning,
-      });
+    if (perAccount && accountsOut.length === 0) {
+      throw new HttpsError(
+        "not-found",
+        "No s'ha trobat el compte a cap connexió bancària activa."
+      );
     }
 
     // LOG: només metadades (mai IBAN sencer, imports ni conceptes).
     logger.info("fetchBankTransactions OK", {
       uid,
       env: creds.env,
+      connectionCount: usedConnections.size,
       accountCount: accountsOut.length,
       txTotal,
       dateTo: dateTo ?? null,
       // Només els NOMS de les capçaleres PSU: mai la IP (dada personal).
-      psuHeadersSent: Object.keys(psuHeaders),
-      requiredPsuHeaders,
+      psuHeadersSent: [...sentPsuHeaders],
     });
 
     return {

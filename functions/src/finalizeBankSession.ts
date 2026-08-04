@@ -6,7 +6,7 @@ import {
   REGION,
   ASPSP_NAME,
   aspspSlug,
-  bankConnectionDoc,
+  bankConnectionsCollection,
   ALL_EB_SECRETS,
   resolveEbCredentials,
 } from "./config.js";
@@ -51,25 +51,26 @@ export const finalizeBankSession = onCall(
 
     const slug = aspspSlug(ASPSP_NAME.value());
     const db = getFirestore();
-    const docRef = db.doc(bankConnectionDoc(uid, slug));
-    const snap = await docRef.get();
-    const pendingState = snap.get("pendingState") as string | undefined;
+    const pending = await db
+      .collection(bankConnectionsCollection(uid))
+      .where("pendingState", "==", state)
+      .limit(2)
+      .get();
 
     // 1. Validació anti-CSRF, d'un sol ús, ABANS de cridar Enable Banking.
-    if (!pendingState || pendingState !== state) {
+    if (pending.size !== 1) {
       logger.warn("State d'autorització bancària no vàlid o ja consumit", {
         uid,
+        matches: pending.size,
       });
-      // Consumim qualsevol pendingState per evitar reutilització/replay.
-      await docRef.set(
-        { pendingState: FieldValue.delete() },
-        { merge: true }
-      );
       throw new HttpsError(
         "permission-denied",
         "La sessió d'autorització no és vàlida. Torna a connectar el banc."
       );
     }
+    const snap = pending.docs[0];
+    const docRef = snap.ref;
+    const connectionId = snap.id;
 
     const creds = resolveEbCredentials();
     const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
@@ -96,10 +97,24 @@ export const finalizeBankSession = onCall(
       null;
 
     // 3. Persistir la sessió i descartar el state (un sol ús).
+    const accounts = session.accounts ?? [];
+    const inferredLabel = accounts
+      .map((account) =>
+        typeof account === "object" && account != null && "name" in account
+          ? String((account as { name?: unknown }).name ?? "").trim()
+          : ""
+      )
+      .find(Boolean);
+
     await docRef.set(
       {
+        connectionId,
         sessionId: session.session_id,
-        accounts: session.accounts ?? [],
+        accounts,
+        connectionLabel:
+          (snap.get("connectionLabel") as string | undefined) ??
+          inferredLabel ??
+          `${ASPSP_NAME.value()} ${connectionId === slug ? "" : "2"}`.trim(),
         validUntil,
         env: creds.env,
         status: "connected",
@@ -113,14 +128,16 @@ export const finalizeBankSession = onCall(
 
     logger.info("Sessió bancària establerta", {
       uid,
-      accountCount: (session.accounts ?? []).length,
+      connectionId,
+      accountCount: accounts.length,
       validUntil,
     });
 
     // No retornem session_id ni code al client.
     return {
       status: "connected",
-      accountCount: (session.accounts ?? []).length,
+      connectionId,
+      accountCount: accounts.length,
       validUntil,
     };
   }

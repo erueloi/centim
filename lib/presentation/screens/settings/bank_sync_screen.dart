@@ -24,8 +24,10 @@ class BankSyncScreen extends ConsumerStatefulWidget {
 
 class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
   _ConnState _state = _ConnState.loading;
-  String? _validUntil;
+  List<BankConnectionInfo> _connections = [];
   List<BankAccountInfo> _accounts = [];
+  final Map<String, BankSessionInspection> _sessionInspections = {};
+  final Set<String> _inspectingConnections = {};
   String _error = '';
 
   @override
@@ -40,7 +42,7 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
       final conn = await ref.read(bankSyncServiceProvider).listAccounts();
       if (!mounted) return;
       setState(() {
-        _validUntil = conn.validUntil;
+        _connections = conn.connections;
         _accounts = conn.accounts;
         _state = _ConnState.connected;
       });
@@ -63,6 +65,7 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
     setState(() => _accounts[index] = updated);
     try {
       await ref.read(bankSyncServiceProvider).updateAccountConfig(
+            connectionId: updated.connectionId,
             accountKey: updated.accountKey,
             sync: updated.sync,
             centimAssetId: updated.centimAssetId,
@@ -77,7 +80,34 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
     }
   }
 
-  Future<void> _connect() async {
+  Future<void> _inspectSessionAccounts(String connectionId) async {
+    if (_inspectingConnections.contains(connectionId)) return;
+    setState(() {
+      _inspectingConnections.add(connectionId);
+      _sessionInspections.remove(connectionId);
+    });
+    try {
+      final inspection = await ref
+          .read(bankSyncServiceProvider)
+          .inspectSessionAccounts(connectionId: connectionId);
+      if (!mounted) return;
+      setState(() => _sessionInspections[connectionId] = inspection);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No s’ha pogut comprovar la sessió: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _inspectingConnections.remove(connectionId));
+      }
+    }
+  }
+
+  Future<void> _connect({
+    String? connectionId,
+    bool newConnection = false,
+  }) async {
     if (!kIsWeb) {
       // Android/iOS (custom scheme) arriba a la propera passa de 2d.4.
       ScaffoldMessenger.of(context).showSnackBar(
@@ -90,9 +120,11 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
     try {
       // Torna a l'origen actual (web desplegada o localhost en dev).
       final redirectUrl = '${Uri.base.origin}/bank-callback';
-      final start = await ref
-          .read(bankSyncServiceProvider)
-          .startAuth(redirectUrl: redirectUrl);
+      final start = await ref.read(bankSyncServiceProvider).startAuth(
+            redirectUrl: redirectUrl,
+            connectionId: connectionId,
+            newConnection: newConnection,
+          );
       // Redirect de tota la pestanya cap a la SCA; en tornar, /bank-callback
       // el gestiona l'app (AuthWrapper → finalizeBankSession).
       await launchUrl(
@@ -144,7 +176,7 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
                 textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: _connect,
+              onPressed: () => _connect(),
               icon: const Icon(Icons.link),
               label: const Text('Connecta el banc'),
             ),
@@ -158,8 +190,6 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildStatusCard(),
-          const SizedBox(height: 16),
           const Text('Comptes',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 4),
@@ -169,15 +199,103 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
             'sincronització podràs confirmar-los o canviar-los.',
             style: TextStyle(color: Colors.grey, fontSize: 13),
           ),
-          const SizedBox(height: 8),
-          for (int i = 0; i < _accounts.length; i++) _buildAccountCard(i),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.tonalIcon(
+              onPressed: () => _connect(newConnection: true),
+              icon: const Icon(Icons.add_link),
+              label: const Text('Afegeix una altra connexió'),
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (final connection in _connections) ...[
+            _buildConnectionHeader(connection),
+            if (_sessionInspections[connection.connectionId]
+                case final inspection?) ...[
+              const SizedBox(height: 8),
+              _buildSessionInspection(inspection),
+            ],
+            const SizedBox(height: 8),
+            for (int i = 0; i < _accounts.length; i++)
+              if (_accounts[i].connectionId == connection.connectionId)
+                _buildAccountCard(i),
+            const SizedBox(height: 12),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildStatusCard() {
-    final status = calculateBankConsentStatus(_validUntil);
+  Widget _buildSessionInspection(BankSessionInspection inspection) {
+    final foundNew = inspection.newAccountCount > 0;
+    final color = foundNew ? Colors.orange : Colors.blueGrey;
+    final summary = foundNew
+        ? 'La sessió veu ${inspection.liveAccountCount} comptes: '
+            '${inspection.newAccountCount} encara no són a la caché de Cèntim.'
+        : 'La sessió veu ${inspection.liveAccountCount} comptes, els mateixos '
+            'que Cèntim té desats (${inspection.cachedAccountCount}).';
+
+    return Card(
+      color: color.withValues(alpha: 0.08),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.science_outlined, color: color, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    summary,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            if (inspection.accounts.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              for (final account in inspection.accounts)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        account.alreadyCached
+                            ? Icons.check_circle_outline
+                            : Icons.add_circle_outline,
+                        color: account.alreadyCached ? Colors.green : color,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          [
+                            if (account.name?.isNotEmpty == true) account.name!,
+                            account.ibanMasked,
+                          ].join(' · '),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+            const SizedBox(height: 8),
+            const Text(
+              'Aquesta comprovació és de només lectura i no desa cap canvi.',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildConnectionHeader(BankConnectionInfo connection) {
+    final status = calculateBankConsentStatus(connection.validUntil);
     final until = status.validUntil?.toLocal();
     final days = status.daysRemaining;
     final expired = status.state == BankConsentState.expired;
@@ -187,30 +305,77 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
     String text;
     if (until == null) {
       color = Colors.grey;
-      text = 'Connectat.';
+      text = 'Connectada.';
     } else if (expired) {
       color = Colors.red;
-      text = 'L\'accés al banc ha caducat. Cal reconnectar.';
+      text = 'Accés caducat. Cal reconnectar.';
     } else if (soon) {
       color = Colors.orange;
-      text =
-          'L\'accés al banc caduca en $days dies (${DateFormat('dd/MM/yyyy').format(until)}). Reconnecta aviat.';
+      text = 'Caduca en $days dia${days == 1 ? '' : 's'} '
+          '(${DateFormat('dd/MM/yyyy').format(until)}).';
     } else {
-      text =
-          'Connectat. Accés vàlid $days dies més (fins ${DateFormat('dd/MM/yyyy').format(until)}).';
+      text = 'Accés vàlid $days dies més '
+          '(fins ${DateFormat('dd/MM/yyyy').format(until)}).';
     }
 
     return Card(
       color: color.withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(children: [
-          Icon(expired ? Icons.warning : Icons.verified_user, color: color),
-          const SizedBox(width: 12),
-          Expanded(child: Text(text)),
-          if (expired || soon)
-            TextButton(onPressed: _connect, child: const Text('Reconnecta')),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(expired ? Icons.warning : Icons.verified_user, color: color),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      connection.label,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(text),
+                  ],
+                ),
+              ),
+            ]),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                TextButton.icon(
+                  onPressed: () => _connect(
+                    connectionId: connection.connectionId,
+                  ),
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: Text(expired || soon ? 'Reconnecta' : 'Renova'),
+                ),
+                TextButton.icon(
+                  onPressed:
+                      _inspectingConnections.contains(connection.connectionId)
+                          ? null
+                          : () => _inspectSessionAccounts(
+                                connection.connectionId,
+                              ),
+                  icon: _inspectingConnections.contains(connection.connectionId)
+                      ? const SizedBox.square(
+                          dimension: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.manage_search, size: 18),
+                  label: const Text('Comprova comptes'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

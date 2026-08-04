@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.3.4
+Suport multiconnexio bancària: permet conservar simultàniament les sessions de CaixaBank de l'Eloi i del Jose, veure els quatre comptes dins del mateix grup i sincronitzar-ne un cada vegada.
+Cada compte utilitza automàticament la sessió PSD2 corresponent, mantenint intactes la importació, la deduplicació, les regles de categorització i els traspassos.
+S'afegeixen controls independents de caducitat, renovació i comprovació de comptes.
 ## v1.3.3
 Millora del marge fins a fi de cicle: les despeses fixes pendents es calculen per import realment cobert, admeten pagaments parcials i es separen entre vencudes i per venir.
 Els residus inferiors a max(1 euro, 1% del pressupost) es consideren coberts.
@@ -145,6 +149,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

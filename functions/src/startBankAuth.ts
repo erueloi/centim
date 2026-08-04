@@ -20,6 +20,10 @@ import {
   enableBankingFetch,
   requireUid,
 } from "./enableBanking.js";
+import {
+  assertValidConnectionId,
+  currentBankGroupId,
+} from "./bankConnections.js";
 
 interface Aspsp {
   name: string;
@@ -107,6 +111,14 @@ export const startBankAuth = onCall(
     // Slug derivat del paràmetre (no del nom retornat) perquè finalizeBankSession
     // pugui recalcular el mateix doc sense tornar a cridar /aspsps.
     const slug = aspspSlug(targetName);
+    const addConnection = request.data?.newConnection === true;
+    const requestedConnectionId = (
+      request.data?.connectionId as string | undefined
+    )?.trim();
+    const connectionId = addConnection
+      ? `${slug}-${randomUUID()}`
+      : requestedConnectionId || slug;
+    assertValidConnectionId(connectionId);
 
     // 3. valid_until dinàmic, capat a la validesa màxima real de CaixaBank.
     const requestedSeconds = REQUESTED_CONSENT_DAYS * 24 * 60 * 60;
@@ -117,8 +129,26 @@ export const startBankAuth = onCall(
     // 4. State anti-CSRF d'un sol ús, desat abans d'iniciar la SCA.
     const state = randomUUID();
     const db = getFirestore();
-    await db.doc(bankConnectionDoc(uid, slug)).set(
+    const groupId = await currentBankGroupId(db, uid);
+    const docRef = db.doc(bankConnectionDoc(uid, connectionId));
+    const existing = await docRef.get();
+    if (existing.exists) {
+      const existingGroupId = existing.get("groupId") as string | undefined;
+      const isLegacy = connectionId === slug && !existingGroupId;
+      if (existingGroupId !== groupId && !isLegacy) {
+        throw new HttpsError(
+          "permission-denied",
+          "Aquesta connexió bancària no pertany al grup actiu."
+        );
+      }
+    } else if (!addConnection && connectionId !== slug) {
+      throw new HttpsError("not-found", "Connexió bancària no trobada.");
+    }
+
+    await docRef.set(
       {
+        connectionId,
+        groupId,
         aspspName: caixa.name,
         aspspCountry: caixa.country,
         // Les desem per poder marcar les consultes com a "client present".
@@ -132,18 +162,58 @@ export const startBankAuth = onCall(
     );
 
     // 5. Iniciar autorització.
-    const auth = await enableBankingFetch<AuthResponse>("/auth", {
-      method: "POST",
-      jwt,
-      baseUrl: creds.baseUrl,
-      body: {
-        access: { valid_until: validUntil },
-        aspsp: { name: caixa.name, country: caixa.country },
-        state,
-        redirect_url: redirectUrl,
-        psu_type: PSU_TYPE,
-      },
-    });
+    let auth: AuthResponse;
+    try {
+      auth = await enableBankingFetch<AuthResponse>("/auth", {
+        method: "POST",
+        jwt,
+        baseUrl: creds.baseUrl,
+        body: {
+          access: { valid_until: validUntil },
+          aspsp: { name: caixa.name, country: caixa.country },
+          state,
+          redirect_url: redirectUrl,
+          psu_type: PSU_TYPE,
+        },
+      });
+    } catch (error) {
+      // Un intent nou que EB rebutja no és una connexió real: no deixem un
+      // document provisional invisible. En una renovació, conservem la sessió
+      // anterior i només retirem l'estat temporal.
+      if (addConnection && !existing.exists) {
+        await docRef.delete();
+      } else {
+        await docRef.set(
+          {
+            pendingState: FieldValue.delete(),
+            pendingValidUntil: FieldValue.delete(),
+            status: existing.get("sessionId") ? "connected" : "error",
+            updatedAt: FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      }
+
+      const status =
+        error instanceof HttpsError &&
+        error.details &&
+        typeof error.details === "object" &&
+        "status" in error.details
+          ? (error.details as { status?: number }).status
+          : undefined;
+      const isLocalRedirect =
+        redirectUrl.startsWith("http://localhost:") ||
+        redirectUrl.startsWith("http://127.0.0.1:");
+      if (status === 400 && isLocalRedirect) {
+        throw new HttpsError(
+          "failed-precondition",
+          `Enable Banking ha rebutjat el callback local. Afegeix ${redirectUrl} ` +
+            "als Redirect URLs de l'aplicació d'Enable Banking.",
+          { status, redirectUrl }
+        );
+      }
+      throw error;
+    }
 
     if (!auth.url) {
       throw new HttpsError(
@@ -164,6 +234,7 @@ export const startBankAuth = onCall(
       env: creds.env,
       authUrl: auth.url,
       aspspName: caixa.name,
+      connectionId,
       validUntil,
       authMethods: caixa.auth_methods ?? [],
     };

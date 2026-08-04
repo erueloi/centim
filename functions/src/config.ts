@@ -61,9 +61,13 @@ export const PSU_TYPE = "personal";
  */
 export const REQUESTED_CONSENT_DAYS = 90;
 
-/** Document per usuari on desem l'estat de la connexió bancària d'un banc. */
-export const bankConnectionDoc = (uid: string, slug: string) =>
-  `users/${uid}/bank_connections/${slug}`;
+/** Col·lecció de consentiments bancaris personals associats als grups de l'usuari. */
+export const bankConnectionsCollection = (uid: string) =>
+  `users/${uid}/bank_connections`;
+
+/** Un consentiment concret. `caixabank` continua sent l'id legacy de l'Eloi. */
+export const bankConnectionDoc = (uid: string, connectionId: string) =>
+  `${bankConnectionsCollection(uid)}/${connectionId}`;
 
 /**
  * Entorn d'Enable Banking, seleccionable sense tocar codi de negoci via

@@ -6,9 +6,10 @@ import {
   REGION,
   ASPSP_NAME,
   aspspSlug,
-  bankConnectionDoc,
 } from "./config.js";
 import { requireUid } from "./enableBanking.js";
+import { EbAccount, accountKeyOf } from "./ebAccounts.js";
+import { listBankConnectionDocs } from "./bankConnections.js";
 
 /**
  * Fase 2 — desa la config de sync d'un compte (quins comptes es sincronitzen,
@@ -42,7 +43,25 @@ export const updateBankAccountConfig = onCall(
 
     const slug = aspspSlug(ASPSP_NAME.value());
     const db = getFirestore();
-    await db.doc(bankConnectionDoc(uid, slug)).set(
+    const requestedConnectionId = (
+      request.data?.connectionId as string | undefined
+    )?.trim();
+    const { docs } = await listBankConnectionDocs(db, uid, slug);
+    const candidates = requestedConnectionId
+      ? docs.filter((doc) => doc.id === requestedConnectionId)
+      : docs;
+    const target = candidates.find((doc) => {
+      const accounts = (doc.get("accounts") as EbAccount[] | undefined) ?? [];
+      return accounts.some((account) => accountKeyOf(account) === accountKey);
+    });
+    if (!target) {
+      throw new HttpsError(
+        "not-found",
+        "No s'ha trobat el compte dins de la connexió indicada."
+      );
+    }
+
+    await target.ref.set(
       {
         accountConfig: { [accountKey]: patch },
         updatedAt: FieldValue.serverTimestamp(),
@@ -52,6 +71,7 @@ export const updateBankAccountConfig = onCall(
 
     logger.info("updateBankAccountConfig OK", {
       uid,
+      connectionId: target.id,
       fields: Object.keys(patch),
     });
     return { ok: true };

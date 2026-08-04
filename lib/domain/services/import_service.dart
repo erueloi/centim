@@ -466,6 +466,7 @@ class ImportService {
   /// Nota: el backend (fetchTransactions) admet diversos comptes alhora; la UI
   /// en fa un per execució perquè la pantalla de revisió sigui inequívoca.
   Future<BankSyncBundle> syncBankAccount({
+    required String connectionId,
     required String accountKey,
     required String dateFrom,
     String? centimAssetId,
@@ -474,7 +475,13 @@ class ImportService {
     final warnings = <String>[];
 
     final result = await service.fetchTransactions(
-      accounts: [BankAccountRequest(key: accountKey, dateFrom: dateFrom)],
+      accounts: [
+        BankAccountRequest(
+          key: accountKey,
+          connectionId: connectionId,
+          dateFrom: dateFrom,
+        ),
+      ],
     );
     final existingTransactions = await _fetchExistingTransactions();
     final learning = _buildLearningIndex(existingTransactions);

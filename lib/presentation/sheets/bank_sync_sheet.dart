@@ -12,11 +12,13 @@ import '../screens/import/import_transactions_screen.dart';
 
 /// El que tria l'usuari abans de baixar moviments.
 class BankSyncChoice {
+  final String connectionId;
   final String accountKey;
   final String dateFrom; // YYYY-MM-DD
   final String? centimAssetId;
 
   BankSyncChoice({
+    required this.connectionId,
     required this.accountKey,
     required this.dateFrom,
     required this.centimAssetId,
@@ -45,6 +47,7 @@ Future<void> runBankSyncFlow(BuildContext context, WidgetRef ref) async {
   BankSyncBundle bundle;
   try {
     bundle = await ref.read(importServiceProvider).syncBankAccount(
+          connectionId: choice.connectionId,
           accountKey: choice.accountKey,
           dateFrom: choice.dateFrom,
           centimAssetId: choice.centimAssetId,
@@ -110,6 +113,7 @@ Future<void> runBankSyncFlow(BuildContext context, WidgetRef ref) async {
       final syncService = ref.read(bankSyncServiceProvider);
       for (final entry in bundle.lastDateByKey.entries) {
         await syncService.updateAccountConfig(
+          connectionId: choice.connectionId,
           accountKey: entry.key,
           lastSyncedDate: entry.value,
         );
@@ -177,7 +181,7 @@ class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
 
   /// Precarrega data i destí segons la config del compte triat.
   void _select(BankAccountInfo acc) {
-    _selectedKey = acc.accountKey;
+    _selectedKey = acc.selectionKey;
     final raw = acc.lastSyncedDate ?? acc.syncStartDate;
     _dateFrom = raw != null
         ? (DateTime.tryParse(raw) ??
@@ -290,13 +294,13 @@ class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
         groupValue: _selectedKey,
         onChanged: (v) {
           if (v == null) return;
-          final acc = _accounts.firstWhere((a) => a.accountKey == v);
+          final acc = _accounts.firstWhere((a) => a.selectionKey == v);
           setState(() => _select(acc));
         },
         child: Column(
           children: _accounts
               .map((a) => RadioListTile<String>(
-                    value: a.accountKey,
+                    value: a.selectionKey,
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     title: Text(a.name ?? a.ibanMasked),
@@ -311,7 +315,6 @@ class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
         ),
       ),
       const SizedBox(height: 16),
-
       _label(context, 'Sincronitzar des de'),
       InkWell(
         onTap: _pickDate,
@@ -339,7 +342,6 @@ class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
         style: TextStyle(color: Colors.grey[600], fontSize: 12),
       ),
       const SizedBox(height: 16),
-
       _label(context, 'On van aquests moviments'),
       assetsAsync.when(
         data: (assets) {
@@ -357,8 +359,8 @@ class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
             items: [
               const DropdownMenuItem<String>(
                   value: null, child: Text('— Sense compte —')),
-              ...liquid
-                  .map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))),
+              ...liquid.map(
+                  (a) => DropdownMenuItem(value: a.id, child: Text(a.name))),
             ],
             onChanged: (v) => setState(() => _assetId = v),
           );
@@ -367,18 +369,23 @@ class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
         error: (_, __) => const Text('Error carregant els actius'),
       ),
       const SizedBox(height: 24),
-
       FilledButton.icon(
         onPressed: (_selectedKey == null || _dateFrom == null)
             ? null
-            : () => Navigator.pop(
+            : () {
+                final account = _accounts.firstWhere(
+                  (candidate) => candidate.selectionKey == _selectedKey,
+                );
+                Navigator.pop(
                   context,
                   BankSyncChoice(
-                    accountKey: _selectedKey!,
+                    connectionId: account.connectionId,
+                    accountKey: account.accountKey,
                     dateFrom: DateFormat('yyyy-MM-dd').format(_dateFrom!),
                     centimAssetId: _assetId,
                   ),
-                ),
+                );
+              },
         icon: const Icon(Icons.download),
         label: const Text('Carregar moviments'),
         style: FilledButton.styleFrom(
