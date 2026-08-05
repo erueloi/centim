@@ -3,26 +3,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../domain/models/category.dart';
+import '../../../domain/models/transaction.dart';
+import '../../../domain/services/ledger_service.dart';
 
 import 'package:centim/presentation/providers/transaction_notifier.dart';
+import 'package:centim/presentation/providers/category_notifier.dart';
 
 class CategoryDrillDownSheet extends ConsumerWidget {
   final Category category;
   final DateTime startDate;
   final DateTime endDate;
   final double totalAmount;
+  final Set<String> categoryIds;
 
-  const CategoryDrillDownSheet({
+  CategoryDrillDownSheet({
     super.key,
     required this.category,
     required this.startDate,
     required this.endDate,
     required this.totalAmount,
-  });
+    Set<String>? categoryIds,
+  }) : categoryIds = categoryIds ?? {category.id};
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactionsAsync = ref.watch(transactionNotifierProvider);
+    final categoriesAsync = ref.watch(categoryNotifierProvider);
 
     return Container(
       padding: const EdgeInsets.only(top: 16),
@@ -110,59 +116,23 @@ class CategoryDrillDownSheet extends ConsumerWidget {
           Flexible(
             child: transactionsAsync.when(
               data: (transactions) {
-                // Filter transactions for this specific category and date range
-                final filtered = transactions.where((t) {
-                  return t.categoryId == category.id &&
-                      t.date.isAfter(
-                          startDate.subtract(const Duration(days: 1))) &&
-                      t.date.isBefore(endDate.add(const Duration(days: 1)));
-                }).toList();
-
-                // Sort newest first
-                filtered.sort((a, b) => b.date.compareTo(a.date));
-
-                if (filtered.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(32.0),
-                    child: Center(
-                      child: Text('Cap moviment trobat.'),
+                return categoriesAsync.when(
+                  data: (categories) => _TransactionList(
+                    transactions: transactions,
+                    categories: categories,
+                    categoryIds: categoryIds,
+                    startDate: startDate,
+                    endDate: endDate,
+                  ),
+                  loading: () => const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(),
                     ),
-                  );
-                }
-
-                return ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: filtered.length,
-                  separatorBuilder: (context, index) =>
-                      const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final t = filtered[index];
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 4),
-                      title: Text(
-                        t.concept,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      subtitle: Text(
-                        DateFormat.yMMMd('ca_ES').format(t.date),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                      ),
-                      trailing: Text(
-                        '${t.amount.toStringAsFixed(2).replaceAll('.', ',')} €',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: t.isIncome ? Colors.green : Colors.red,
-                        ),
-                      ),
-                    );
-                  },
+                  ),
+                  error: (err, stack) => Center(
+                    child: Text('Error carregant les categories: $err'),
+                  ),
                 );
               },
               loading: () => const Center(
@@ -183,4 +153,97 @@ class CategoryDrillDownSheet extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _TransactionList extends StatelessWidget {
+  final List<Transaction> transactions;
+  final List<Category> categories;
+  final Set<String> categoryIds;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  const _TransactionList({
+    required this.transactions,
+    required this.categories,
+    required this.categoryIds,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final lookups = LedgerLookups.from(categories);
+    final currentSubcategoryNames = <String, String>{
+      for (final category in categories)
+        for (final subcategory in category.subcategories)
+          '${category.id}:${subcategory.id}': subcategory.name,
+    };
+    final entries = <_DrillDownEntry>[];
+
+    for (final transaction in transactions) {
+      if (!categoryIds.contains(transaction.categoryId) ||
+          transaction.date.isBefore(startDate) ||
+          transaction.date.isAfter(endDate)) {
+        continue;
+      }
+      final classification = classifyTransaction(transaction, lookups);
+      if (classification.bucket != LedgerBucket.expense) continue;
+      entries.add(
+        _DrillDownEntry(transaction, classification.delta),
+      );
+    }
+    entries.sort((a, b) => b.transaction.date.compareTo(a.transaction.date));
+
+    if (entries.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: Text('Cap moviment comptabilitzat.')),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      itemCount: entries.length,
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        final transaction = entry.transaction;
+        final currentSubcategory = currentSubcategoryNames[
+            '${transaction.categoryId}:${transaction.subCategoryId}'];
+        final detail = [
+          DateFormat.yMMMd('ca_ES').format(transaction.date),
+          if (currentSubcategory != null) currentSubcategory,
+        ].join(' · ');
+        return ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+          title: Text(
+            transaction.concept,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+          ),
+          subtitle: Text(
+            detail,
+            style: TextStyle(color: Colors.grey[600], fontSize: 13),
+          ),
+          trailing: Text(
+            '${entry.delta.toStringAsFixed(2).replaceAll('.', ',')} €',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: entry.delta < 0 ? Colors.green : Colors.red,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DrillDownEntry {
+  final Transaction transaction;
+  final double delta;
+
+  const _DrillDownEntry(this.transaction, this.delta);
 }

@@ -16,6 +16,12 @@ _$CycleReportImpl _$$CycleReportImplFromJson(Map<String, dynamic> json) =>
       totalIncome: (json['totalIncome'] as num).toDouble(),
       totalExpense: (json['totalExpense'] as num).toDouble(),
       savingsPercentage: (json['savingsPercentage'] as num).toDouble(),
+      savedThisCycle: (json['savedThisCycle'] as num?)?.toDouble() ?? 0.0,
+      withdrawnThisCycle:
+          (json['withdrawnThisCycle'] as num?)?.toDouble() ?? 0.0,
+      netSaved: (json['netSaved'] as num?)?.toDouble() ?? 0.0,
+      personalTransferIncome:
+          (json['personalTransferIncome'] as num?)?.toDouble() ?? 0.0,
       topOverspent: (json['topOverspent'] as List<dynamic>?)
               ?.map((e) => e as Map<String, dynamic>)
               .toList() ??
@@ -30,6 +36,15 @@ _$CycleReportImpl _$$CycleReportImplFromJson(Map<String, dynamic> json) =>
               ?.map((e) => e as Map<String, dynamic>)
               .toList() ??
           const [],
+      generatedForStartDate: json['generatedForStartDate'] == null
+          ? null
+          : DateTime.parse(json['generatedForStartDate'] as String),
+      generatedForEndDate: json['generatedForEndDate'] == null
+          ? null
+          : DateTime.parse(json['generatedForEndDate'] as String),
+      sourceFingerprint: json['sourceFingerprint'] as String? ?? '',
+      reportSchemaVersion: (json['reportSchemaVersion'] as num?)?.toInt() ?? 0,
+      ledgerSchemaVersion: (json['ledgerSchemaVersion'] as num?)?.toInt() ?? 0,
       schemaVersion: (json['schemaVersion'] as num?)?.toInt() ?? 0,
     );
 
@@ -43,10 +58,20 @@ Map<String, dynamic> _$$CycleReportImplToJson(_$CycleReportImpl instance) =>
       'totalIncome': instance.totalIncome,
       'totalExpense': instance.totalExpense,
       'savingsPercentage': instance.savingsPercentage,
+      'savedThisCycle': instance.savedThisCycle,
+      'withdrawnThisCycle': instance.withdrawnThisCycle,
+      'netSaved': instance.netSaved,
+      'personalTransferIncome': instance.personalTransferIncome,
       'topOverspent': instance.topOverspent,
       'topSaved': instance.topSaved,
       'zeroExpenseDays': instance.zeroExpenseDays,
       'totalDays': instance.totalDays,
       'unexpectedExpenses': instance.unexpectedExpenses,
+      'generatedForStartDate':
+          instance.generatedForStartDate?.toIso8601String(),
+      'generatedForEndDate': instance.generatedForEndDate?.toIso8601String(),
+      'sourceFingerprint': instance.sourceFingerprint,
+      'reportSchemaVersion': instance.reportSchemaVersion,
+      'ledgerSchemaVersion': instance.ledgerSchemaVersion,
       'schemaVersion': instance.schemaVersion,
     };

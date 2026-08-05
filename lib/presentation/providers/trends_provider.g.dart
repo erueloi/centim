@@ -23,7 +23,7 @@ final trendsFilterNotifierProvider = AutoDisposeNotifierProvider<
 );
 
 typedef _$TrendsFilterNotifier = AutoDisposeNotifier<TrendsTimeFilter>;
-String _$trendsNotifierHash() => r'd49ed5ddc8ee9c5391ca9d342c71e1bb37af15a5';
+String _$trendsNotifierHash() => r'9761da3e8779e15b477ee39e846039e738cf3521';
 
 /// See also [TrendsNotifier].
 @ProviderFor(TrendsNotifier)

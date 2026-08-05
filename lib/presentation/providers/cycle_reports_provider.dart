@@ -9,8 +9,39 @@ import 'category_notifier.dart';
 import 'ai_coach_provider.dart';
 import '../../domain/models/category.dart';
 import '../../domain/services/ledger_service.dart';
+import '../../domain/services/cycle_report_service.dart';
+import 'budget_provider.dart';
 
 part 'cycle_reports_provider.g.dart';
+
+bool isCycleReportSpendingStatus(BudgetStatus status) =>
+    status.category.type == TransactionType.expense &&
+    !isSavingsBudgetCategory(status.category);
+
+final cycleReportSourceFingerprintProvider = StreamProvider.autoDispose
+    .family<String?, BillingCycle>((ref, cycle) async* {
+  final groupId = await ref.watch(currentGroupIdProvider.future);
+  if (groupId == null) {
+    yield null;
+    return;
+  }
+  final transactions = await ref.watch(transactionNotifierProvider.future);
+  final categories = await ref.watch(categoryNotifierProvider.future);
+  final budgetMonth = budgetMonthForCycle(cycle);
+  final repository = ref.watch(budgetEntryRepositoryProvider);
+  await for (final entries in repository.watchEntriesForMonth(
+    groupId,
+    budgetMonth.year,
+    budgetMonth.month,
+  )) {
+    yield buildCycleReportSourceFingerprint(
+      cycle: cycle,
+      transactions: transactions,
+      categories: categories,
+      budgetEntries: entries,
+    );
+  }
+});
 
 @riverpod
 class CycleReportNotifier extends _$CycleReportNotifier {
@@ -30,34 +61,35 @@ class CycleReportNotifier extends _$CycleReportNotifier {
       final groupId = await ref.read(currentGroupIdProvider.future);
       if (groupId == null) throw Exception("No group ID");
 
-      // 1. Get all transactions and filter for this cycle
+      // 1. Dades font del cicle.
       final allTx = await ref.read(transactionNotifierProvider.future);
-      final cycleTx = allTx.where((t) {
-        final tDay = DateTime(t.date.year, t.date.month, t.date.day, 12, 0, 0);
-        final startDay = DateTime(cycle.startDate.year, cycle.startDate.month,
-            cycle.startDate.day, 12, 0, 0);
-        final endDay = DateTime(cycle.endDate.year, cycle.endDate.month,
-            cycle.endDate.day, 12, 0, 0);
-
-        return (tDay.isAtSameMomentAs(startDay) || tDay.isAfter(startDay)) &&
-            !tDay.isAfter(endDay);
-      }).toList();
-
-      // 2. Get categories and calculate expenses/budgets
+      final cycleTx = transactionsInBillingCycle(allTx, cycle);
       final categories = await ref.read(categoryNotifierProvider.future);
+      final budgetMonth = budgetMonthForCycle(cycle);
+      final budgetEntries = await ref
+          .read(budgetEntryRepositoryProvider)
+          .watchEntriesForMonth(
+            groupId,
+            budgetMonth.year,
+            budgetMonth.month,
+          )
+          .first;
+
+      // Mateix pressupost efectiu que Panoràmica: BudgetEntry del mes del cicle
+      // i historial arxivat inclòs.
+      final budgetStatuses = calculateBudgetStatus(
+        categories,
+        allTx,
+        budgetEntries,
+        cycle,
+        includeArchived: true,
+      );
       final categoryExpenses = <String, double>{};
       final categoryBudgets = <String, double>{};
-      final nameById = <String, String>{};
-
-      for (final cat in categories) {
-        nameById[cat.id] = cat.name;
-        if (cat.type == TransactionType.income) continue;
-        double catBudget = 0.0;
-        for (final sub in cat.subcategories) {
-          catBudget += sub.monthlyBudget;
-        }
-        categoryBudgets[cat.name] = catBudget;
-        categoryExpenses[cat.name] = 0.0;
+      for (final status in budgetStatuses) {
+        if (!isCycleReportSpendingStatus(status)) continue;
+        categoryBudgets[status.category.name] = status.total;
+        categoryExpenses[status.category.name] = status.spent;
       }
 
       // FONT ÚNICA DE CÀLCUL (mateixes regles que Dashboard i Trends).
@@ -66,31 +98,25 @@ class CycleReportNotifier extends _$CycleReportNotifier {
       final double totalIncome = ledger.totalIncome;
       final double totalExpense = ledger.totalExpense;
 
-      ledger.expenseByCategory.forEach((catId, amount) {
-        final name = nameById[catId];
-        if (name != null) {
-          categoryExpenses[name] = (categoryExpenses[name] ?? 0.0) + amount;
-        }
-      });
-
       // 3. Calculate metrics
       double savingsPercentage = 0;
       if (totalIncome > 0) {
-        final saved = totalIncome - totalExpense;
-        savingsPercentage = (saved / totalIncome) * 100;
-        if (savingsPercentage < 0) savingsPercentage = 0;
+        savingsPercentage = (ledger.netSaved / totalIncome) * 100;
       }
 
-      // Zero Expense Days
+      // Dies sense despesa canònica: guardioles i refunds no creen falsos dies
+      // de despesa.
       final totalDays = cycle.endDate.difference(cycle.startDate).inDays + 1;
-      final expenseDays = <String>{};
-      for (final tx in cycleTx) {
-        if (!tx.isIncome && tx.amount > 0) {
-          final dayKey = '${tx.date.year}-${tx.date.month}-${tx.date.day}';
-          expenseDays.add(dayKey);
-        }
-      }
-      final zeroExpenseDays = totalDays - expenseDays.length;
+      final zeroExpenseDays = countCanonicalZeroExpenseDays(
+        cycle: cycle,
+        cycleTransactions: cycleTx,
+        lookups: look,
+      );
+      final personalTransferIncome = calculatePersonalTransferIncome(
+        cycleTransactions: cycleTx,
+        categories: categories,
+        lookups: look,
+      );
 
       // Deviations
       final deviations = <String, double>{};
@@ -127,7 +153,8 @@ class CycleReportNotifier extends _$CycleReportNotifier {
               })
           .toList();
 
-      // Unexpected Expenses (Imprevistos purs)
+      // Despeses fora de pressupost. No pressuposa que fossin imprevistes ni
+      // intenta casar-les automàticament amb un ingrés compensatori.
       final unexpectedExpenses = <Map<String, dynamic>>[];
       for (final cat in categoryExpenses.keys) {
         final spent = categoryExpenses[cat] ?? 0.0;
@@ -149,12 +176,14 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         totalLiabilities: 0.0,
         equityRatio: 0.0,
         monthlyIncome: totalIncome,
-        savingsWithdrawalIncome: 0.0,
+        savingsWithdrawalIncome: ledger.withdrawnThisCycle,
         monthlyExpenses: totalExpense,
         netOfCycle: totalIncome - totalExpense,
         savingsPercentage: savingsPercentage,
         debtPercentage: 0.0,
         livingExpensesPercentage: 0.0,
+        savedThisCycle: ledger.savedThisCycle,
+        withdrawnThisCycle: ledger.withdrawnThisCycle,
       );
 
       final userProfile = await ref.read(userProfileProvider.future);
@@ -168,7 +197,11 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         categoryExpenses: categoryExpenses,
         categoryBudgets: categoryBudgets,
         zeroExpenseDays: zeroExpenseDays,
+        totalDays: totalDays,
         unexpectedExpenses: unexpectedExpenses,
+        savedThisCycle: ledger.savedThisCycle,
+        withdrawnThisCycle: ledger.withdrawnThisCycle,
+        personalTransferIncome: personalTransferIncome,
         isHistorical: true,
       );
 
@@ -182,11 +215,25 @@ class CycleReportNotifier extends _$CycleReportNotifier {
         totalIncome: totalIncome,
         totalExpense: totalExpense,
         savingsPercentage: savingsPercentage,
+        savedThisCycle: ledger.savedThisCycle,
+        withdrawnThisCycle: ledger.withdrawnThisCycle,
+        netSaved: ledger.netSaved,
+        personalTransferIncome: personalTransferIncome,
         topOverspent: topOverspent,
         topSaved: topSaved,
         zeroExpenseDays: zeroExpenseDays > 0 ? zeroExpenseDays : 0,
         totalDays: totalDays,
         unexpectedExpenses: unexpectedExpenses,
+        generatedForStartDate: cycle.startDate,
+        generatedForEndDate: cycle.endDate,
+        sourceFingerprint: buildCycleReportSourceFingerprint(
+          cycle: cycle,
+          transactions: allTx,
+          categories: categories,
+          budgetEntries: budgetEntries,
+        ),
+        reportSchemaVersion: kCycleReportSchemaVersion,
+        ledgerSchemaVersion: kLedgerSchemaVersion,
         schemaVersion: kLedgerSchemaVersion,
       );
 

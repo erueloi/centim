@@ -18,6 +18,10 @@ class CycleReport with _$CycleReport {
     required double totalIncome,
     required double totalExpense,
     required double savingsPercentage,
+    @Default(0.0) double savedThisCycle,
+    @Default(0.0) double withdrawnThisCycle,
+    @Default(0.0) double netSaved,
+    @Default(0.0) double personalTransferIncome,
 
     // Deviations (Category Name to Deviation Amount)
     @Default([]) List<Map<String, dynamic>> topOverspent,
@@ -28,7 +32,14 @@ class CycleReport with _$CycleReport {
     @Default(0) int totalDays,
     @Default([]) List<Map<String, dynamic>> unexpectedExpenses,
 
-    // Semàntica de càlcul amb què es va generar (0 = llegat, pre-ledger).
+    // Fonts utilitzades per comprovar si el snapshot continua vigent.
+    DateTime? generatedForStartDate,
+    DateTime? generatedForEndDate,
+    @Default('') String sourceFingerprint,
+    @Default(0) int reportSchemaVersion,
+    @Default(0) int ledgerSchemaVersion,
+
+    // Camp llegat, conservat perquè els documents antics continuïn llegint-se.
     @Default(0) int schemaVersion,
   }) = _CycleReport;
 

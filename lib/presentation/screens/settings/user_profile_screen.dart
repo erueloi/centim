@@ -172,226 +172,241 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       appBar: AppBar(
         title: const Text('El meu perfil'),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircleAvatar(
-                radius: 40,
-                child: Icon(Icons.person, size: 40),
-              ),
-              const SizedBox(height: 16),
-              if (user?.email != null) ...[
-                Text(
-                  user?.email ?? '',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // Edició de nom
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Com et dius?',
-                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _nameController,
-                      decoration: InputDecoration(
-                        hintText: 'Introdueix el teu nom...',
-                        prefixIcon: const Icon(Icons.badge_outlined),
-                        suffixIcon: IconButton(
-                          icon: _isSaving
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.save, color: Colors.purple),
-                          onPressed: _isSaving ? null : _updateName,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Aquest nom el veuran la resta the membres del grup al assignar pagadors.',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 48),
-
-              ListTile(
-                leading: const Icon(Icons.help_outline, color: AppTheme.copper),
-                title: Text(
-                  AppLocalizations.of(context)!.howItWorks,
-                  style: const TextStyle(
-                      color: AppTheme.copper, fontWeight: FontWeight.w500),
-                ),
-                trailing:
-                    const Icon(Icons.chevron_right, color: AppTheme.copper),
-                onTap: _showUserGuide,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey[300]!),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              ListTile(
-                leading:
-                    const Icon(Icons.account_balance, color: AppTheme.copper),
-                title: const Text(
-                  'Banc / Sincronització',
-                  style: TextStyle(
-                      color: AppTheme.copper, fontWeight: FontWeight.w500),
-                ),
-                trailing:
-                    const Icon(Icons.chevron_right, color: AppTheme.copper),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const BankSyncScreen()),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey[300]!),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              ListTile(
-                leading: const Icon(Icons.auto_awesome, color: AppTheme.copper),
-                title: const Text(
-                  'Regles d’importació',
-                  style: TextStyle(
-                    color: AppTheme.copper,
-                    fontWeight: FontWeight.w500,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircleAvatar(
+                    radius: 40,
+                    child: Icon(Icons.person, size: 40),
                   ),
-                ),
-                subtitle: const Text(
-                  'Suggeriments per concepte, sempre amb confirmació',
-                ),
-                trailing:
-                    const Icon(Icons.chevron_right, color: AppTheme.copper),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ImportRulesScreen()),
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey[300]!),
-                ),
-              ),
-              const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                  if (user?.email != null) ...[
+                    Text(
+                      user?.email ?? '',
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
 
-              // Eina de manteniment (discreta): incoherències de dades.
-              Consumer(
-                builder: (context, ref, _) {
-                  final count = ref.watch(incoherencesProvider).maybeWhen(
-                        data: (items) => items.length,
-                        orElse: () => 0,
-                      );
-                  return ListTile(
-                    leading: const Icon(Icons.rule, color: AppTheme.copper),
+                  // Edició de nom
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Com et dius?',
+                          style:
+                              Theme.of(context).textTheme.labelLarge?.copyWith(
+                                    color: Colors.grey[700],
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _nameController,
+                          decoration: InputDecoration(
+                            hintText: 'Introdueix el teu nom...',
+                            prefixIcon: const Icon(Icons.badge_outlined),
+                            suffixIcon: IconButton(
+                              icon: _isSaving
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                          strokeWidth: 2))
+                                  : const Icon(Icons.save,
+                                      color: Colors.purple),
+                              onPressed: _isSaving ? null : _updateName,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: Colors.grey[300]!),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Aquest nom el veuran la resta the membres del grup al assignar pagadors.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 48),
+
+                  ListTile(
+                    leading:
+                        const Icon(Icons.help_outline, color: AppTheme.copper),
+                    title: Text(
+                      AppLocalizations.of(context)!.howItWorks,
+                      style: const TextStyle(
+                          color: AppTheme.copper, fontWeight: FontWeight.w500),
+                    ),
+                    trailing:
+                        const Icon(Icons.chevron_right, color: AppTheme.copper),
+                    onTap: _showUserGuide,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey[300]!),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  ListTile(
+                    leading: const Icon(Icons.account_balance,
+                        color: AppTheme.copper),
                     title: const Text(
-                      'Incoherències',
+                      'Banc / Sincronització',
                       style: TextStyle(
                           color: AppTheme.copper, fontWeight: FontWeight.w500),
                     ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (count > 0)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.orange,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text('$count',
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold)),
-                          ),
+                    trailing:
                         const Icon(Icons.chevron_right, color: AppTheme.copper),
-                      ],
-                    ),
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(
-                          builder: (_) => const IncoherencesScreen()),
+                      MaterialPageRoute(builder: (_) => const BankSyncScreen()),
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(color: Colors.grey[300]!),
                     ),
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
+                  ),
+                  const SizedBox(height: 16),
 
-              OutlinedButton.icon(
-                onPressed: _showReleaseNotes,
-                icon: const Icon(Icons.info_outline, color: AppTheme.copper),
-                label: const Text('Versió i Novetats',
-                    style: TextStyle(color: AppTheme.copper)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+                  ListTile(
+                    leading:
+                        const Icon(Icons.auto_awesome, color: AppTheme.copper),
+                    title: const Text(
+                      'Regles d’importació',
+                      style: TextStyle(
+                        color: AppTheme.copper,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Suggeriments per concepte, sempre amb confirmació',
+                    ),
+                    trailing:
+                        const Icon(Icons.chevron_right, color: AppTheme.copper),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const ImportRulesScreen()),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.grey[300]!),
+                    ),
                   ),
-                  side: const BorderSide(color: AppTheme.copper),
-                ),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await ref.read(authRepositoryProvider).signOut();
-                  if (context.mounted) {
-                    Navigator.of(context).popUntil((route) => route.isFirst);
-                  }
-                },
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: const Text('Tancar sessió',
-                    style: TextStyle(color: Colors.red)),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+                  const SizedBox(height: 16),
+
+                  // Eina de manteniment (discreta): incoherències de dades.
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final count = ref.watch(incoherencesProvider).maybeWhen(
+                            data: (items) => items.length,
+                            orElse: () => 0,
+                          );
+                      return ListTile(
+                        leading: const Icon(Icons.rule, color: AppTheme.copper),
+                        title: const Text(
+                          'Incoherències',
+                          style: TextStyle(
+                              color: AppTheme.copper,
+                              fontWeight: FontWeight.w500),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (count > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text('$count',
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                            const Icon(Icons.chevron_right,
+                                color: AppTheme.copper),
+                          ],
+                        ),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const IncoherencesScreen()),
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.grey[300]!),
+                        ),
+                      );
+                    },
                   ),
-                  side: const BorderSide(color: Colors.red),
-                ),
+                  const SizedBox(height: 16),
+
+                  OutlinedButton.icon(
+                    onPressed: _showReleaseNotes,
+                    icon:
+                        const Icon(Icons.info_outline, color: AppTheme.copper),
+                    label: const Text('Versió i Novetats',
+                        style: TextStyle(color: AppTheme.copper)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      side: const BorderSide(color: AppTheme.copper),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await ref.read(authRepositoryProvider).signOut();
+                      if (context.mounted) {
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
+                      }
+                    },
+                    icon: const Icon(Icons.logout, color: Colors.red),
+                    label: const Text('Tancar sessió',
+                        style: TextStyle(color: Colors.red)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      side: const BorderSide(color: Colors.red),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

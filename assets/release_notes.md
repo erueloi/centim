@@ -1,5 +1,7 @@
 # Release Notes
 
+## v1.3.5
+Millores a Tendencies i Historial de Cicles: agrupacio per IDs i noms actuals, grafic de flux llegible, taxa d'estalvi honesta, deteccio d'informes obsolets, pressupost historic efectiu, estalvi real aportat-rescatat-net, dies a zero segons el ledger i veredictes del Coach mes directes i neutrals.
 ## v1.3.4
 Suport multiconnexio bancària: permet conservar simultàniament les sessions de CaixaBank de l'Eloi i del Jose, veure els quatre comptes dins del mateix grup i sincronitzar-ne un cada vegada.
 Cada compte utilitza automàticament la sessió PSD2 corresponent, mantenint intactes la importació, la deduplicació, les regles de categorització i els traspassos.
@@ -149,6 +151,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 

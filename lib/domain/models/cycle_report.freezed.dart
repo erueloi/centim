@@ -27,7 +27,11 @@ mixin _$CycleReport {
   String get aiVerdict => throw _privateConstructorUsedError; // Metrics
   double get totalIncome => throw _privateConstructorUsedError;
   double get totalExpense => throw _privateConstructorUsedError;
-  double get savingsPercentage =>
+  double get savingsPercentage => throw _privateConstructorUsedError;
+  double get savedThisCycle => throw _privateConstructorUsedError;
+  double get withdrawnThisCycle => throw _privateConstructorUsedError;
+  double get netSaved => throw _privateConstructorUsedError;
+  double get personalTransferIncome =>
       throw _privateConstructorUsedError; // Deviations (Category Name to Deviation Amount)
   List<Map<String, dynamic>> get topOverspent =>
       throw _privateConstructorUsedError;
@@ -36,7 +40,13 @@ mixin _$CycleReport {
   int get zeroExpenseDays => throw _privateConstructorUsedError;
   int get totalDays => throw _privateConstructorUsedError;
   List<Map<String, dynamic>> get unexpectedExpenses =>
-      throw _privateConstructorUsedError; // Semàntica de càlcul amb què es va generar (0 = llegat, pre-ledger).
+      throw _privateConstructorUsedError; // Fonts utilitzades per comprovar si el snapshot continua vigent.
+  DateTime? get generatedForStartDate => throw _privateConstructorUsedError;
+  DateTime? get generatedForEndDate => throw _privateConstructorUsedError;
+  String get sourceFingerprint => throw _privateConstructorUsedError;
+  int get reportSchemaVersion => throw _privateConstructorUsedError;
+  int get ledgerSchemaVersion =>
+      throw _privateConstructorUsedError; // Camp llegat, conservat perquè els documents antics continuïn llegint-se.
   int get schemaVersion => throw _privateConstructorUsedError;
 
   /// Serializes this CycleReport to a JSON map.
@@ -64,11 +74,20 @@ abstract class $CycleReportCopyWith<$Res> {
       double totalIncome,
       double totalExpense,
       double savingsPercentage,
+      double savedThisCycle,
+      double withdrawnThisCycle,
+      double netSaved,
+      double personalTransferIncome,
       List<Map<String, dynamic>> topOverspent,
       List<Map<String, dynamic>> topSaved,
       int zeroExpenseDays,
       int totalDays,
       List<Map<String, dynamic>> unexpectedExpenses,
+      DateTime? generatedForStartDate,
+      DateTime? generatedForEndDate,
+      String sourceFingerprint,
+      int reportSchemaVersion,
+      int ledgerSchemaVersion,
       int schemaVersion});
 }
 
@@ -95,11 +114,20 @@ class _$CycleReportCopyWithImpl<$Res, $Val extends CycleReport>
     Object? totalIncome = null,
     Object? totalExpense = null,
     Object? savingsPercentage = null,
+    Object? savedThisCycle = null,
+    Object? withdrawnThisCycle = null,
+    Object? netSaved = null,
+    Object? personalTransferIncome = null,
     Object? topOverspent = null,
     Object? topSaved = null,
     Object? zeroExpenseDays = null,
     Object? totalDays = null,
     Object? unexpectedExpenses = null,
+    Object? generatedForStartDate = freezed,
+    Object? generatedForEndDate = freezed,
+    Object? sourceFingerprint = null,
+    Object? reportSchemaVersion = null,
+    Object? ledgerSchemaVersion = null,
     Object? schemaVersion = null,
   }) {
     return _then(_value.copyWith(
@@ -135,6 +163,22 @@ class _$CycleReportCopyWithImpl<$Res, $Val extends CycleReport>
           ? _value.savingsPercentage
           : savingsPercentage // ignore: cast_nullable_to_non_nullable
               as double,
+      savedThisCycle: null == savedThisCycle
+          ? _value.savedThisCycle
+          : savedThisCycle // ignore: cast_nullable_to_non_nullable
+              as double,
+      withdrawnThisCycle: null == withdrawnThisCycle
+          ? _value.withdrawnThisCycle
+          : withdrawnThisCycle // ignore: cast_nullable_to_non_nullable
+              as double,
+      netSaved: null == netSaved
+          ? _value.netSaved
+          : netSaved // ignore: cast_nullable_to_non_nullable
+              as double,
+      personalTransferIncome: null == personalTransferIncome
+          ? _value.personalTransferIncome
+          : personalTransferIncome // ignore: cast_nullable_to_non_nullable
+              as double,
       topOverspent: null == topOverspent
           ? _value.topOverspent
           : topOverspent // ignore: cast_nullable_to_non_nullable
@@ -155,6 +199,26 @@ class _$CycleReportCopyWithImpl<$Res, $Val extends CycleReport>
           ? _value.unexpectedExpenses
           : unexpectedExpenses // ignore: cast_nullable_to_non_nullable
               as List<Map<String, dynamic>>,
+      generatedForStartDate: freezed == generatedForStartDate
+          ? _value.generatedForStartDate
+          : generatedForStartDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      generatedForEndDate: freezed == generatedForEndDate
+          ? _value.generatedForEndDate
+          : generatedForEndDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      sourceFingerprint: null == sourceFingerprint
+          ? _value.sourceFingerprint
+          : sourceFingerprint // ignore: cast_nullable_to_non_nullable
+              as String,
+      reportSchemaVersion: null == reportSchemaVersion
+          ? _value.reportSchemaVersion
+          : reportSchemaVersion // ignore: cast_nullable_to_non_nullable
+              as int,
+      ledgerSchemaVersion: null == ledgerSchemaVersion
+          ? _value.ledgerSchemaVersion
+          : ledgerSchemaVersion // ignore: cast_nullable_to_non_nullable
+              as int,
       schemaVersion: null == schemaVersion
           ? _value.schemaVersion
           : schemaVersion // ignore: cast_nullable_to_non_nullable
@@ -180,11 +244,20 @@ abstract class _$$CycleReportImplCopyWith<$Res>
       double totalIncome,
       double totalExpense,
       double savingsPercentage,
+      double savedThisCycle,
+      double withdrawnThisCycle,
+      double netSaved,
+      double personalTransferIncome,
       List<Map<String, dynamic>> topOverspent,
       List<Map<String, dynamic>> topSaved,
       int zeroExpenseDays,
       int totalDays,
       List<Map<String, dynamic>> unexpectedExpenses,
+      DateTime? generatedForStartDate,
+      DateTime? generatedForEndDate,
+      String sourceFingerprint,
+      int reportSchemaVersion,
+      int ledgerSchemaVersion,
       int schemaVersion});
 }
 
@@ -209,11 +282,20 @@ class __$$CycleReportImplCopyWithImpl<$Res>
     Object? totalIncome = null,
     Object? totalExpense = null,
     Object? savingsPercentage = null,
+    Object? savedThisCycle = null,
+    Object? withdrawnThisCycle = null,
+    Object? netSaved = null,
+    Object? personalTransferIncome = null,
     Object? topOverspent = null,
     Object? topSaved = null,
     Object? zeroExpenseDays = null,
     Object? totalDays = null,
     Object? unexpectedExpenses = null,
+    Object? generatedForStartDate = freezed,
+    Object? generatedForEndDate = freezed,
+    Object? sourceFingerprint = null,
+    Object? reportSchemaVersion = null,
+    Object? ledgerSchemaVersion = null,
     Object? schemaVersion = null,
   }) {
     return _then(_$CycleReportImpl(
@@ -249,6 +331,22 @@ class __$$CycleReportImplCopyWithImpl<$Res>
           ? _value.savingsPercentage
           : savingsPercentage // ignore: cast_nullable_to_non_nullable
               as double,
+      savedThisCycle: null == savedThisCycle
+          ? _value.savedThisCycle
+          : savedThisCycle // ignore: cast_nullable_to_non_nullable
+              as double,
+      withdrawnThisCycle: null == withdrawnThisCycle
+          ? _value.withdrawnThisCycle
+          : withdrawnThisCycle // ignore: cast_nullable_to_non_nullable
+              as double,
+      netSaved: null == netSaved
+          ? _value.netSaved
+          : netSaved // ignore: cast_nullable_to_non_nullable
+              as double,
+      personalTransferIncome: null == personalTransferIncome
+          ? _value.personalTransferIncome
+          : personalTransferIncome // ignore: cast_nullable_to_non_nullable
+              as double,
       topOverspent: null == topOverspent
           ? _value._topOverspent
           : topOverspent // ignore: cast_nullable_to_non_nullable
@@ -269,6 +367,26 @@ class __$$CycleReportImplCopyWithImpl<$Res>
           ? _value._unexpectedExpenses
           : unexpectedExpenses // ignore: cast_nullable_to_non_nullable
               as List<Map<String, dynamic>>,
+      generatedForStartDate: freezed == generatedForStartDate
+          ? _value.generatedForStartDate
+          : generatedForStartDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      generatedForEndDate: freezed == generatedForEndDate
+          ? _value.generatedForEndDate
+          : generatedForEndDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      sourceFingerprint: null == sourceFingerprint
+          ? _value.sourceFingerprint
+          : sourceFingerprint // ignore: cast_nullable_to_non_nullable
+              as String,
+      reportSchemaVersion: null == reportSchemaVersion
+          ? _value.reportSchemaVersion
+          : reportSchemaVersion // ignore: cast_nullable_to_non_nullable
+              as int,
+      ledgerSchemaVersion: null == ledgerSchemaVersion
+          ? _value.ledgerSchemaVersion
+          : ledgerSchemaVersion // ignore: cast_nullable_to_non_nullable
+              as int,
       schemaVersion: null == schemaVersion
           ? _value.schemaVersion
           : schemaVersion // ignore: cast_nullable_to_non_nullable
@@ -289,11 +407,20 @@ class _$CycleReportImpl implements _CycleReport {
       required this.totalIncome,
       required this.totalExpense,
       required this.savingsPercentage,
+      this.savedThisCycle = 0.0,
+      this.withdrawnThisCycle = 0.0,
+      this.netSaved = 0.0,
+      this.personalTransferIncome = 0.0,
       final List<Map<String, dynamic>> topOverspent = const [],
       final List<Map<String, dynamic>> topSaved = const [],
       this.zeroExpenseDays = 0,
       this.totalDays = 0,
       final List<Map<String, dynamic>> unexpectedExpenses = const [],
+      this.generatedForStartDate,
+      this.generatedForEndDate,
+      this.sourceFingerprint = '',
+      this.reportSchemaVersion = 0,
+      this.ledgerSchemaVersion = 0,
       this.schemaVersion = 0})
       : _topOverspent = topOverspent,
         _topSaved = topSaved,
@@ -320,6 +447,18 @@ class _$CycleReportImpl implements _CycleReport {
   final double totalExpense;
   @override
   final double savingsPercentage;
+  @override
+  @JsonKey()
+  final double savedThisCycle;
+  @override
+  @JsonKey()
+  final double withdrawnThisCycle;
+  @override
+  @JsonKey()
+  final double netSaved;
+  @override
+  @JsonKey()
+  final double personalTransferIncome;
 // Deviations (Category Name to Deviation Amount)
   final List<Map<String, dynamic>> _topOverspent;
 // Deviations (Category Name to Deviation Amount)
@@ -357,14 +496,28 @@ class _$CycleReportImpl implements _CycleReport {
     return EqualUnmodifiableListView(_unexpectedExpenses);
   }
 
-// Semàntica de càlcul amb què es va generar (0 = llegat, pre-ledger).
+// Fonts utilitzades per comprovar si el snapshot continua vigent.
+  @override
+  final DateTime? generatedForStartDate;
+  @override
+  final DateTime? generatedForEndDate;
+  @override
+  @JsonKey()
+  final String sourceFingerprint;
+  @override
+  @JsonKey()
+  final int reportSchemaVersion;
+  @override
+  @JsonKey()
+  final int ledgerSchemaVersion;
+// Camp llegat, conservat perquè els documents antics continuïn llegint-se.
   @override
   @JsonKey()
   final int schemaVersion;
 
   @override
   String toString() {
-    return 'CycleReport(id: $id, groupId: $groupId, cycleId: $cycleId, generatedAt: $generatedAt, aiVerdict: $aiVerdict, totalIncome: $totalIncome, totalExpense: $totalExpense, savingsPercentage: $savingsPercentage, topOverspent: $topOverspent, topSaved: $topSaved, zeroExpenseDays: $zeroExpenseDays, totalDays: $totalDays, unexpectedExpenses: $unexpectedExpenses, schemaVersion: $schemaVersion)';
+    return 'CycleReport(id: $id, groupId: $groupId, cycleId: $cycleId, generatedAt: $generatedAt, aiVerdict: $aiVerdict, totalIncome: $totalIncome, totalExpense: $totalExpense, savingsPercentage: $savingsPercentage, savedThisCycle: $savedThisCycle, withdrawnThisCycle: $withdrawnThisCycle, netSaved: $netSaved, personalTransferIncome: $personalTransferIncome, topOverspent: $topOverspent, topSaved: $topSaved, zeroExpenseDays: $zeroExpenseDays, totalDays: $totalDays, unexpectedExpenses: $unexpectedExpenses, generatedForStartDate: $generatedForStartDate, generatedForEndDate: $generatedForEndDate, sourceFingerprint: $sourceFingerprint, reportSchemaVersion: $reportSchemaVersion, ledgerSchemaVersion: $ledgerSchemaVersion, schemaVersion: $schemaVersion)';
   }
 
   @override
@@ -385,6 +538,14 @@ class _$CycleReportImpl implements _CycleReport {
                 other.totalExpense == totalExpense) &&
             (identical(other.savingsPercentage, savingsPercentage) ||
                 other.savingsPercentage == savingsPercentage) &&
+            (identical(other.savedThisCycle, savedThisCycle) ||
+                other.savedThisCycle == savedThisCycle) &&
+            (identical(other.withdrawnThisCycle, withdrawnThisCycle) ||
+                other.withdrawnThisCycle == withdrawnThisCycle) &&
+            (identical(other.netSaved, netSaved) ||
+                other.netSaved == netSaved) &&
+            (identical(other.personalTransferIncome, personalTransferIncome) ||
+                other.personalTransferIncome == personalTransferIncome) &&
             const DeepCollectionEquality()
                 .equals(other._topOverspent, _topOverspent) &&
             const DeepCollectionEquality().equals(other._topSaved, _topSaved) &&
@@ -394,28 +555,48 @@ class _$CycleReportImpl implements _CycleReport {
                 other.totalDays == totalDays) &&
             const DeepCollectionEquality()
                 .equals(other._unexpectedExpenses, _unexpectedExpenses) &&
+            (identical(other.generatedForStartDate, generatedForStartDate) ||
+                other.generatedForStartDate == generatedForStartDate) &&
+            (identical(other.generatedForEndDate, generatedForEndDate) ||
+                other.generatedForEndDate == generatedForEndDate) &&
+            (identical(other.sourceFingerprint, sourceFingerprint) ||
+                other.sourceFingerprint == sourceFingerprint) &&
+            (identical(other.reportSchemaVersion, reportSchemaVersion) ||
+                other.reportSchemaVersion == reportSchemaVersion) &&
+            (identical(other.ledgerSchemaVersion, ledgerSchemaVersion) ||
+                other.ledgerSchemaVersion == ledgerSchemaVersion) &&
             (identical(other.schemaVersion, schemaVersion) ||
                 other.schemaVersion == schemaVersion));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      groupId,
-      cycleId,
-      generatedAt,
-      aiVerdict,
-      totalIncome,
-      totalExpense,
-      savingsPercentage,
-      const DeepCollectionEquality().hash(_topOverspent),
-      const DeepCollectionEquality().hash(_topSaved),
-      zeroExpenseDays,
-      totalDays,
-      const DeepCollectionEquality().hash(_unexpectedExpenses),
-      schemaVersion);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        groupId,
+        cycleId,
+        generatedAt,
+        aiVerdict,
+        totalIncome,
+        totalExpense,
+        savingsPercentage,
+        savedThisCycle,
+        withdrawnThisCycle,
+        netSaved,
+        personalTransferIncome,
+        const DeepCollectionEquality().hash(_topOverspent),
+        const DeepCollectionEquality().hash(_topSaved),
+        zeroExpenseDays,
+        totalDays,
+        const DeepCollectionEquality().hash(_unexpectedExpenses),
+        generatedForStartDate,
+        generatedForEndDate,
+        sourceFingerprint,
+        reportSchemaVersion,
+        ledgerSchemaVersion,
+        schemaVersion
+      ]);
 
   /// Create a copy of CycleReport
   /// with the given fields replaced by the non-null parameter values.
@@ -443,11 +624,20 @@ abstract class _CycleReport implements CycleReport {
       required final double totalIncome,
       required final double totalExpense,
       required final double savingsPercentage,
+      final double savedThisCycle,
+      final double withdrawnThisCycle,
+      final double netSaved,
+      final double personalTransferIncome,
       final List<Map<String, dynamic>> topOverspent,
       final List<Map<String, dynamic>> topSaved,
       final int zeroExpenseDays,
       final int totalDays,
       final List<Map<String, dynamic>> unexpectedExpenses,
+      final DateTime? generatedForStartDate,
+      final DateTime? generatedForEndDate,
+      final String sourceFingerprint,
+      final int reportSchemaVersion,
+      final int ledgerSchemaVersion,
       final int schemaVersion}) = _$CycleReportImpl;
 
   factory _CycleReport.fromJson(Map<String, dynamic> json) =
@@ -468,8 +658,16 @@ abstract class _CycleReport implements CycleReport {
   @override
   double get totalExpense;
   @override
+  double get savingsPercentage;
+  @override
+  double get savedThisCycle;
+  @override
+  double get withdrawnThisCycle;
+  @override
+  double get netSaved;
+  @override
   double
-      get savingsPercentage; // Deviations (Category Name to Deviation Amount)
+      get personalTransferIncome; // Deviations (Category Name to Deviation Amount)
   @override
   List<Map<String, dynamic>> get topOverspent;
   @override
@@ -480,7 +678,17 @@ abstract class _CycleReport implements CycleReport {
   int get totalDays;
   @override
   List<Map<String, dynamic>>
-      get unexpectedExpenses; // Semàntica de càlcul amb què es va generar (0 = llegat, pre-ledger).
+      get unexpectedExpenses; // Fonts utilitzades per comprovar si el snapshot continua vigent.
+  @override
+  DateTime? get generatedForStartDate;
+  @override
+  DateTime? get generatedForEndDate;
+  @override
+  String get sourceFingerprint;
+  @override
+  int get reportSchemaVersion;
+  @override
+  int get ledgerSchemaVersion; // Camp llegat, conservat perquè els documents antics continuïn llegint-se.
   @override
   int get schemaVersion;
 

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../domain/models/billing_cycle.dart';
+import '../../../domain/models/cycle_report.dart';
+import '../../../domain/services/cycle_report_service.dart';
+import '../../../domain/services/ledger_service.dart';
 import '../providers/cycle_reports_provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../providers/category_notifier.dart';
@@ -16,13 +19,30 @@ class CycleReportView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reportAsync = ref.watch(cycleReportNotifierProvider(cycle.id));
+    final fingerprintAsync =
+        ref.watch(cycleReportSourceFingerprintProvider(cycle));
 
     return reportAsync.when(
       data: (report) {
         if (report == null) {
           return _buildEmptyState(context, ref);
         }
-        return _buildReportContent(context, report, ref);
+        final legacyOrWrongVersion =
+            report.reportSchemaVersion != kCycleReportSchemaVersion ||
+                report.ledgerSchemaVersion != kLedgerSchemaVersion ||
+                report.sourceFingerprint.isEmpty;
+        final isOutdated = legacyOrWrongVersion ||
+            fingerprintAsync.maybeWhen(
+              data: (fingerprint) =>
+                  fingerprint != null &&
+                  isCycleReportOutdated(
+                    report: report,
+                    cycle: cycle,
+                    currentFingerprint: fingerprint,
+                  ),
+              orElse: () => false,
+            );
+        return _buildReportContent(context, report, ref, isOutdated);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, st) => Center(child: Text('Error: $e')),
@@ -91,9 +111,8 @@ class CycleReportView extends ConsumerWidget {
     );
   }
 
-  Widget _buildReportContent(
-      BuildContext context, dynamic report, WidgetRef ref) {
-    // report is CycleReport
+  Widget _buildReportContent(BuildContext context, CycleReport report,
+      WidgetRef ref, bool isOutdated) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Container(
@@ -101,6 +120,10 @@ class CycleReportView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (isOutdated) ...[
+              _buildOutdatedBadge(ref),
+              const SizedBox(height: 12),
+            ],
             _buildAiVerdict(report.aiVerdict, ref),
             const SizedBox(height: 24),
             _buildMetricsGrid(
@@ -109,6 +132,12 @@ class CycleReportView extends ConsumerWidget {
               savingsPercent: report.savingsPercentage,
               zeroExpenseDays: report.zeroExpenseDays,
               totalDays: report.totalDays,
+            ),
+            const SizedBox(height: 12),
+            _buildSavingsBreakdown(
+              saved: report.savedThisCycle,
+              withdrawn: report.withdrawnThisCycle,
+              net: report.netSaved,
             ),
             const SizedBox(height: 24),
             const Text(
@@ -140,7 +169,7 @@ class CycleReportView extends ConsumerWidget {
                   child: _buildDeviationsList(
                     context: context,
                     ref: ref,
-                    title: "Estalvis",
+                    title: "Sota pressupost",
                     icon: Icons.trending_down,
                     color: Colors.green,
                     items: report.topSaved,
@@ -161,6 +190,87 @@ class CycleReportView extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildOutdatedBadge(WidgetRef ref) {
+    return Material(
+      color: Colors.orange.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            const Icon(Icons.history, color: Colors.orange, size: 20),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Informe generat amb dades antigues',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            TextButton(
+              onPressed: () => ref
+                  .read(cycleReportNotifierProvider(cycle.id).notifier)
+                  .generateReportForCycle(cycle),
+              child: const Text('Regenera’l'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSavingsBreakdown({
+    required double saved,
+    required double withdrawn,
+    required double net,
+  }) {
+    String amount(double value) =>
+        '${value.toStringAsFixed(2).replaceAll('.', ',')} €';
+    return Card(
+      elevation: 0,
+      color: AppTheme.copper.withValues(alpha: 0.08),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Estalvi del cicle',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(child: _savingValue('Aportat', amount(saved))),
+                Expanded(child: _savingValue('Rescatat', amount(withdrawn))),
+                Expanded(
+                  child: _savingValue(
+                    'Net',
+                    amount(net),
+                    color: net >= 0 ? Colors.green : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _savingValue(String label, String value, {Color? color}) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: TextStyle(fontWeight: FontWeight.bold, color: color),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 
@@ -310,7 +420,7 @@ class CycleReportView extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               isPercent
-                  ? "${value.toStringAsFixed(0)}%"
+                  ? "${value.toStringAsFixed(1)}%"
                   : "${value.toStringAsFixed(2)}€",
               style: TextStyle(
                   color: color, fontWeight: FontWeight.bold, fontSize: 18),
@@ -526,13 +636,13 @@ class CycleReportView extends ConsumerWidget {
           children: [
             Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
             SizedBox(width: 8),
-            Text("⚠️ Imprevistos purs",
+            Text("Despeses fora de pressupost",
                 style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         const SizedBox(height: 8),
         const Text(
-          "Despeses en categories sense pressupost assignat.",
+          "Despeses en categories sense pressupost assignat. No implica que fossin imprevistes i poden incloure imports compensats per ingressos.",
           style: TextStyle(color: Colors.grey, fontSize: 13),
         ),
         const SizedBox(height: 12),

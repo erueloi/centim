@@ -19,10 +19,15 @@ class CycleReportRepository {
     final data = docSnap.data()!;
     // Optional: Handle date conversions if needed, but freezed + json_serializable should handle DateTime assuming correct JSON format.
 
-    // We expect generatedAt to be a Timestamp in Firestore, need to convert
-    if (data['generatedAt'] is Timestamp) {
-      data['generatedAt'] =
-          (data['generatedAt'] as Timestamp).toDate().toIso8601String();
+    // json_serializable espera ISO-8601; Firestore retorna Timestamp.
+    for (final key in [
+      'generatedAt',
+      'generatedForStartDate',
+      'generatedForEndDate',
+    ]) {
+      if (data[key] is Timestamp) {
+        data[key] = (data[key] as Timestamp).toDate().toIso8601String();
+      }
     }
 
     return CycleReport.fromJson(data);
@@ -30,10 +35,14 @@ class CycleReportRepository {
 
   Future<void> saveReport(CycleReport report) async {
     final json = report.toJson();
-    // Convert DateTime back to Timestamp for Firestore
-    if (json['generatedAt'] is String) {
-      json['generatedAt'] =
-          Timestamp.fromDate(DateTime.parse(json['generatedAt']));
+    for (final key in [
+      'generatedAt',
+      'generatedForStartDate',
+      'generatedForEndDate',
+    ]) {
+      if (json[key] is String) {
+        json[key] = Timestamp.fromDate(DateTime.parse(json[key] as String));
+      }
     }
 
     await _reportsRef(report.groupId).doc(report.cycleId).set(json);

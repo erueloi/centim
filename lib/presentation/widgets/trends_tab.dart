@@ -15,10 +15,6 @@ class TrendsTab extends ConsumerWidget {
 
     return trendsAsync.when(
       data: (data) {
-        if (data.monthlyFlow.isEmpty) {
-          return const Center(child: Text("No hi ha dades suficients."));
-        }
-
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -63,16 +59,33 @@ class TrendsTab extends ConsumerWidget {
               _SavingsRateCard(rate: data.savingsRate),
               const SizedBox(height: 24),
 
-              // Line Chart
+              // Cash-flow chart
               Text(
-                'Flux de Caixa (12 mesos)',
+                'Flux de caixa',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 16),
-              AspectRatio(
-                aspectRatio: 1.5,
-                child: _CashFlowChart(data: data.monthlyFlow),
-              ),
+              if (data.monthlyFlow.isEmpty)
+                const SizedBox(
+                  height: 150,
+                  child: Center(
+                    child: Text('No hi ha mesos complets amb moviments.'),
+                  ),
+                )
+              else
+                AspectRatio(
+                  aspectRatio: 1.5,
+                  child: _CashFlowChart(data: data.monthlyFlow),
+                ),
+              if (data.currentMonthExcludedFromFlow) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'El mes en curs no s’inclou perquè encara és incomplet.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey[600],
+                      ),
+                ),
+              ],
               const SizedBox(height: 32),
 
               // Pie Chart
@@ -105,12 +118,14 @@ class _SavingsRateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Determine color/message
-    // > 20% Great, > 10% Good, > 0% OK, < 0% Bad
-    Color color =
-        rate >= 0.2 ? Colors.green : (rate > 0 ? Colors.blue : Colors.red);
-    String message =
-        rate >= 0.2 ? "Excel·lent!" : (rate > 0 ? "Vas bé" : "Atenció");
+    final level = savingsRateLevel(rate);
+    final color = switch (level) {
+      SavingsRateLevel.veryTight => Colors.red,
+      SavingsRateLevel.improvable => Colors.orange,
+      SavingsRateLevel.good => Colors.blue,
+      SavingsRateLevel.veryGood => Colors.green,
+    };
+    final message = savingsRateMessage(rate);
 
     return Card(
       elevation: 2,
@@ -128,35 +143,38 @@ class _SavingsRateCard extends StatelessWidget {
               child: Icon(Icons.savings, color: color, size: 32),
             ),
             const SizedBox(width: 16),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Taxa d'Estalvi Mitjana",
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-                ),
-                RichText(
-                  text: TextSpan(
-                    text: '${(rate * 100).toStringAsFixed(1)}% ',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
-                    children: [
-                      TextSpan(
-                        text: message,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.normal,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Taxa d’estalvi del període",
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
-                ),
-              ],
+                  RichText(
+                    text: TextSpan(
+                      text: '${(rate * 100).toStringAsFixed(1)}% ',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                              ),
+                      children: [
+                        TextSpan(
+                          text: message,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.normal,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -181,133 +199,214 @@ class _CashFlowChart extends StatelessWidget {
         maxY = m.expense;
       }
     }
-    maxY = maxY * 1.1; // Add padding
+    maxY = maxY > 0 ? maxY * 1.1 : 1;
+    final yInterval = maxY / 4;
 
-    return LineChart(
-      LineChartData(
-        gridData: const FlGridData(show: false),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                int index = value.toInt();
-                if (index >= 0 && index < data.length) {
-                  // Show every 2nd or 3rd month if simpler?
-                  // Or show first letter of month.
-                  final date = data[index].month;
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Text(
-                      DateFormat.MMM('ca_ES').format(date).toUpperCase(),
-                      style: const TextStyle(fontSize: 10),
-                    ),
-                  );
-                }
-                return const Text('');
-              },
-              interval: 1, // Only some labels?
-            ),
-          ),
-          leftTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    return Column(
+      children: [
+        const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            _ChartLegendDot(color: Colors.green, label: 'Ingressos'),
+            SizedBox(width: 16),
+            _ChartLegendDot(color: Colors.red, label: 'Despeses'),
+          ],
         ),
-        borderData: FlBorderData(show: false),
-        minX: 0,
-        maxX: (data.length - 1).toDouble(),
-        minY: 0,
-        maxY: maxY,
-        lineBarsData: [
-          // Income Line
-          LineChartBarData(
-            spots: data.asMap().entries.map((e) {
-              return FlSpot(e.key.toDouble(), e.value.income);
-            }).toList(),
-            isCurved: true,
-            color: Colors.green,
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: Colors.green.withValues(alpha: 0.1),
-            ),
-          ),
-          // Expense Line
-          LineChartBarData(
-            spots: data.asMap().entries.map((e) {
-              return FlSpot(e.key.toDouble(), e.value.expense);
-            }).toList(),
-            isCurved: true,
-            color: Colors.red,
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(show: false),
-          ),
-        ],
-        lineTouchData: LineTouchData(
-          handleBuiltInTouches: true,
-          getTouchedSpotIndicator:
-              (LineChartBarData barData, List<int> spotIndexes) {
-            return spotIndexes.map((spotIndex) {
-              return TouchedSpotIndicatorData(
-                const FlLine(
-                  color: Colors.blueGrey,
-                  strokeWidth: 2,
-                  dashArray: [4, 4],
+        const SizedBox(height: 8),
+        Expanded(
+          child: LineChart(
+            LineChartData(
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                horizontalInterval: yInterval,
+                getDrawingHorizontalLine: (value) => FlLine(
+                  color: Colors.grey.withValues(alpha: 0.18),
+                  strokeWidth: 1,
                 ),
-                FlDotData(
-                  getDotPainter: (spot, percent, barData, index) {
-                    return FlDotCirclePainter(
-                      radius: 4,
-                      color: Colors.white,
-                      strokeWidth: 2,
-                      strokeColor: barData.color ?? Colors.blueGrey,
-                    );
-                  },
+              ),
+              titlesData: FlTitlesData(
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 34,
+                    getTitlesWidget: (value, meta) {
+                      int index = value.toInt();
+                      if (index >= 0 && index < data.length) {
+                        // Show every 2nd or 3rd month if simpler?
+                        // Or show first letter of month.
+                        final date = data[index].month;
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            data[index].isIncomplete
+                                ? '${DateFormat.MMM('ca_ES').format(date).toUpperCase()}\nEN CURS'
+                                : DateFormat.MMM(
+                                    'ca_ES',
+                                  ).format(date).toUpperCase(),
+                            style: TextStyle(
+                              fontSize: data[index].isIncomplete ? 9 : 10,
+                              color: data[index].isIncomplete
+                                  ? Colors.orange[800]
+                                  : null,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      }
+                      return const Text('');
+                    },
+                    interval: 1, // Only some labels?
+                  ),
                 ),
-              );
-            }).toList();
-          },
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (touchedSpot) => Colors.blueGrey.shade800,
-            getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) {
-                final isIncome = spot.barIndex == 0;
-                // Obtenir el nom del mes pel títol només un cop
-                final date = data[spot.x.toInt()].month;
-                final monthName = DateFormat.MMMM('ca_ES').format(date);
-
-                return LineTooltipItem(
-                  '${monthName.toUpperCase()}\n',
-                  const TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold),
-                  children: [
-                    TextSpan(
-                      text:
-                          '${spot.y.toStringAsFixed(2).replaceAll('.', ',')} €',
-                      style: TextStyle(
-                        color: isIncome ? Colors.green[300] : Colors.red[300],
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 48,
+                    interval: yInterval,
+                    getTitlesWidget: (value, meta) => Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Text(
+                        _formatAxisAmount(value),
+                        style: TextStyle(fontSize: 9, color: Colors.grey[600]),
+                        textAlign: TextAlign.right,
                       ),
                     ),
-                  ],
-                );
-              }).toList();
-            },
+                  ),
+                ),
+                topTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              borderData: FlBorderData(show: false),
+              minX: 0,
+              maxX: data.length > 1 ? (data.length - 1).toDouble() : 1,
+              minY: 0,
+              maxY: maxY,
+              lineBarsData: [
+                // Income Line
+                LineChartBarData(
+                  spots: data.asMap().entries.map((e) {
+                    return FlSpot(e.key.toDouble(), e.value.income);
+                  }).toList(),
+                  isCurved: false,
+                  color: Colors.green,
+                  barWidth: 3,
+                  isStrokeCapRound: true,
+                  dotData: const FlDotData(show: true),
+                  belowBarData: BarAreaData(show: false),
+                ),
+                // Expense Line
+                LineChartBarData(
+                  spots: data.asMap().entries.map((e) {
+                    return FlSpot(e.key.toDouble(), e.value.expense);
+                  }).toList(),
+                  isCurved: false,
+                  color: Colors.red,
+                  barWidth: 3,
+                  isStrokeCapRound: true,
+                  dotData: const FlDotData(show: true),
+                  belowBarData: BarAreaData(show: false),
+                ),
+              ],
+              lineTouchData: LineTouchData(
+                handleBuiltInTouches: true,
+                getTouchedSpotIndicator:
+                    (LineChartBarData barData, List<int> spotIndexes) {
+                  return spotIndexes.map((spotIndex) {
+                    return TouchedSpotIndicatorData(
+                      const FlLine(
+                        color: Colors.blueGrey,
+                        strokeWidth: 2,
+                        dashArray: [4, 4],
+                      ),
+                      FlDotData(
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: 4,
+                            color: Colors.white,
+                            strokeWidth: 2,
+                            strokeColor: barData.color ?? Colors.blueGrey,
+                          );
+                        },
+                      ),
+                    );
+                  }).toList();
+                },
+                touchTooltipData: LineTouchTooltipData(
+                  getTooltipColor: (touchedSpot) => Colors.blueGrey.shade800,
+                  getTooltipItems: (touchedSpots) {
+                    return touchedSpots.map((spot) {
+                      final isIncome = spot.barIndex == 0;
+                      // Obtenir el nom del mes pel títol només un cop
+                      final date = data[spot.x.toInt()].month;
+                      final monthName = DateFormat.MMMM('ca_ES').format(date);
+
+                      return LineTooltipItem(
+                        '${monthName.toUpperCase()}\n',
+                        const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold),
+                        children: [
+                          TextSpan(
+                            text:
+                                '${spot.y.toStringAsFixed(2).replaceAll('.', ',')} €',
+                            style: TextStyle(
+                              color: isIncome
+                                  ? Colors.green[300]
+                                  : Colors.red[300],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList();
+                  },
+                ),
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
+}
+
+class _ChartLegendDot extends StatelessWidget {
+  final Color color;
+  final String label;
+
+  const _ChartLegendDot({required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 10,
+          height: 3,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(label, style: const TextStyle(fontSize: 11)),
+      ],
+    );
+  }
+}
+
+String _formatAxisAmount(double value) {
+  if (value.abs() >= 1000) {
+    final thousands = value / 1000;
+    return '${thousands.toStringAsFixed(thousands % 1 == 0 ? 0 : 1)}k €';
+  }
+  return '${value.toStringAsFixed(0)} €';
 }
 
 class _CategoryPieChart extends ConsumerStatefulWidget {
@@ -369,6 +468,7 @@ class _CategoryPieChartState extends ConsumerState<_CategoryPieChart> {
                           maxChildSize: 0.95,
                           builder: (_, controller) => CategoryDrillDownSheet(
                             category: c.category,
+                            categoryIds: c.categoryIds,
                             startDate: widget.startDate,
                             endDate: widget.endDate,
                             totalAmount: c.totalAmount,
@@ -458,6 +558,7 @@ class _CategoryPieChartState extends ConsumerState<_CategoryPieChart> {
                           maxChildSize: 0.95,
                           builder: (_, controller) => CategoryDrillDownSheet(
                             category: c.category,
+                            categoryIds: c.categoryIds,
                             startDate: widget.startDate,
                             endDate: widget.endDate,
                             totalAmount: c.totalAmount,

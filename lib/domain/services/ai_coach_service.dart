@@ -1,4 +1,5 @@
 import 'package:firebase_ai/firebase_ai.dart';
+import 'dart:convert';
 
 import '../models/financial_summary.dart';
 import '../models/billing_cycle.dart';
@@ -60,7 +61,11 @@ INSTRUCCIONS:
     required Map<String, double> categoryExpenses,
     required Map<String, double> categoryBudgets,
     required int zeroExpenseDays,
+    required int totalDays,
     required List<Map<String, dynamic>> unexpectedExpenses,
+    required double savedThisCycle,
+    required double withdrawnThisCycle,
+    required double personalTransferIncome,
     bool isHistorical = false,
   }) async {
     final model = FirebaseAI.googleAI().generativeModel(
@@ -68,14 +73,16 @@ INSTRUCCIONS:
       systemInstruction: Content.system('''
 Ets el 'Cèntim Coach', l'assistent financer personal de $userName. Saps que estan enmig de la gran aventura de reformar una Masia del 1768 a la Floresta 🏡.
 
-To i Actitud: 
-El teu to ha de ser assertiu, super empàtic, motivador, còmplice i divertit. Tens totalment prohibit fer-los sentir culpables, renyar-los de forma agressiva o fer-los posar tristos.
+To i actitud:
+Sigues directe, neutral, empàtic i concret. No renyis, però tampoc felicitis per defecte ni maquillis una situació ajustada.
 
 Comportament davant les dades:
-1. Analitza el JSON de dades financeres (un sol paràgraf de màxim 3-4 frases).
-2. Celebra efusivament els encerts i els "Dies a Zero" 🎉.
-3. Si hi ha imprevistos o desviacions (especialment amb la Masia), treu-hi ferro amb humor compassiu (és normal que una casa del 1768 tingui sorpreses amagades! 🏚️✨), però dona'ls un consell assertiu i pràctic per intentar preveure-ho millor.
-4. Fes servir emojis per donar calidesa al text.
+1. Analitza el JSON en un sol paràgraf de màxim 4 frases.
+2. Comença pel resultat del cicle i digues si el marge ha estat positiu o negatiu.
+3. Compara el marge total amb el marge sense Bizums/transferències de particulars. Aquesta segona xifra és una aproximació temporal, no una classificació definitiva d'ajuda familiar.
+4. Valora els dies a zero com una proporció sobre els dies totals; no presentis una xifra baixa com un èxit.
+5. Explica riscos i encerts amb el mateix pes i acaba amb una acció concreta.
+6. Utilitza com a màxim un emoji en tota la resposta.
 
 Regla d'Or (Última frase):
 La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci exactament per: "🎯 Objectiu pel cicle vinent:".
@@ -88,13 +95,17 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
       ),
     );
 
-    final contextJson = _prepareCycleContextJson(
+    final contextJson = buildCycleVerdictContextJson(
       summary: summary,
       activeCycle: activeCycle,
       categoryExpenses: categoryExpenses,
       categoryBudgets: categoryBudgets,
       zeroExpenseDays: zeroExpenseDays,
+      totalDays: totalDays,
       unexpectedExpenses: unexpectedExpenses,
+      savedThisCycle: savedThisCycle,
+      withdrawnThisCycle: withdrawnThisCycle,
+      personalTransferIncome: personalTransferIncome,
       isHistorical: isHistorical,
     );
 
@@ -104,18 +115,20 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
     return response.text?.trim() ?? "Ho sento, m'he quedat sense paraules!";
   }
 
-  String _prepareCycleContextJson({
+  String buildCycleVerdictContextJson({
     required FinancialSummary summary,
     required BillingCycle activeCycle,
     required Map<String, double> categoryExpenses,
     required Map<String, double> categoryBudgets,
     required int zeroExpenseDays,
+    required int totalDays,
     required List<Map<String, dynamic>> unexpectedExpenses,
+    required double savedThisCycle,
+    required double withdrawnThisCycle,
+    required double personalTransferIncome,
     required bool isHistorical,
   }) {
     // Calculate month elapsed percentage
-    final totalDays =
-        activeCycle.endDate.difference(activeCycle.startDate).inDays;
     final safeTotalDays = totalDays > 0 ? totalDays : 1;
 
     int monthElapsedPercentage = 100;
@@ -170,26 +183,39 @@ La teva última frase ha de ser SEMPRE un repte assequible i positiu que comenci
       }
     }
 
-    // Savings status
-    final savingsStatus = {
-      'estalvi_previst': summary.netOfCycle,
-      'percentatge_estalvi_actual': summary.savingsPercentage.round(),
-    };
-
-    return '''
-{
-  "mes_tancat": $isHistorical,
-  "mes_transcorregut_percent": $monthElapsedPercentage,
-  "pressupost_total_gastat_percent": $spentPercentage,
-  "top_3_categories_desviades": ${top3Deviations.toString()},
-  "estat_estalvi": ${savingsStatus.toString()},
-  "masia_o_obres_moviments": $masiaMoviments,
-  "masia_cost_actual": $masiaCost,
-  "dies_restants_cicle": ${safeTotalDays - elapsedDays},
-  "dies_a_zero_despeses": $zeroExpenseDays,
-  "compres_imprevistes_sense_pressupost": ${unexpectedExpenses.toString()}
-}
-''';
+    final netSaved = savedThisCycle - withdrawnThisCycle;
+    final marginWithoutPersonalTransfers =
+        summary.netOfCycle - personalTransferIncome;
+    return jsonEncode({
+      'cicle_tancat': isHistorical,
+      'cicle_transcorregut_percent': monthElapsedPercentage,
+      'ingressos_totals': summary.monthlyIncome,
+      'ingressos_bizum_transferencies_particulars_estimats':
+          personalTransferIncome,
+      'ingressos_sense_bizum_transferencies_particulars':
+          summary.monthlyIncome - personalTransferIncome,
+      'despeses_totals': summary.monthlyExpenses,
+      'marge_amb_tots_els_ingressos': summary.netOfCycle,
+      'marge_sense_bizum_transferencies_particulars':
+          marginWithoutPersonalTransfers,
+      'tancament_positiu_depen_de_particulars':
+          summary.netOfCycle >= 0 && marginWithoutPersonalTransfers < 0,
+      'despeses_sobre_ingressos_percent': spentPercentage,
+      'top_3_categories_desviades': top3Deviations,
+      'estalvi': {
+        'aportat': savedThisCycle,
+        'rescatat': withdrawnThisCycle,
+        'net': netSaved,
+        'percentatge_net_sobre_ingressos': summary.savingsPercentage,
+      },
+      'masia_o_obres_moviments': masiaMoviments,
+      'masia_cost_actual': masiaCost,
+      'dies_totals_cicle': safeTotalDays,
+      'dies_restants_cicle': safeTotalDays - elapsedDays,
+      'dies_a_zero_despeses': zeroExpenseDays,
+      'dies_a_zero_percent': zeroExpenseDays / safeTotalDays * 100,
+      'despeses_fora_de_pressupost': unexpectedExpenses,
+    });
   }
 }
 
