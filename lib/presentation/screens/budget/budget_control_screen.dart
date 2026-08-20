@@ -25,6 +25,7 @@ import '../../../domain/models/budget_entry.dart';
 import '../../widgets/cycle_selector.dart';
 import '../../widgets/budget_progress_style.dart';
 import '../../widgets/trends_tab.dart'; // Import TrendsTab
+import '../../widgets/annual_view_tab.dart'; // Import AnnualViewTab
 import '../../providers/transaction_filter_provider.dart';
 import '../../widgets/main_scaffold.dart';
 import '../dashboard/panoramic_heatmap_screen.dart';
@@ -57,16 +58,17 @@ class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
     }
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: Text(
             widget.isReadOnly ? 'Detall estat' : l10n.budgetScreenTitle,
           ),
-          bottom: const TabBar(
+          bottom: TabBar(
             tabs: [
-              Tab(text: 'Mensual'),
-              Tab(text: 'Tendències'),
+              const Tab(text: 'Mensual'),
+              const Tab(text: 'Tendències'),
+              Tab(text: l10n.annualViewTab),
             ],
           ),
           actions: [
@@ -196,6 +198,8 @@ class _BudgetControlScreenState extends ConsumerState<BudgetControlScreen> {
             ),
             // Tab 2: Tendències (New content)
             const ResponsiveCenter(child: TrendsTab()),
+            // Tab 3: Vista Anual
+            const ResponsiveCenter(child: AnnualViewTab()),
           ],
         ),
       ),

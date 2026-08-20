@@ -83,7 +83,7 @@ String commonMerchantLabel(Iterable<String> keys) {
   return tokenLists.first.join(' ').toUpperCase();
 }
 
-const _refundPrefixes = {
+const _cleanPrefixes = {
   'devolucio',
   'devolució',
   'devolucion',
@@ -91,6 +91,16 @@ const _refundPrefixes = {
   'refund',
   'reemborsament',
   'reembolso',
+  'bizum',
+  'rebut',
+  'emes',
+  'emès',
+  'transfer',
+  'traspassos',
+  'traspas',
+  'traspàs',
+  'transferencia',
+  'transferència',
 };
 
 List<String> _identityTokens(String key) {
@@ -98,8 +108,12 @@ List<String> _identityTokens(String key) {
       .split(' ')
       .where((token) => token.isNotEmpty)
       .toList();
-  while (tokens.isNotEmpty && _refundPrefixes.contains(tokens.first)) {
+  while (tokens.isNotEmpty && _cleanPrefixes.contains(tokens.first)) {
     tokens.removeAt(0);
+  }
+  // Si traient els prefixos ha quedat buit, mantenim el token original
+  if (tokens.isEmpty && key.trim().isNotEmpty) {
+    return transactionConceptKey(key).split(' ').where((t) => t.isNotEmpty).toList();
   }
   return tokens;
 }

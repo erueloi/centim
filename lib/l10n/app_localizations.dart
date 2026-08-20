@@ -1393,6 +1393,114 @@ abstract class AppLocalizations {
   /// In ca, this message translates to:
   /// **'No hi ha prous fons a la guardiola'**
   String get insufficientFunds;
+
+  /// No description provided for @annualViewTab.
+  ///
+  /// In ca, this message translates to:
+  /// **'Anual'**
+  String get annualViewTab;
+
+  /// No description provided for @annualCostQuestion.
+  ///
+  /// In ca, this message translates to:
+  /// **'Quant em costa la vida a l\'any i on va?'**
+  String get annualCostQuestion;
+
+  /// No description provided for @annualExpenseTotal.
+  ///
+  /// In ca, this message translates to:
+  /// **'Despesa Anual Total'**
+  String get annualExpenseTotal;
+
+  /// No description provided for @annualMonthlyAverage.
+  ///
+  /// In ca, this message translates to:
+  /// **'Mitjana Mensual'**
+  String get annualMonthlyAverage;
+
+  /// No description provided for @annualRealSpent.
+  ///
+  /// In ca, this message translates to:
+  /// **'Real acumulat'**
+  String get annualRealSpent;
+
+  /// No description provided for @annualProjected.
+  ///
+  /// In ca, this message translates to:
+  /// **'Projecció restant'**
+  String get annualProjected;
+
+  /// No description provided for @annualDebtService.
+  ///
+  /// In ca, this message translates to:
+  /// **'Servei de Deute Bancari'**
+  String get annualDebtService;
+
+  /// No description provided for @annualDebtServicePct.
+  ///
+  /// In ca, this message translates to:
+  /// **'{percent}% de la despesa anual'**
+  String annualDebtServicePct(Object percent);
+
+  /// No description provided for @annualDebtServiceMonthly.
+  ///
+  /// In ca, this message translates to:
+  /// **'{amount}/mes de quota'**
+  String annualDebtServiceMonthly(Object amount);
+
+  /// No description provided for @annualExportSummary.
+  ///
+  /// In ca, this message translates to:
+  /// **'Compartir Resum'**
+  String get annualExportSummary;
+
+  /// No description provided for @annualExportCsv.
+  ///
+  /// In ca, this message translates to:
+  /// **'Exportar CSV'**
+  String get annualExportCsv;
+
+  /// No description provided for @annualSummaryCopied.
+  ///
+  /// In ca, this message translates to:
+  /// **'Resum copiat al portapapers!'**
+  String get annualSummaryCopied;
+
+  /// No description provided for @annualNoData.
+  ///
+  /// In ca, this message translates to:
+  /// **'No hi ha dades de despesa per a aquest any.'**
+  String get annualNoData;
+
+  /// No description provided for @annualYoYDelta.
+  ///
+  /// In ca, this message translates to:
+  /// **'vs any anterior'**
+  String get annualYoYDelta;
+
+  /// No description provided for @annualPerMonth.
+  ///
+  /// In ca, this message translates to:
+  /// **'€/mes'**
+  String get annualPerMonth;
+
+  /// No description provided for @annualPerYear.
+  ///
+  /// In ca, this message translates to:
+  /// **'€/any'**
+  String get annualPerYear;
+
+  /// No description provided for @annualRealBadge.
+  ///
+  /// In ca, this message translates to:
+  /// **'Real ({count}m): {amount}'**
+  String annualRealBadge(Object amount, Object count);
+
+  /// No description provided for @annualProjectedBadge.
+  ///
+  /// In ca, this message translates to:
+  /// **'Projecció ({count}m): {amount}'**
+  String annualProjectedBadge(Object amount, Object count);
 }
 
 class _AppLocalizationsDelegate

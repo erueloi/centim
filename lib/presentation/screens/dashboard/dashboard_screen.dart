@@ -23,6 +23,8 @@ import '../settings/incoherences_screen.dart';
 import 'coach_chat_screen.dart';
 import 'cycle_reports_agenda_screen.dart';
 
+import 'package:package_info_plus/package_info_plus.dart';
+
 import '../../../domain/services/version_check_service.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
@@ -36,10 +38,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   late ConfettiController _confettiController;
   late final VersionCheckService _versionCheckService; // Service instance
   bool _showBanner = false;
+  String _appVersion = '1.3.5';
 
   @override
   void initState() {
     super.initState();
+    _loadAppVersion();
     _confettiController = ConfettiController(
       duration: const Duration(seconds: 3),
     );
@@ -53,6 +57,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _versionCheckService.checkForUpdates(context);
     });
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = info.version;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -376,7 +391,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             DashboardQuickActions(
                               onNominaReceived: _closeCycleAndCelebrate,
                             ),
-                            const SizedBox(height: 80), // Space for FAB
+                            const SizedBox(height: 28),
+                            Center(
+                              child: Text(
+                                'Cèntim v$_appVersion',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.30),
+                                  letterSpacing: 0.6,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 70), // Space for FAB
                           ],
                         ),
                       ),

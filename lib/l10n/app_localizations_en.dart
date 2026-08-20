@@ -693,4 +693,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insufficientFunds => 'Insufficient funds in the savings goal';
+
+  @override
+  String get annualViewTab => 'Annual';
+
+  @override
+  String get annualCostQuestion =>
+      'How much does living cost me per year and where does it go?';
+
+  @override
+  String get annualExpenseTotal => 'Total Annual Expense';
+
+  @override
+  String get annualMonthlyAverage => 'Monthly Average';
+
+  @override
+  String get annualRealSpent => 'Real accumulated';
+
+  @override
+  String get annualProjected => 'Projected remaining';
+
+  @override
+  String get annualDebtService => 'Bank Debt Service';
+
+  @override
+  String annualDebtServicePct(Object percent) {
+    return '$percent% of annual expense';
+  }
+
+  @override
+  String annualDebtServiceMonthly(Object amount) {
+    return '$amount/mo installment';
+  }
+
+  @override
+  String get annualExportSummary => 'Share Summary';
+
+  @override
+  String get annualExportCsv => 'Export CSV';
+
+  @override
+  String get annualSummaryCopied => 'Summary copied to clipboard!';
+
+  @override
+  String get annualNoData => 'No expense data for this year.';
+
+  @override
+  String get annualYoYDelta => 'vs previous year';
+
+  @override
+  String get annualPerMonth => '€/mo';
+
+  @override
+  String get annualPerYear => '€/yr';
+
+  @override
+  String annualRealBadge(Object amount, Object count) {
+    return 'Real (${count}m): $amount';
+  }
+
+  @override
+  String annualProjectedBadge(Object amount, Object count) {
+    return 'Projected (${count}m): $amount';
+  }
 }

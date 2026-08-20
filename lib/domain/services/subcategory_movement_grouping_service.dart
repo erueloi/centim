@@ -164,6 +164,14 @@ SubcategoryMovementGrouping groupSubcategoryMovements({
   }
 
   if (otherChildren.isNotEmpty) {
+    final otherChildrenWithPercentages = otherChildren.map((child) {
+      final pct = expectedTotal.abs() >= 0.005 ? (child.amount / expectedTotal) * 100 : 0.0;
+      return child.withPercentages(
+        percentage: pct,
+        displayPercentage: pct.round(),
+      );
+    }).toList();
+
     visible.add(
       MovementConceptGroup(
         name: 'Altres',
@@ -176,7 +184,7 @@ SubcategoryMovementGrouping groupSubcategoryMovements({
               (a, b) => b.transaction.date.compareTo(a.transaction.date),
             ),
         ),
-        children: List.unmodifiable(otherChildren),
+        children: List.unmodifiable(otherChildrenWithPercentages),
         isOther: true,
       ),
     );

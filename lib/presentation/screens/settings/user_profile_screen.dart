@@ -22,10 +22,12 @@ class UserProfileScreen extends ConsumerStatefulWidget {
 class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   final _nameController = TextEditingController();
   bool _isSaving = false;
+  String _appVersion = '1.3.5';
 
   @override
   void initState() {
     super.initState();
+    _loadAppVersion();
     final user = ref.read(authRepositoryProvider).currentUser;
     if (user != null) {
       _nameController.text = user.displayName ?? '';
@@ -46,6 +48,17 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
         }
       });
     }
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = info.version;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -370,18 +383,41 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  OutlinedButton.icon(
+                  OutlinedButton(
                     onPressed: _showReleaseNotes,
-                    icon:
-                        const Icon(Icons.info_outline, color: AppTheme.copper),
-                    label: const Text('Versió i Novetats',
-                        style: TextStyle(color: AppTheme.copper)),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
+                        horizontal: 16,
                         vertical: 12,
                       ),
                       side: const BorderSide(color: AppTheme.copper),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.info_outline, color: AppTheme.copper),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Versió i Novetats',
+                          style: TextStyle(color: AppTheme.copper),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.copper.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            'v$_appVersion',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.copper,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -390,7 +426,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                       await ref.read(authRepositoryProvider).signOut();
                       if (context.mounted) {
                         Navigator.of(context)
-                            .popUntil((route) => route.isFirst);
+                             .popUntil((route) => route.isFirst);
                       }
                     },
                     icon: const Icon(Icons.logout, color: Colors.red),
@@ -404,6 +440,19 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                       side: const BorderSide(color: Colors.red),
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  Center(
+                    child: Text(
+                      'Cèntim v$_appVersion',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+                        letterSpacing: 0.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),

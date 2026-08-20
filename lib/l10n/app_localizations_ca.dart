@@ -694,4 +694,66 @@ class AppLocalizationsCa extends AppLocalizations {
 
   @override
   String get insufficientFunds => 'No hi ha prous fons a la guardiola';
+
+  @override
+  String get annualViewTab => 'Anual';
+
+  @override
+  String get annualCostQuestion => 'Quant em costa la vida a l\'any i on va?';
+
+  @override
+  String get annualExpenseTotal => 'Despesa Anual Total';
+
+  @override
+  String get annualMonthlyAverage => 'Mitjana Mensual';
+
+  @override
+  String get annualRealSpent => 'Real acumulat';
+
+  @override
+  String get annualProjected => 'Projecció restant';
+
+  @override
+  String get annualDebtService => 'Servei de Deute Bancari';
+
+  @override
+  String annualDebtServicePct(Object percent) {
+    return '$percent% de la despesa anual';
+  }
+
+  @override
+  String annualDebtServiceMonthly(Object amount) {
+    return '$amount/mes de quota';
+  }
+
+  @override
+  String get annualExportSummary => 'Compartir Resum';
+
+  @override
+  String get annualExportCsv => 'Exportar CSV';
+
+  @override
+  String get annualSummaryCopied => 'Resum copiat al portapapers!';
+
+  @override
+  String get annualNoData => 'No hi ha dades de despesa per a aquest any.';
+
+  @override
+  String get annualYoYDelta => 'vs any anterior';
+
+  @override
+  String get annualPerMonth => '€/mes';
+
+  @override
+  String get annualPerYear => '€/any';
+
+  @override
+  String annualRealBadge(Object amount, Object count) {
+    return 'Real (${count}m): $amount';
+  }
+
+  @override
+  String annualProjectedBadge(Object amount, Object count) {
+    return 'Projecció (${count}m): $amount';
+  }
 }

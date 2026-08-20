@@ -176,6 +176,57 @@ void main() {
     expect(result.groups, isEmpty);
     expect(result.matchesExpectedTotal, isTrue);
   });
+
+  test('Invariant de suma: suma(grups) == total i suma(displayPercentage) == 100 amb fills d’Altres', () {
+    final transactions = [
+      _tx('ALFA RESTAURANT', 50),
+      _tx('BRAVO CAFE', 45),
+      _tx('CHARLIE FORN', 40),
+      _tx('DELTA PASTISSERIA', 35),
+      _tx('ECHO SUPER', 30),
+      _tx('FOXTROT CARNISSERIA', 25),
+      _tx('GOLF PEIXATERIA', 20),
+      _tx('HOTEL MENJAR', 15),
+      _tx('INDIA FRUITA', 14),
+      _tx('JULIETT GELATS', 13),
+      _tx('KILO BAR', 12),
+      _tx('LIMA TAPES', 11),
+      _tx('MIKE XURRERIA', 10),
+      _tx('NOVEMBER LOCAL', 5),
+      _tx('OSCAR LOCAL', 4),
+      _tx('PAPA LOCAL', 3),
+      _tx('QUEBEC LOCAL', 2),
+    ];
+    final totalExpected = transactions.fold(0.0, (sum, tx) => sum + tx.amount); // 334 €
+
+    final result = groupSubcategoryMovements(
+      cycleTransactions: transactions,
+      categories: const [category],
+      category: category,
+      subcategoryId: market.id,
+      expectedTotal: totalExpected,
+      maxVisiblePositiveGroups: 10,
+      minimumShare: 0.01,
+      minimumAmount: 10.0,
+    );
+
+    expect(result.matchesExpectedTotal, isTrue);
+    expect(result.total, totalExpected);
+
+    // Suma d'imports dels grups principals == totalExpected
+    final groupsSum = result.groups.fold<double>(0, (sum, g) => sum + g.amount);
+    expect((groupsSum - totalExpected).abs() < 0.001, isTrue);
+
+    // Suma de percentatges == 100
+    final pctSum = result.groups.fold<int>(0, (sum, g) => sum + g.displayPercentage);
+    expect(pctSum, 100);
+
+    // Comprovar que Altres conté els subgrups fills i que la seva suma coincideix amb Altres.amount
+    final otherGroup = result.groups.firstWhere((g) => g.isOther);
+    expect(otherGroup.children, isNotEmpty);
+    final childrenSum = otherGroup.children.fold<double>(0, (sum, c) => sum + c.amount);
+    expect((childrenSum - otherGroup.amount).abs() < 0.001, isTrue);
+  });
 }
 
 Transaction _tx(

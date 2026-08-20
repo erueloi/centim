@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.3.6
+Vista Anual unificada amb toggle compacte Real/Projecció.
+Diferencial Estructural destacat i Tresoreria secundària.
+Nou bloc col·lapsable de moviments de guardioles i estalvi net.
+PDF d'informe anual unificat estrictament en despesa real auditada.
+Unificació d'ingressos sense categoria com a 'Altres (sense classificar)'.
+Visualització de la versió de l'app al Splash, Dashboard i Perfil.
 ## v1.3.5
 Millores a Tendencies i Historial de Cicles: agrupacio per IDs i noms actuals, grafic de flux llegible, taxa d'estalvi honesta, deteccio d'informes obsolets, pressupost historic efectiu, estalvi real aportat-rescatat-net, dies a zero segons el ledger i veredictes del Coach mes directes i neutrals.
 ## v1.3.4
@@ -151,6 +158,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
