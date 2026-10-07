@@ -1,5 +1,7 @@
 # Release Notes
 
+## v1.3.8
+Administració del grup al Perfil: llista de membres, sortir del grup, i per al propietari treure membres, traspassar la propietat i generar un codi d'invitació nou.
 ## v1.3.7
 Seguretat: cada llar queda aïllada i només els seus membres en poden veure les dades.
 El codi d'invitació del grup ara es mostra al Perfil, amb un botó per copiar-lo.
@@ -161,6 +163,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
