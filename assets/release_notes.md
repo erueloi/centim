@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.3.7
+Seguretat: cada llar queda aïllada i només els seus membres en poden veure les dades.
+El codi d'invitació del grup ara es mostra al Perfil, amb un botó per copiar-lo.
 ## v1.3.6
 Vista Anual unificada amb toggle compacte Real/Projecció.
 Diferencial Estructural destacat i Tresoreria secundària.
@@ -158,6 +161,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
