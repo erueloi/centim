@@ -9,13 +9,23 @@ import 'auth_providers.dart';
 
 part 'group_providers.g.dart';
 
+/// uid de l'usuari autenticat (provider a part perquè es pugui substituir als tests).
+final currentUidProvider = Provider<String?>(
+  (ref) => ref.watch(authRepositoryProvider).currentUser?.uid,
+);
+
+/// En viu: els canvis de membres, owner o codi es veuen a l'instant, i si
+/// l'usuari deixa de ser membre el stream falla amb `permission-denied`.
 @riverpod
-Future<HouseholdGroup?> currentGroup(Ref ref) async {
+Stream<HouseholdGroup?> currentGroup(Ref ref) async* {
   final groupId = await ref.watch(currentGroupIdProvider.future);
-  if (groupId == null) return null;
+  if (groupId == null) {
+    yield null;
+    return;
+  }
 
   final repo = ref.watch(groupRepositoryProvider);
-  return repo.getGroup(groupId);
+  yield* repo.watchGroup(groupId);
 }
 
 @riverpod

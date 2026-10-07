@@ -53,6 +53,52 @@ class GroupRepository {
     return HouseholdGroup.fromJson(doc.data()!);
   }
 
+  /// Grup en viu. Si l'usuari deixa de ser-ne membre (l'owner el treu), el
+  /// listener falla amb `permission-denied`: vegeu GroupAccessGuard.
+  Stream<HouseholdGroup?> watchGroup(String groupId) {
+    return _firestore.collection('groups').doc(groupId).snapshots().map(
+          (doc) => doc.exists ? HouseholdGroup.fromJson(doc.data()!) : null,
+        );
+  }
+
+  // --- Administració de membres. Les regles només ho permeten a l'owner,
+  // excepte sortir del grup, que ho pot fer qualsevol membre que no sigui
+  // l'owner.
+
+  Future<void> removeMember(String groupId, String userId) async {
+    await _firestore.collection('groups').doc(groupId).update({
+      'memberIds': FieldValue.arrayRemove([userId]),
+    });
+  }
+
+  Future<void> transferOwnership(String groupId, String newOwnerId) async {
+    await _firestore.collection('groups').doc(groupId).update({
+      'ownerId': newOwnerId,
+    });
+  }
+
+  /// El codi anterior deixa de servir immediatament.
+  Future<String> regenerateInviteCode(String groupId) async {
+    final inviteCode = _generateInviteCode();
+    await _firestore.collection('groups').doc(groupId).update({
+      'inviteCode': inviteCode,
+    });
+    return inviteCode;
+  }
+
+  /// Surt del grup i, en el mateix lot, buida el grup actual del perfil
+  /// perquè l'app torni a la pantalla de crear o unir-se a un grup.
+  Future<void> leaveGroup(String groupId, String userId) async {
+    final batch = _firestore.batch();
+    batch.update(_firestore.collection('groups').doc(groupId), {
+      'memberIds': FieldValue.arrayRemove([userId]),
+    });
+    batch.update(_firestore.collection('users').doc(userId), {
+      'currentGroupId': null,
+    });
+    await batch.commit();
+  }
+
   Future<void> updateGroup(HouseholdGroup group) async {
     await _firestore.collection('groups').doc(group.id).update(group.toJson());
   }

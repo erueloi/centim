@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/main_scaffold.dart';
@@ -5,6 +6,8 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/setup_group_screen.dart';
 import '../screens/settings/bank_sync_screen.dart';
 import '../providers/auth_providers.dart';
+import '../providers/group_providers.dart';
+import '../../data/providers/repository_providers.dart';
 import '../../domain/services/bank_callback.dart';
 import '../../domain/services/bank_sync_service.dart';
 import '../providers/bank_consent_provider.dart';
@@ -37,7 +40,9 @@ class AuthWrapper extends ConsumerWidget {
               return const SetupGroupScreen();
             }
 
-            return const _BankCallbackHandler(child: MainScaffold());
+            return const _GroupAccessGuard(
+              child: _BankCallbackHandler(child: MainScaffold()),
+            );
           },
           loading: () =>
               const Scaffold(body: Center(child: CircularProgressIndicator())),
@@ -49,6 +54,26 @@ class AuthWrapper extends ConsumerWidget {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, s) => Scaffold(body: Center(child: Text('Error: $e'))),
     );
+  }
+}
+
+/// Si l'usuari perd l'accés al grup actual (l'owner l'ha tret del grup), les
+/// regles deneguen la lectura del grup. Llavors es buida el currentGroupId
+/// perquè l'app torni a la pantalla de crear o unir-se a un grup, en lloc de
+/// quedar-se amb totes les dades en error.
+class _GroupAccessGuard extends ConsumerWidget {
+  final Widget child;
+  const _GroupAccessGuard({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(currentGroupProvider, (_, next) {
+      final error = next.error;
+      if (error is FirebaseException && error.code == 'permission-denied') {
+        ref.read(authRepositoryProvider).clearCurrentGroupId();
+      }
+    });
+    return child;
   }
 }
 

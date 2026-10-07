@@ -98,4 +98,14 @@ class AuthRepository {
       'currentGroupId': groupId,
     });
   }
+
+  /// Deixa l'usuari sense grup actual (l'app mostrarà la pantalla de crear
+  /// o unir-se a un grup).
+  Future<void> clearCurrentGroupId() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+    await _firestore.collection('users').doc(user.uid).update({
+      'currentGroupId': null,
+    });
+  }
 }

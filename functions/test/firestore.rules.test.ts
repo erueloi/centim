@@ -522,6 +522,55 @@ describe("legítim: perfils i gestió del grup", () => {
     await assertSucceeds(updateDoc(doc(alice(), "groups/gA"), { ownerId: "bob" }));
   });
 
+  it("sortir del grup tal com ho fa l'app: lot amb memberIds i currentGroupId", async () => {
+    const db = bob();
+    const batch = writeBatch(db);
+    batch.update(doc(db, "groups/gA"), { memberIds: arrayRemove("bob") });
+    batch.update(doc(db, "users/bob"), { currentGroupId: null });
+    await assertSucceeds(batch.commit());
+  });
+
+  it("l'owner treu un membre; el tret perd l'accés però pot buidar el seu grup actual", async () => {
+    await assertSucceeds(
+      updateDoc(doc(alice(), "groups/gA"), { memberIds: arrayRemove("bob") })
+    );
+    // Això és el que fa fallar el listener de l'app (GroupAccessGuard)...
+    await assertFails(getDoc(doc(bob(), "groups/gA")));
+    await assertFails(getDoc(doc(bob(), "users/alice")));
+    // ...i el que fa després per tornar a la pantalla de crear/unir-se.
+    await assertSucceeds(updateDoc(doc(bob(), "users/bob"), { currentGroupId: null }));
+  });
+
+  it("l'owner pot treure un uid sense perfil (compte esborrat)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await updateDoc(doc(ctx.firestore() as unknown as Firestore, "groups/gA"), {
+        memberIds: arrayUnion("orfe"),
+      });
+    });
+    // El selector llegeix el perfil inexistent sense error de permisos.
+    await assertSucceeds(getDoc(doc(alice(), "users/orfe")));
+    await assertSucceeds(
+      updateDoc(doc(alice(), "groups/gA"), { memberIds: arrayRemove("orfe") })
+    );
+  });
+
+  it("després de traspassar la propietat, l'antic owner ja pot sortir", async () => {
+    await assertSucceeds(updateDoc(doc(alice(), "groups/gA"), { ownerId: "bob" }));
+    await assertSucceeds(
+      updateDoc(doc(alice(), "groups/gA"), { memberIds: arrayRemove("alice") })
+    );
+    // I el nou owner és qui gestiona el codi.
+    await assertSucceeds(updateDoc(doc(bob(), "groups/gA"), { inviteCode: "BOB123" }));
+  });
+
+  it("l'antic owner ja no pot gestionar membres després del traspàs", async () => {
+    await assertSucceeds(updateDoc(doc(alice(), "groups/gA"), { ownerId: "bob" }));
+    await assertFails(
+      updateDoc(doc(alice(), "groups/gA"), { memberIds: arrayRemove("bob") })
+    );
+    await assertFails(updateDoc(doc(alice(), "groups/gA"), { inviteCode: "ALI123" }));
+  });
+
   it("un membre que no és owner pot sortir del grup", async () => {
     await assertSucceeds(
       updateDoc(doc(bob(), "groups/gA"), { memberIds: arrayRemove("bob") })

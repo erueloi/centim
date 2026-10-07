@@ -6,12 +6,15 @@ part of 'group_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$currentGroupHash() => r'5a4d587cad071bb1afe8648ee0bbd6ff72e8e83d';
+String _$currentGroupHash() => r'f623e24ae31c5b6ab7e1cb55280ddf20d0bd4546';
 
-/// See also [currentGroup].
+/// En viu: els canvis de membres, owner o codi es veuen a l'instant, i si
+/// l'usuari deixa de ser membre el stream falla amb `permission-denied`.
+///
+/// Copied from [currentGroup].
 @ProviderFor(currentGroup)
 final currentGroupProvider =
-    AutoDisposeFutureProvider<HouseholdGroup?>.internal(
+    AutoDisposeStreamProvider<HouseholdGroup?>.internal(
   currentGroup,
   name: r'currentGroupProvider',
   debugGetCreateSourceHash:
@@ -22,8 +25,8 @@ final currentGroupProvider =
 
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
-typedef CurrentGroupRef = AutoDisposeFutureProviderRef<HouseholdGroup?>;
-String _$groupMembersHash() => r'1b330f44dc8683d34ff8597ace6f05023ba970fe';
+typedef CurrentGroupRef = AutoDisposeStreamProviderRef<HouseholdGroup?>;
+String _$groupMembersHash() => r'7ac1fce7cfbdfb1caf1f4a898cce5972ebedb29c';
 
 /// See also [groupMembers].
 @ProviderFor(groupMembers)
