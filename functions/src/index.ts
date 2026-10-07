@@ -9,3 +9,4 @@ export { fetchBankTransactions } from "./fetchBankTransactions.js";
 export { listBankAccounts } from "./listBankAccounts.js";
 export { inspectBankSessionAccounts } from "./inspectBankSessionAccounts.js";
 export { updateBankAccountConfig } from "./updateBankAccountConfig.js";
+export { joinGroupWithCode } from "./joinGroup.js";

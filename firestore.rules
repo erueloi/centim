@@ -17,13 +17,34 @@ service cloud.firestore {
       return isAuthenticated() && (request.auth.uid in groupData.memberIds);
     }
 
+    // El currentGroupId de qui llegeix l'escriu ell mateix, així que NO prova
+    // res: cal que TANT qui llegeix COM el perfil llegit siguin a memberIds
+    // d'aquell grup. Si no, n'hi hauria prou d'apuntar-lo al grup d'una víctima.
+    function sharesGroupWith(userId) {
+      let groupId = get(/databases/$(database)/documents/users/$(request.auth.uid))
+        .data.get('currentGroupId', null);
+      let memberIds = get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
+      return groupId is string
+        && request.auth.uid in memberIds
+        && userId in memberIds;
+    }
+
+    // Mateix format que genera l'app (6 caràcters A-Z0-9).
+    function isValidInviteCode(code) {
+      return code is string && code.matches('^[A-Z0-9]{6}$');
+    }
+
+    // Les dades d'una llar no es poden moure ni injectar a una altra.
+    function groupIdUnchanged() {
+      return request.resource.data.groupId == resource.data.groupId;
+    }
+
     // --- RULES ---
 
-    // USERS: Users can read/write their own profile.
-    // Also, any authenticated user can read other users' profiles
-    // (needed for group member listing / payer selectors).
+    // USERS: cadascú llegeix el seu perfil i el dels membres del seu grup
+    // (selector de pagador), sempre per id: cap llistat de la col·lecció.
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow get: if isUser(userId) || (isAuthenticated() && sharesGroupWith(userId));
       allow write: if isUser(userId);
     }
 
@@ -35,39 +56,59 @@ service cloud.firestore {
       allow read: if isUser(userId);
     }
 
-    // GROUPS:
+    // GROUPS: només els membres el veuen, i ningú en pot llistar. Unir-se a una
+    // llar només es pot fer amb el codi, via la Cloud Function joinGroupWithCode
+    // (Admin SDK); aquí no hi ha cap camí per afegir-se a memberIds.
     match /groups/{groupId} {
-      allow create: if isAuthenticated();
-      
-      // Allow any authenticated user to read groups (so they can query by inviteCode)
-      allow read: if isAuthenticated();
+      function sensitiveKeysTouched() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['memberIds', 'ownerId', 'inviteCode']);
+      }
 
-      // Allow update if user is a member/owner OR if they are joining the group
-      allow update: if isAuthenticated() && (
-        request.auth.uid in resource.data.memberIds || 
-        request.auth.uid == resource.data.ownerId ||
-        (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds']) &&
-          request.resource.data.memberIds.hasAll(resource.data.memberIds) &&
-          request.resource.data.memberIds.size() == resource.data.memberIds.size() + 1 &&
-          request.auth.uid in request.resource.data.memberIds
-        )
-      );
+      // L'owner gestiona membres, propietat i codi, però sempre ha de quedar
+      // dins del grup (no pot sortir mentre no traspassi la propietat).
+      function isOwnerUpdate() {
+        return request.auth.uid == resource.data.ownerId
+          && request.resource.data.ownerId in request.resource.data.memberIds
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['inviteCode'])
+              || isValidInviteCode(request.resource.data.inviteCode));
+      }
+
+      // Un membre que no és l'owner es pot treure a si mateix i res més.
+      function isSelfLeave() {
+        return request.auth.uid != resource.data.ownerId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds'])
+          && request.resource.data.memberIds == resource.data.memberIds.removeAll([request.auth.uid]);
+      }
+
+      allow get: if isAuthenticated() && request.auth.uid in resource.data.memberIds;
+
+      allow create: if isAuthenticated()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid]
+        && isValidInviteCode(request.resource.data.inviteCode);
+
+      allow update: if isAuthenticated()
+        && request.auth.uid in resource.data.memberIds
+        && (!sensitiveKeysTouched() || isOwnerUpdate() || isSelfLeave());
     }
 
     // TRANSACTIONS
     match /transactions/{transactionId} {
       // Create: User must be member of the target groupId
       allow create: if isAuthenticated() && isGroupMember(request.resource.data.groupId);
-      
-      // Read/Update/Delete: User must be member of the existing doc's groupId
-      allow read, update, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+
+      // Read/Delete: User must be member of the existing doc's groupId
+      allow read, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+      // Update: a més, el groupId no pot canviar
+      allow update: if isAuthenticated() && isGroupMember(resource.data.groupId) && groupIdUnchanged();
     }
-    
+
     // BUDGETS
     match /budgets/{budgetId} {
       allow create: if isAuthenticated() && isGroupMember(request.resource.data.groupId);
-      allow read, update, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+      allow read, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+      allow update: if isAuthenticated() && isGroupMember(resource.data.groupId) && groupIdUnchanged();
     }
     
     // CATEGORIES (subcollection under groups)
@@ -121,15 +162,18 @@ service cloud.firestore {
     // BILLING CYCLES
     match /billing_cycles/{cycleId} {
       allow create: if isAuthenticated() && isGroupMember(request.resource.data.groupId);
-      allow read, update, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+      allow read, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+      allow update: if isAuthenticated() && isGroupMember(resource.data.groupId) && groupIdUnchanged();
     }
-    
+
     // SAVINGS GOALS (root collection)
     match /savings_goals/{goalId} {
       // Create: user must be member of the group
       allow create: if isAuthenticated() && isGroupMember(request.resource.data.groupId);
-      // Read/Update/Delete: user must be member of the group on the existing document
-      allow read, update, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+      // Read/Delete: user must be member of the group on the existing document
+      allow read, delete: if isAuthenticated() && isGroupMember(resource.data.groupId);
+      // Update: a més, el groupId no pot canviar
+      allow update: if isAuthenticated() && isGroupMember(resource.data.groupId) && groupIdUnchanged();
     }
   }
 }

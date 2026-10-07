@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart'
+    show Clipboard, ClipboardData, rootBundle;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:centim/l10n/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/providers/repository_providers.dart';
+import '../../providers/group_providers.dart';
 import '../../providers/incoherences_provider.dart';
 import 'bank_sync_screen.dart';
 import 'incoherences_screen.dart';
@@ -265,6 +267,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     ),
                   ),
 
+                  const SizedBox(height: 16),
+                  const _GroupInviteCard(),
+
                   const SizedBox(height: 48),
 
                   ListTile(
@@ -458,6 +463,102 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Grup actual i codi d'invitació, perquè els membres puguin convidar algú
+/// a la llar (l'altra persona l'introdueix a "Unir-se a un grup").
+class _GroupInviteCard extends ConsumerWidget {
+  const _GroupInviteCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final group = ref.watch(currentGroupProvider).valueOrNull;
+    if (group == null) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'El meu grup',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.home_outlined, color: AppTheme.copper),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  group.name,
+                  style: const TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+              Text(
+                '${group.memberIds.length} '
+                '${group.memberIds.length == 1 ? 'membre' : 'membres'}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.only(left: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SelectableText(
+                    group.inviteCode,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Copiar el codi',
+                  icon: const Icon(Icons.copy, color: AppTheme.copper),
+                  onPressed: () async {
+                    await Clipboard.setData(
+                      ClipboardData(text: group.inviteCode),
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Codi copiat.')),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Comparteix aquest codi amb qui vulguis convidar: l\'haurà '
+            'd\'introduir a «Unir-se a un grup» en registrar-se.',
+            style: TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
       ),
     );
   }

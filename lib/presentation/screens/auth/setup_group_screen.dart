@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/providers/repository_providers.dart';
@@ -49,16 +50,18 @@ class _SetupGroupScreenState extends ConsumerState<SetupGroupScreen> {
     if (_codeController.text.isEmpty) return;
     setState(() => _isLoading = true);
     try {
-      final authRepo = ref.read(authRepositoryProvider);
       final groupRepo = ref.read(groupRepositoryProvider);
-      final user = authRepo.currentUser;
-      if (user == null) return;
 
-      final resolvedGroupId =
-          await groupRepo.joinGroup(_codeController.text, user.uid);
-      await authRepo.updateCurrentGroupId(resolvedGroupId);
+      // La funció també deixa el grup com a currentGroupId de l'usuari.
+      await groupRepo.joinGroup(_codeController.text);
 
       // Navigate to Home
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'No s\'ha pogut unir al grup.')),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(

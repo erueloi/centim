@@ -24,17 +24,17 @@ Future<List<UserProfile>> groupMembers(Ref ref) async {
   if (group == null || group.memberIds.isEmpty) return [];
 
   try {
-    // Note: whereIn is limited to 10. For larger groups, need chunking.
-    // Assuming small groups for now.
-    final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .where(FieldPath.documentId, whereIn: group.memberIds.take(10).toList())
-        .get();
-
+    // Un get per membre: les regles només permeten llegir perfils per id
+    // (el propi i els dels companys de grup), mai llistar la col·lecció.
     final users = <UserProfile>[];
-    for (var doc in snapshot.docs) {
+    final usersCol = FirebaseFirestore.instance.collection('users');
+    final docs = await Future.wait(
+      group.memberIds.map((uid) => usersCol.doc(uid).get()),
+    );
+    for (var doc in docs) {
+      if (!doc.exists) continue;
       try {
-        final data = Map<String, dynamic>.from(doc.data());
+        final data = Map<String, dynamic>.from(doc.data()!);
         data['uid'] ??= doc
             .id; // Assegurar el camp UID per si no el guardava dins l'objecte
         data['email'] ??=

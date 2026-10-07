@@ -1,5 +1,5 @@
 import { importPKCS8, SignJWT, type KeyLike } from "jose";
-import { HttpsError, type CallableRequest } from "firebase-functions/v2/https";
+import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 
 /** Base URL per defecte (Sandbox i Producció comparteixen host avui). */
@@ -157,14 +157,5 @@ export async function enableBankingFetch<T>(
   return parsed as T;
 }
 
-/** Comprova que la crida callable ve d'un usuari autenticat i retorna el seu uid. */
-export function requireUid(request: CallableRequest): string {
-  const uid = request.auth?.uid;
-  if (!uid) {
-    throw new HttpsError(
-      "unauthenticated",
-      "Cal haver iniciat sessió per connectar el banc."
-    );
-  }
-  return uid;
-}
+// Reexportat perquè els imports existents de les Functions bancàries continuïn igual.
+export { requireUid } from "./auth.js";

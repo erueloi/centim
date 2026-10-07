@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../../domain/models/household_group.dart';
 import 'dart:math';
 
 class GroupRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFunctions _functions =
+      FirebaseFunctions.instanceFor(region: 'europe-west1');
 
   String _generateInviteCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -17,8 +20,9 @@ class GroupRepository {
     final docRef = _firestore.collection('groups').doc(); // Auto-ID
     final inviteCode = _generateInviteCode();
 
-    // In a real app, we should check for uniqueness of inviteCode here
-    // checking if a doc with this code already exists. For now, skipping for simplicity.
+    // No es comprova la unicitat del codi: les regles no deixen llistar grups.
+    // Amb 36^6 combinacions la col·lisió és molt improbable, i si passa,
+    // joinGroupWithCode la detecta i no uneix ningú a l'atzar.
 
     final group = HouseholdGroup(
       id: docRef.id,
@@ -31,36 +35,16 @@ class GroupRepository {
     return docRef.id;
   }
 
-  Future<String> joinGroup(String inviteCode, String userId) async {
-    // Find group by invite code
-    final query = await _firestore
-        .collection('groups')
-        .where('inviteCode', isEqualTo: inviteCode)
-        .limit(1)
-        .get();
-
-    if (query.docs.isEmpty) {
-      throw Exception('Invalid invite code');
-    }
-
-    final docRef = query.docs.first.reference;
-
-    await _firestore.runTransaction((transaction) async {
-      final snapshot = await transaction.get(docRef);
-      if (!snapshot.exists) {
-        throw Exception('Group not found');
-      }
-
-      final data = snapshot.data()!;
-      final currentMembers = List<String>.from(data['memberIds'] as List);
-
-      if (!currentMembers.contains(userId)) {
-        currentMembers.add(userId);
-        transaction.update(docRef, {'memberIds': currentMembers});
-      }
-    });
-
-    return docRef.id;
+  /// Unir-se a una llar amb el codi d'invitació. Les regles de Firestore no
+  /// deixen llistar grups ni afegir-se a `memberIds`: ho fa la Cloud Function
+  /// `joinGroupWithCode`, que també deixa aquest grup com a `currentGroupId`.
+  /// Llança [FirebaseFunctionsException] amb un missatge en català si el codi
+  /// no és vàlid o no existeix.
+  Future<String> joinGroup(String inviteCode) async {
+    final result = await _functions
+        .httpsCallable('joinGroupWithCode')
+        .call<Map<String, dynamic>>({'code': inviteCode});
+    return result.data['groupId'] as String;
   }
 
   Future<HouseholdGroup?> getGroup(String groupId) async {

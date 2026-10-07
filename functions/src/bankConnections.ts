@@ -12,7 +12,10 @@ export interface UserBankConnections {
   docs: QueryDocumentSnapshot<DocumentData>[];
 }
 
-/** Grup actiu del propietari de les connexions. */
+/**
+ * Grup actiu del propietari de les connexions. El `currentGroupId` el pot
+ * escriure el mateix usuari, així que cal verificar que n'és membre de debò.
+ */
 export async function currentBankGroupId(
   db: Firestore,
   uid: string
@@ -23,6 +26,14 @@ export async function currentBankGroupId(
     throw new HttpsError(
       "failed-precondition",
       "No hi ha cap grup actiu per associar-hi la connexió bancària."
+    );
+  }
+  const group = await db.doc(`groups/${groupId}`).get();
+  const memberIds = (group.get("memberIds") as string[] | undefined) ?? [];
+  if (!memberIds.includes(uid)) {
+    throw new HttpsError(
+      "permission-denied",
+      "No ets membre del grup actiu."
     );
   }
   return groupId;
