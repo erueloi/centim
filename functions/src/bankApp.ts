@@ -332,6 +332,11 @@ export function connectionReconnectState(
   if (status === "needs-reconnect") {
     return { needsReconnect: true, reason: (conn.reconnectReason as string) ?? APP_CHANGED };
   }
+  // Ha estat connectada però ja no té sessió (p. ex. una reconnexió a mitges
+  // de la 1.4.1, que deixava "authorizing"): cal reconnectar-la.
+  if (!conn.sessionId) {
+    return { needsReconnect: true, reason: (conn.reconnectReason as string) ?? APP_CHANGED };
+  }
   if (connectionAppId(conn, legacyAppId) !== currentAppId) {
     return { needsReconnect: true, reason: APP_CHANGED };
   }

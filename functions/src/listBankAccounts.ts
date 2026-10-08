@@ -39,15 +39,10 @@ export const listBankAccounts = onCall(
     const currentAppId = access.app?.appId ?? legacyAppId ?? "";
 
     const { docs } = await listBankConnectionDocs(db, uid, LEGACY_CONNECTION_ID);
-    // Les que tenen sessió, o que n'han tingut i s'han de reconnectar. Els
-    // intents de SCA abandonats (mai connectats) no es mostren, encara que
-    // una versió anterior els hagués marcat com a "cal reconnectar".
-    const visible = docs.filter(
-      (doc) =>
-        !!doc.get("sessionId") ||
-        ((doc.get("status") === "needs-reconnect" || doc.get("status") === "inactive") &&
-          wasEverConnected(doc.data()))
-    );
+    // Totes les que han estat connectades alguna vegada (sigui quin sigui
+    // l'estat: una renovació a mitges no pot amagar una connexió). Els
+    // intents de SCA abandonats que no han connectat mai no es mostren.
+    const visible = docs.filter((doc) => wasEverConnected(doc.data()));
 
     const connections = visible.map((snap) => {
       const stored = (snap.get("accounts") as EbAccount[] | undefined) ?? [];

@@ -428,6 +428,45 @@ describe("canvi d'aplicació i comptes accessibles", () => {
     expect(list.connections.map((c: { connectionId: string }) => c.connectionId)).toEqual(["bbva-1"]);
   });
 
+  it("començar a reconnectar i no acabar-ho no amaga la connexió", async () => {
+    await saveGroupApp();
+    await seedConnection("bob", "mock-1", {
+      groupId: "gA", appId: GROUP_APP_ID, aspspName: "Mock ASPSP", connectedAt: new Date(),
+      status: "needs-reconnect", reconnectReason: "app-removed", accounts: [account(1)],
+    });
+
+    await startBankAuth.run(callAs("bob", { connectionId: "mock-1" }));
+    const conn = (await db().doc("users/bob/bank_connections/mock-1").get()).data()!;
+    expect(conn.status).toBe("needs-reconnect");
+    expect(conn.pendingState).toBeDefined();
+
+    const list = await listBankAccounts.run(callAs("bob"));
+    expect(list.connections).toHaveLength(1);
+    expect(list.connections[0]).toMatchObject({
+      connectionId: "mock-1",
+      needsReconnect: true,
+      reconnectReason: "app-removed",
+    });
+  });
+
+  it("una connexió que la 1.4.1 va deixar 'authorizing' a mitja reconnexió es torna a veure", async () => {
+    await saveGroupApp();
+    // L'estat real de producció: connectada abans, sense sessió, "authorizing".
+    await seedConnection("bob", "mock-2", {
+      groupId: "gA", appId: GROUP_APP_ID, aspspName: "Mock ASPSP", connectedAt: new Date(),
+      status: "authorizing", reconnectReason: "app-removed", pendingState: "z", accounts: [account(1)],
+    });
+    const list = await listBankAccounts.run(callAs("bob"));
+    expect(list.connections[0]).toMatchObject({ connectionId: "mock-2", needsReconnect: true });
+  });
+
+  it("una connexió nova neix 'authorizing'", async () => {
+    await saveGroupApp();
+    const start = await startBankAuth.run(callAs("bob", { newConnection: true, aspspName: "BBVA" }));
+    const conn = (await db().doc(`users/bob/bank_connections/${start.connectionId}`).get()).data()!;
+    expect(conn.status).toBe("authorizing");
+  });
+
   it("un intent abandonat que una versió anterior va marcar 'cal reconnectar' no es mostra", async () => {
     await saveGroupApp();
     await seedConnection("bob", "caixabank", {

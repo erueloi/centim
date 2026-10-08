@@ -21,11 +21,12 @@ class BankCallback {
 
   static bool isCallback(Uri uri) => uri.path.contains('bank-callback');
 
-  /// URL neta per substituir el callback: l'arrel de l'app, sense el `code`
+  /// Camí net per substituir el callback: l'arrel de l'app, sense el `code`
   /// (és una credencial d'un sol ús) ni el `state`. Si es quedessin a la
   /// barra, recarregar la pàgina o entrar amb un altre usuari a la mateixa
   /// pestanya tornaria a intentar tancar una autorització ja gastada.
-  static String cleanUrlFor(Uri uri) => '${uri.origin}/';
+  /// Relatiu (mateix origen); el fragment de Flutter el conserva qui el fa servir.
+  static const cleanPath = '/';
 
   /// Només per als tests.
   static void resetForTest() {

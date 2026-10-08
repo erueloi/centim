@@ -25,20 +25,7 @@ void main() {
     expect(BankCallback.hasPending, isFalse);
   });
 
-  test('la URL neta és l\'arrel de l\'app, sense code ni state', () {
-    for (final raw in [
-      'https://centim-162bd.web.app/bank-callback?code=c1&state=s1',
-      'http://localhost:5000/bank-callback?code=c1&state=s1#/',
-    ]) {
-      final clean = BankCallback.cleanUrlFor(Uri.parse(raw));
-      expect(clean, isNot(contains('code')));
-      expect(clean, isNot(contains('state')));
-      expect(clean, isNot(contains('bank-callback')));
-      expect(clean, endsWith('/'));
-    }
-    expect(
-      BankCallback.cleanUrlFor(Uri.parse('http://localhost:5000/bank-callback?code=c')),
-      'http://localhost:5000/',
-    );
+  test('el camí net és l\'arrel, relatiu i sense code ni state', () {
+    expect(BankCallback.cleanPath, '/');
   });
 }

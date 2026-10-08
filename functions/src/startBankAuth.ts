@@ -146,7 +146,10 @@ export const startBankAuth = onCall(
         pendingValidUntil: validUntil,
         // finalize comprova que l'aplicació no hagi canviat enmig de la SCA.
         pendingAppId: creds.appId,
-        status: existing?.get("sessionId") ? existing.get("status") ?? "connected" : "authorizing",
+        // Només una connexió nova neix "authorizing". En una renovació l'estat
+        // no es toca fins que finalize tanqui la SCA: si l'usuari no l'acaba,
+        // la connexió ha de continuar com estava ("cal reconnectar", etc.).
+        ...(addConnection ? { status: "authorizing" } : {}),
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }

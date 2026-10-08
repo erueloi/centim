@@ -23,9 +23,14 @@ void main() async {
   // Captura el retorn de l'SCA bancària (web: /bank-callback?code&state) i
   // treu el codi de la barra d'adreces: és d'un sol ús i no s'ha de tornar a
   // processar en recarregar ni quedar a l'historial.
-  final startUri = Uri.base;
-  if (BankCallback.captureFromUri(startUri)) {
-    replaceBrowserUrl(BankCallback.cleanUrlFor(startUri));
+  // És una neteja: si falla, l'app ha d'arrencar igualment (a la 1.4.1 una
+  // excepció aquí la deixava en blanc).
+  if (BankCallback.captureFromUri(Uri.base)) {
+    try {
+      replaceBrowserUrl(BankCallback.cleanPath);
+    } catch (e) {
+      debugPrint('No s\'ha pogut netejar l\'URL del callback bancari: $e');
+    }
   }
 
   runApp(const ProviderScope(child: MyApp()));
