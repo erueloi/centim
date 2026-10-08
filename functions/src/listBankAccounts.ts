@@ -15,6 +15,7 @@ import {
   groupConnectionDocs,
   legacyAppIdOrNull,
   requireBankAccess,
+  wasEverConnected,
 } from "./bankApp.js";
 
 /**
@@ -39,12 +40,13 @@ export const listBankAccounts = onCall(
 
     const { docs } = await listBankConnectionDocs(db, uid, LEGACY_CONNECTION_ID);
     // Les que tenen sessió, o que n'han tingut i s'han de reconnectar. Els
-    // intents de SCA abandonats ("authorizing" sense sessió) no es mostren.
+    // intents de SCA abandonats (mai connectats) no es mostren, encara que
+    // una versió anterior els hagués marcat com a "cal reconnectar".
     const visible = docs.filter(
       (doc) =>
         !!doc.get("sessionId") ||
-        doc.get("status") === "needs-reconnect" ||
-        doc.get("status") === "inactive"
+        ((doc.get("status") === "needs-reconnect" || doc.get("status") === "inactive") &&
+          wasEverConnected(doc.data()))
     );
 
     const connections = visible.map((snap) => {

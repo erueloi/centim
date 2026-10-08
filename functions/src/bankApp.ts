@@ -300,6 +300,15 @@ export async function groupConnectionDocs(
 }
 
 /**
+ * Cert si la connexió ha tingut sessió alguna vegada. Els intents de SCA
+ * abandonats ("authorizing", sense sessió ni comptes) no ho són.
+ */
+export function wasEverConnected(conn: DocumentData): boolean {
+  const accounts = conn.accounts as unknown[] | undefined;
+  return !!conn.sessionId || !!conn.connectedAt || (accounts?.length ?? 0) > 0;
+}
+
+/**
  * Aplicació amb què es va crear la connexió. Les anteriors a la fase 1 no
  * tenen appId: es van crear amb l'aplicació global.
  */
@@ -378,6 +387,9 @@ export async function reconcileGroupConnections(
   for (const doc of await groupConnectionDocs(db, groupId)) {
     const conn = doc.data();
     if (conn.status === "inactive") continue;
+    // Un intent de SCA abandonat no és una connexió: no es toca (si es
+    // marqués "cal reconnectar", reapareixeria a la pantalla com si ho fos).
+    if (!wasEverConnected(conn)) continue;
     const appId = connectionAppId(conn, opts.legacyAppId);
     if (opts.newAppId && appId === opts.newAppId) {
       if (!conn.appId) await doc.ref.set({ appId: opts.newAppId }, { merge: true });

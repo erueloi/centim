@@ -409,6 +409,34 @@ describe("canvi d'aplicació i comptes accessibles", () => {
     expect(conn.sessionId).toBeUndefined();
   });
 
+  it("un intent de connexió abandonat no reapareix com a 'Cal reconnectar' en canviar l'aplicació", async () => {
+    // El cas real: "Connecta el banc" sense acabar la SCA (mai connectat).
+    await seedConnection("bob", "caixabank", {
+      groupId: "gA", status: "authorizing", aspspName: "CaixaBank", pendingState: "x",
+    });
+    await seedConnection("bob", "bbva-1", {
+      groupId: "gA", appId: OTHER_APP_ID, sessionId: "s-1", connectedAt: new Date(), accounts: [account(1)],
+    });
+
+    const result = await saveGroupApp();
+    expect(result).toMatchObject({ connectionsKept: 0, connectionsToReconnect: 1 });
+    const abandoned = (await db().doc("users/bob/bank_connections/caixabank").get()).data()!;
+    expect(abandoned.status).toBe("authorizing");
+    expect(abandoned.reconnectReason).toBeUndefined();
+
+    const list = await listBankAccounts.run(callAs("bob"));
+    expect(list.connections.map((c: { connectionId: string }) => c.connectionId)).toEqual(["bbva-1"]);
+  });
+
+  it("un intent abandonat que una versió anterior va marcar 'cal reconnectar' no es mostra", async () => {
+    await saveGroupApp();
+    await seedConnection("bob", "caixabank", {
+      groupId: "gA", status: "needs-reconnect", reconnectReason: "app-changed", aspspName: "CaixaBank",
+    });
+    const list = await listBankAccounts.run(callAs("bob"));
+    expect(list.connections).toEqual([]);
+  });
+
   it("comptes accessibles: unió de les connexions actives de tots els membres, sense duplicats", async () => {
     await saveGroupApp();
     await db().doc("users/bob").set({ name: "Bob" }, { merge: true });
@@ -455,6 +483,10 @@ describe("migració del grup de transició sense reconnectar", () => {
     await seedConnection("jose", "caixabank-2", {
       groupId: "gLegacy", sessionId: "sess-jose", aspspName: "CaixaBank", accounts: [account(2)],
     });
+    // Com a producció: un intent abandonat, sense sessió ni comptes.
+    await seedConnection("eloi", "caixabank-abandonat", {
+      groupId: "gLegacy", status: "authorizing", aspspName: "CaixaBank", pendingState: "y",
+    });
   });
 
   it("abans de migrar, el grup fa servir l'aplicació global i les connexions són vàlides", async () => {
@@ -474,6 +506,9 @@ describe("migració del grup de transició sense reconnectar", () => {
       expect(conn).toMatchObject({ appId: LEGACY_APP_ID, sessionId: session });
       expect(conn.status).toBeUndefined();
     }
+    const abandoned = (await db().doc("users/eloi/bank_connections/caixabank-abandonat").get()).data()!;
+    expect(abandoned).toMatchObject({ status: "authorizing" });
+    expect(abandoned.appId).toBeUndefined();
     await expect(getBankSetup.run(callAs("jose"))).resolves.toMatchObject({ source: "group" });
     const list = await listBankAccounts.run(callAs("jose"));
     expect(list.connections[0]).toMatchObject({ needsReconnect: false });
