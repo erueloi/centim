@@ -4,23 +4,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:intl/intl.dart';
 import 'package:centim/l10n/app_localizations.dart';
+import '../../../ajuda/ajuda_urls.dart';
+import '../../../ajuda/ancores_ajuda.dart';
 import '../../../domain/services/bank_consent_service.dart';
 import '../../providers/bank_consent_provider.dart';
+import '../../sheets/bank_picker_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../domain/models/asset.dart';
 import '../../../domain/services/bank_sync_service.dart';
 import '../../providers/asset_provider.dart';
+import 'bank_app_wizard.dart';
 
-enum _ConnState { loading, connected, notConnected, notEnabled, error }
+enum _ConnState { loading, ready, noApp, error }
 
 /// El grup actual no té accés a la connexió bancària: missatge informatiu,
 /// sense botons de reintentar ni de connectar (no depèn de l'usuari).
 class BankNotEnabledNotice extends StatelessWidget {
-  const BankNotEnabledNotice({super.key});
+  final String? message;
+  const BankNotEnabledNotice({super.key, this.message});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -28,18 +34,34 @@ class BankNotEnabledNotice extends StatelessWidget {
           const Icon(Icons.lock_clock_outlined, size: 48, color: Colors.grey),
           const SizedBox(height: 16),
           Text(
-            AppLocalizations.of(context)!.bankNotEnabledForGroup,
+            message ?? l10n.bankNotEnabledForGroup,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 16),
           ),
+          const SizedBox(height: 8),
+          const BankHelpLink(),
         ]),
       ),
     );
   }
 }
 
-/// Configuració de la sincronització bancària (Enable Banking):
-/// estat de connexió + selector de quins comptes sincronitzar i com.
+/// Enllaç a la guia (`<base>/apps/centim/guia#banc-propi`).
+class BankHelpLink extends StatelessWidget {
+  const BankHelpLink({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: () => launchUrl(ajudaUri(AncoresAjuda.bancPropi)),
+      icon: const Icon(Icons.help_outline, size: 18),
+      label: Text(AppLocalizations.of(context)!.bankHelpLink),
+    );
+  }
+}
+
+/// Configuració de la sincronització bancària (Enable Banking): aplicació del
+/// grup, connexions, comptes a sincronitzar i comptes accessibles del grup.
 class BankSyncScreen extends ConsumerStatefulWidget {
   const BankSyncScreen({super.key});
 
@@ -49,8 +71,10 @@ class BankSyncScreen extends ConsumerStatefulWidget {
 
 class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
   _ConnState _state = _ConnState.loading;
+  BankSetup? _setup;
   List<BankConnectionInfo> _connections = [];
   List<BankAccountInfo> _accounts = [];
+  List<GroupBankAccount> _groupAccounts = [];
   final Map<String, BankSessionInspection> _sessionInspections = {};
   final Set<String> _inspectingConnections = {};
   String _error = '';
@@ -64,27 +88,117 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
   Future<void> _load() async {
     setState(() => _state = _ConnState.loading);
     try {
-      final conn = await ref.read(bankSyncServiceProvider).listAccounts();
+      final service = ref.read(bankSyncServiceProvider);
+      final setup = await service.getSetup();
+      if (!mounted) return;
+      if (!setup.configured) {
+        setState(() {
+          _setup = setup;
+          _state = _ConnState.noApp;
+        });
+        return;
+      }
+      final conn = await service.listAccounts();
       if (!mounted) return;
       setState(() {
+        _setup = setup;
         _connections = conn.connections;
         _accounts = conn.accounts;
-        _state = _ConnState.connected;
+        _groupAccounts = conn.groupAccounts;
+        _state = _ConnState.ready;
       });
       ref.invalidate(bankConnectionStateProvider);
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
-      // failed-precondition (needsReauth) = encara no hi ha sessió.
-      setState(() => _state = isBankNotEnabled(e)
-          ? _ConnState.notEnabled
-          : e.code == 'failed-precondition'
-              ? _ConnState.notConnected
-              : _ConnState.error);
-      _error = e.message ?? 'Error';
+      setState(() {
+        _state = isNoBankApp(e) ? _ConnState.noApp : _ConnState.error;
+        _error = e.message ?? 'Error';
+      });
     } catch (e) {
       if (!mounted) return;
-      setState(() => _state = _ConnState.error);
-      _error = e.toString();
+      setState(() {
+        _state = _ConnState.error;
+        _error = e.toString();
+      });
+    }
+  }
+
+  void _onSaved(BankAppSaveResult result) {
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(result.connectionsToReconnect > 0
+          ? l10n.bankSavedReconnect(result.connectionsToReconnect)
+          : l10n.bankSaved),
+    ));
+    _load();
+  }
+
+  /// Obre l'assistent complet o només el formulari de credencials.
+  Future<void> _openCredentialsPage({required bool fullWizard}) async {
+    final l10n = AppLocalizations.of(context)!;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (pageContext) => Scaffold(
+          appBar: AppBar(
+            title: Text(
+              fullWizard ? l10n.bankSetupOwnApp : l10n.bankChangeCredentials,
+            ),
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              if (fullWizard)
+                BankAppWizard(onSaved: (result) {
+                  Navigator.pop(pageContext);
+                  _onSaved(result);
+                })
+              else
+                BankCredentialsForm(onSaved: (result) {
+                  Navigator.pop(pageContext);
+                  _onSaved(result);
+                }),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _deleteCredentials() async {
+    final l10n = AppLocalizations.of(context)!;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.bankDeleteConfirmTitle),
+        content: Text(l10n.bankDeleteConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancelButton),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              l10n.bankDeleteCredentials,
+              style: const TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await ref.read(bankSyncServiceProvider).deleteAppCredentials();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l10n.bankDeleted)));
+      _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e is FirebaseFunctionsException ? (e.message ?? '$e') : '$e'),
+      ));
     }
   }
 
@@ -131,9 +245,22 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
     }
   }
 
+  /// Connexió nova: primer es tria el banc.
+  Future<void> _addConnection() async {
+    final aspsp = await showBankPicker(context);
+    if (aspsp == null || !mounted) return;
+    await _connect(
+      newConnection: true,
+      aspspName: aspsp.name,
+      aspspCountry: aspsp.country,
+    );
+  }
+
   Future<void> _connect({
     String? connectionId,
     bool newConnection = false,
+    String? aspspName,
+    String? aspspCountry,
   }) async {
     if (!kIsWeb) {
       // Android/iOS (custom scheme) arriba a la propera passa de 2d.4.
@@ -151,6 +278,8 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
             redirectUrl: redirectUrl,
             connectionId: connectionId,
             newConnection: newConnection,
+            aspspName: aspspName,
+            aspspCountry: aspspCountry,
           );
       // Redirect de tota la pestanya cap a la SCA; en tornar, /bank-callback
       // el gestiona l'app (AuthWrapper → finalizeBankSession).
@@ -159,8 +288,8 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
         webOnlyWindowName: '_self',
       );
     } catch (e) {
-      if (isBankNotEnabled(e)) {
-        if (mounted) setState(() => _state = _ConnState.notEnabled);
+      if (isNoBankApp(e)) {
+        if (mounted) setState(() => _state = _ConnState.noApp);
         return;
       }
       if (mounted) {
@@ -178,9 +307,8 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
       body: switch (_state) {
         _ConnState.loading => const Center(child: CircularProgressIndicator()),
         _ConnState.error => _buildError(),
-        _ConnState.notConnected => _buildNotConnected(),
-        _ConnState.notEnabled => const BankNotEnabledNotice(),
-        _ConnState.connected => _buildConnected(),
+        _ConnState.noApp => _buildNoApp(),
+        _ConnState.ready => _buildReady(),
       },
     );
   }
@@ -198,30 +326,41 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
         ),
       );
 
-  Widget _buildNotConnected() => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.account_balance, size: 48, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text('Encara no has connectat cap banc.',
-                textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => _connect(),
-              icon: const Icon(Icons.link),
-              label: const Text('Connecta el banc'),
-            ),
-          ]),
+  /// El grup no té aplicació: assistent per a l'owner, avís per a la resta.
+  Widget _buildNoApp() {
+    final l10n = AppLocalizations.of(context)!;
+    if (_setup?.isOwner != true) {
+      return BankNotEnabledNotice(message: l10n.bankNoAppMember);
+    }
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text(
+          l10n.bankNoAppTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-      );
+        const SizedBox(height: 8),
+        BankAppWizard(onSaved: _onSaved),
+        const Align(alignment: Alignment.centerLeft, child: BankHelpLink()),
+      ],
+    );
+  }
 
-  Widget _buildConnected() {
+  Widget _buildReady() {
+    final l10n = AppLocalizations.of(context)!;
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (_setup != null) _buildAppStatusCard(_setup!),
+          const SizedBox(height: 8),
+          Text(
+            l10n.bankRestrictedNotice,
+            style: const TextStyle(color: Colors.grey, fontSize: 13),
+          ),
+          const Align(alignment: Alignment.centerLeft, child: BankHelpLink()),
+          const SizedBox(height: 8),
           const Text('Comptes',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 4),
@@ -235,12 +374,17 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: FilledButton.tonalIcon(
-              onPressed: () => _connect(newConnection: true),
+              onPressed: _addConnection,
               icon: const Icon(Icons.add_link),
-              label: const Text('Afegeix una altra connexió'),
+              label: Text(l10n.bankAddConnection),
             ),
           ),
           const SizedBox(height: 16),
+          if (_connections.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(l10n.bankNoConnections),
+            ),
           for (final connection in _connections) ...[
             _buildConnectionHeader(connection),
             if (_sessionInspections[connection.connectionId]
@@ -249,14 +393,134 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
               _buildSessionInspection(inspection),
             ],
             const SizedBox(height: 8),
-            for (int i = 0; i < _accounts.length; i++)
-              if (_accounts[i].connectionId == connection.connectionId)
-                _buildAccountCard(i),
+            if (!connection.needsReconnect)
+              for (int i = 0; i < _accounts.length; i++)
+                if (_accounts[i].connectionId == connection.connectionId)
+                  _buildAccountCard(i),
             const SizedBox(height: 12),
           ],
+          _buildGroupAccounts(),
         ],
       ),
     );
+  }
+
+  Widget _buildAppStatusCard(BankSetup setup) {
+    final l10n = AppLocalizations.of(context)!;
+    if (setup.isLegacy) {
+      return Card(
+        color: Colors.blueGrey.withValues(alpha: 0.08),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.bankAppStatusTitle,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(l10n.bankLegacyNotice),
+              if (setup.isOwner) ...[
+                const SizedBox(height: 8),
+                FilledButton.tonalIcon(
+                  onPressed: () => _openCredentialsPage(fullWizard: true),
+                  icon: const Icon(Icons.settings_suggest_outlined),
+                  label: Text(l10n.bankSetupOwnApp),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    final env = setup.env == 'production' ? l10n.bankEnvProduction : l10n.bankEnvSandbox;
+    final date = setup.validatedAt == null
+        ? '—'
+        : DateFormat('dd/MM/yyyy').format(setup.validatedAt!.toLocal());
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.verified_user_outlined, color: Colors.green),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  setup.appName ?? l10n.bankAppStatusTitle,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 4),
+            Text(
+              l10n.bankAppStatusLine(setup.appIdShort ?? '—', date, env),
+              style: const TextStyle(color: Colors.grey, fontSize: 13),
+            ),
+            if (setup.isOwner)
+              Wrap(spacing: 8, children: [
+                TextButton.icon(
+                  onPressed: () => _openCredentialsPage(fullWizard: false),
+                  icon: const Icon(Icons.key_outlined, size: 18),
+                  label: Text(l10n.bankChangeCredentials),
+                ),
+                TextButton.icon(
+                  onPressed: _deleteCredentials,
+                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                  label: Text(
+                    l10n.bankDeleteCredentials,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// "Comptes accessibles": unió dels comptes ja connectats pels membres.
+  Widget _buildGroupAccounts() {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Text(l10n.bankAccessibleAccountsTitle,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const SizedBox(height: 4),
+        Text(
+          l10n.bankAccessibleAccountsBody,
+          style: const TextStyle(color: Colors.grey, fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        if (_groupAccounts.isEmpty)
+          Text(l10n.bankNoAccessibleAccounts)
+        else
+          for (final account in _groupAccounts)
+            ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.account_balance_outlined),
+              title: Text(account.name ?? account.ibanMasked),
+              subtitle: Text([
+                account.ibanMasked,
+                account.aspspName,
+                if (account.memberName != null) account.memberName!,
+              ].join(' · ')),
+            ),
+      ],
+    );
+  }
+
+  String _reconnectReasonText(String? reason) {
+    final l10n = AppLocalizations.of(context)!;
+    return switch (reason) {
+      'app-removed' => l10n.bankReasonAppRemoved,
+      'left-group' => l10n.bankReasonLeftGroup,
+      _ => l10n.bankReasonAppChanged,
+    };
   }
 
   Widget _buildSessionInspection(BankSessionInspection inspection) {
@@ -335,7 +599,11 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
 
     Color color = Colors.green;
     String text;
-    if (until == null) {
+    if (connection.needsReconnect) {
+      color = Colors.orange;
+      text = '${AppLocalizations.of(context)!.bankNeedsReconnect}. '
+          '${_reconnectReasonText(connection.reconnectReason)}';
+    } else if (until == null) {
       color = Colors.grey;
       text = 'Connectada.';
     } else if (expired) {
@@ -358,7 +626,12 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              Icon(expired ? Icons.warning : Icons.verified_user, color: color),
+              Icon(
+                expired || connection.needsReconnect
+                    ? Icons.warning
+                    : Icons.verified_user,
+                color: color,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -371,6 +644,12 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
                         fontSize: 16,
                       ),
                     ),
+                    if (connection.aspspName != null &&
+                        connection.aspspName != connection.label)
+                      Text(
+                        connection.aspspName!,
+                        style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
                     const SizedBox(height: 2),
                     Text(text),
                   ],
@@ -387,9 +666,12 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
                     connectionId: connection.connectionId,
                   ),
                   icon: const Icon(Icons.refresh, size: 18),
-                  label: Text(expired || soon ? 'Reconnecta' : 'Renova'),
+                  label: Text(expired || soon || connection.needsReconnect
+                      ? AppLocalizations.of(context)!.bankReconnect
+                      : 'Renova'),
                 ),
-                TextButton.icon(
+                if (!connection.needsReconnect)
+                  TextButton.icon(
                   onPressed:
                       _inspectingConnections.contains(connection.connectionId)
                           ? null

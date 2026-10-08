@@ -152,14 +152,21 @@ class _BankCallbackHandlerState extends ConsumerState<_BankCallbackHandler> {
   Future<void> _process(({String code, String state}) pending) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await ref.read(bankSyncServiceProvider).finalizeSession(
+      final result = await ref.read(bankSyncServiceProvider).finalizeSession(
             code: pending.code,
             state: pending.state,
           );
       ref.invalidate(bankConnectionStateProvider);
       if (!mounted) return;
+      // Mode restringit: si el banc no retorna cap compte, és que no està
+      // enllaçat al panell d'Enable Banking del grup.
       messenger.showSnackBar(
-        const SnackBar(content: Text('Banc connectat correctament.')),
+        result.noLinkedAccounts
+            ? SnackBar(
+                content: Text(AppLocalizations.of(context)!.bankNoLinkedAccounts),
+                duration: const Duration(seconds: 10),
+              )
+            : const SnackBar(content: Text('Banc connectat correctament.')),
       );
       Navigator.push(
         context,
@@ -170,8 +177,8 @@ class _BankCallbackHandlerState extends ConsumerState<_BankCallbackHandler> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            isBankNotEnabled(e)
-                ? AppLocalizations.of(context)!.bankNotEnabledForGroup
+            isNoBankApp(e)
+                ? AppLocalizations.of(context)!.bankNoAppForGroup
                 : 'No s\'ha pogut connectar el banc: $e',
           ),
         ),

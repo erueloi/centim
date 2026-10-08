@@ -1591,6 +1591,348 @@ abstract class AppLocalizations {
   /// In ca, this message translates to:
   /// **'La connexió bancària encara no està disponible per al teu grup.'**
   String get bankNotEnabledForGroup;
+
+  /// No description provided for @bankNoAppTitle.
+  ///
+  /// In ca, this message translates to:
+  /// **'El grup encara no té connexió bancària'**
+  String get bankNoAppTitle;
+
+  /// No description provided for @bankNoAppForGroup.
+  ///
+  /// In ca, this message translates to:
+  /// **'El teu grup encara no té configurada la connexió bancària.'**
+  String get bankNoAppForGroup;
+
+  /// No description provided for @bankNoAppMember.
+  ///
+  /// In ca, this message translates to:
+  /// **'Demana a l\'owner del grup que configuri la connexió bancària.'**
+  String get bankNoAppMember;
+
+  /// No description provided for @bankWizardIntro.
+  ///
+  /// In ca, this message translates to:
+  /// **'Cada grup fa servir la seva pròpia aplicació d\'Enable Banking. Com a owner, la configures en tres passos.'**
+  String get bankWizardIntro;
+
+  /// No description provided for @bankWizardStep1Title.
+  ///
+  /// In ca, this message translates to:
+  /// **'Crea l\'aplicació a Enable Banking'**
+  String get bankWizardStep1Title;
+
+  /// No description provided for @bankWizardStep1Body.
+  ///
+  /// In ca, this message translates to:
+  /// **'Al panell d\'Enable Banking (Control panel → API applications), registra una aplicació de tipus Production. Tria generar la clau privada al navegador i desa el fitxer .pem en un lloc segur. Fes servir aquests valors:'**
+  String get bankWizardStep1Body;
+
+  /// No description provided for @bankWizardRedirectUrl.
+  ///
+  /// In ca, this message translates to:
+  /// **'Redirect URL'**
+  String get bankWizardRedirectUrl;
+
+  /// No description provided for @bankWizardPrivacyUrl.
+  ///
+  /// In ca, this message translates to:
+  /// **'URL de privacitat'**
+  String get bankWizardPrivacyUrl;
+
+  /// No description provided for @bankWizardTermsUrl.
+  ///
+  /// In ca, this message translates to:
+  /// **'URL de condicions'**
+  String get bankWizardTermsUrl;
+
+  /// No description provided for @bankWizardDescription.
+  ///
+  /// In ca, this message translates to:
+  /// **'Descripció'**
+  String get bankWizardDescription;
+
+  /// No description provided for @bankWizardDescriptionValue.
+  ///
+  /// In ca, this message translates to:
+  /// **'Cèntim: finances de la llar. Llegeix els comptes de la família per importar-ne els moviments.'**
+  String get bankWizardDescriptionValue;
+
+  /// No description provided for @bankWizardOpenPanel.
+  ///
+  /// In ca, this message translates to:
+  /// **'Obre Enable Banking'**
+  String get bankWizardOpenPanel;
+
+  /// No description provided for @bankWizardStep2Title.
+  ///
+  /// In ca, this message translates to:
+  /// **'Enllaça els comptes'**
+  String get bankWizardStep2Title;
+
+  /// No description provided for @bankWizardStep2Body.
+  ///
+  /// In ca, this message translates to:
+  /// **'A la teva aplicació del panell, fes «Link accounts»: tria el país, el banc i el tipus «personal», i autentica\'t al teu banc. Per als comptes dels altres membres, fes tu el Link i deixa que cada membre s\'autentiqui al seu banc i ho accepti.'**
+  String get bankWizardStep2Body;
+
+  /// No description provided for @bankWizardStep3Title.
+  ///
+  /// In ca, this message translates to:
+  /// **'Enganxa l\'id i la clau'**
+  String get bankWizardStep3Title;
+
+  /// No description provided for @bankWizardNext.
+  ///
+  /// In ca, this message translates to:
+  /// **'Continua'**
+  String get bankWizardNext;
+
+  /// No description provided for @bankWizardBack.
+  ///
+  /// In ca, this message translates to:
+  /// **'Enrere'**
+  String get bankWizardBack;
+
+  /// No description provided for @bankAppIdLabel.
+  ///
+  /// In ca, this message translates to:
+  /// **'Id de l\'aplicació'**
+  String get bankAppIdLabel;
+
+  /// No description provided for @bankPemLabel.
+  ///
+  /// In ca, this message translates to:
+  /// **'Clau privada (.pem)'**
+  String get bankPemLabel;
+
+  /// No description provided for @bankPemUpload.
+  ///
+  /// In ca, this message translates to:
+  /// **'Puja el fitxer .pem'**
+  String get bankPemUpload;
+
+  /// No description provided for @bankPemLoaded.
+  ///
+  /// In ca, this message translates to:
+  /// **'Fitxer carregat: {fileName}'**
+  String bankPemLoaded(Object fileName);
+
+  /// No description provided for @bankCheckAndSave.
+  ///
+  /// In ca, this message translates to:
+  /// **'Comprova i desa'**
+  String get bankCheckAndSave;
+
+  /// No description provided for @bankCredentialsHint.
+  ///
+  /// In ca, this message translates to:
+  /// **'La clau es comprova amb Enable Banking i es desa xifrada. Ningú, ni tu, la podrà tornar a veure des de Cèntim.'**
+  String get bankCredentialsHint;
+
+  /// No description provided for @bankSaved.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aplicació del grup desada.'**
+  String get bankSaved;
+
+  /// No description provided for @bankSavedReconnect.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aplicació desada. Connexions que cal tornar a connectar: {count}.'**
+  String bankSavedReconnect(Object count);
+
+  /// No description provided for @bankCopy.
+  ///
+  /// In ca, this message translates to:
+  /// **'Copia'**
+  String get bankCopy;
+
+  /// No description provided for @bankCopied.
+  ///
+  /// In ca, this message translates to:
+  /// **'Copiat.'**
+  String get bankCopied;
+
+  /// No description provided for @bankRestrictedNotice.
+  ///
+  /// In ca, this message translates to:
+  /// **'Només es poden llegir els comptes enllaçats al panell d\'Enable Banking del grup.'**
+  String get bankRestrictedNotice;
+
+  /// No description provided for @bankHelpLink.
+  ///
+  /// In ca, this message translates to:
+  /// **'Com configurar la connexió bancària'**
+  String get bankHelpLink;
+
+  /// No description provided for @bankAppStatusTitle.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aplicació d\'Enable Banking del grup'**
+  String get bankAppStatusTitle;
+
+  /// No description provided for @bankAppStatusLine.
+  ///
+  /// In ca, this message translates to:
+  /// **'{appId} · {env} · validada el {date}'**
+  String bankAppStatusLine(Object appId, Object date, Object env);
+
+  /// No description provided for @bankEnvProduction.
+  ///
+  /// In ca, this message translates to:
+  /// **'Producció'**
+  String get bankEnvProduction;
+
+  /// No description provided for @bankEnvSandbox.
+  ///
+  /// In ca, this message translates to:
+  /// **'Sandbox'**
+  String get bankEnvSandbox;
+
+  /// No description provided for @bankChangeCredentials.
+  ///
+  /// In ca, this message translates to:
+  /// **'Canvia les credencials'**
+  String get bankChangeCredentials;
+
+  /// No description provided for @bankDeleteCredentials.
+  ///
+  /// In ca, this message translates to:
+  /// **'Elimina'**
+  String get bankDeleteCredentials;
+
+  /// No description provided for @bankDeleteConfirmTitle.
+  ///
+  /// In ca, this message translates to:
+  /// **'Eliminar l\'aplicació del grup?'**
+  String get bankDeleteConfirmTitle;
+
+  /// No description provided for @bankDeleteConfirmBody.
+  ///
+  /// In ca, this message translates to:
+  /// **'Es tancaran les connexions bancàries de tots els membres i caldrà tornar-les a connectar quan configuris una aplicació nova.'**
+  String get bankDeleteConfirmBody;
+
+  /// No description provided for @bankDeleted.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aplicació del grup eliminada.'**
+  String get bankDeleted;
+
+  /// No description provided for @bankLegacyNotice.
+  ///
+  /// In ca, this message translates to:
+  /// **'El grup encara fa servir l\'aplicació compartida antiga. Configura la vostra: amb el mateix id i la mateixa clau, no caldrà reconnectar cap banc.'**
+  String get bankLegacyNotice;
+
+  /// No description provided for @bankSetupOwnApp.
+  ///
+  /// In ca, this message translates to:
+  /// **'Configura l\'aplicació del grup'**
+  String get bankSetupOwnApp;
+
+  /// No description provided for @bankAccessibleAccountsTitle.
+  ///
+  /// In ca, this message translates to:
+  /// **'Comptes accessibles'**
+  String get bankAccessibleAccountsTitle;
+
+  /// No description provided for @bankAccessibleAccountsBody.
+  ///
+  /// In ca, this message translates to:
+  /// **'Comptes ja connectats pels membres del grup. No és la llista del panell d\'Enable Banking: si en falta algun, cal enllaçar-lo al panell i connectar-lo des de Cèntim.'**
+  String get bankAccessibleAccountsBody;
+
+  /// No description provided for @bankNoAccessibleAccounts.
+  ///
+  /// In ca, this message translates to:
+  /// **'Encara no hi ha cap compte connectat.'**
+  String get bankNoAccessibleAccounts;
+
+  /// No description provided for @bankNeedsReconnect.
+  ///
+  /// In ca, this message translates to:
+  /// **'Cal reconnectar'**
+  String get bankNeedsReconnect;
+
+  /// No description provided for @bankReasonAppChanged.
+  ///
+  /// In ca, this message translates to:
+  /// **'S\'ha canviat l\'aplicació d\'Enable Banking del grup.'**
+  String get bankReasonAppChanged;
+
+  /// No description provided for @bankReasonAppRemoved.
+  ///
+  /// In ca, this message translates to:
+  /// **'S\'ha eliminat l\'aplicació d\'Enable Banking del grup.'**
+  String get bankReasonAppRemoved;
+
+  /// No description provided for @bankReasonLeftGroup.
+  ///
+  /// In ca, this message translates to:
+  /// **'És d\'abans que sortissis del grup.'**
+  String get bankReasonLeftGroup;
+
+  /// No description provided for @bankReconnect.
+  ///
+  /// In ca, this message translates to:
+  /// **'Reconnecta'**
+  String get bankReconnect;
+
+  /// No description provided for @bankAddConnection.
+  ///
+  /// In ca, this message translates to:
+  /// **'Afegeix una connexió'**
+  String get bankAddConnection;
+
+  /// No description provided for @bankNoConnections.
+  ///
+  /// In ca, this message translates to:
+  /// **'Encara no has connectat cap banc.'**
+  String get bankNoConnections;
+
+  /// No description provided for @bankPickTitle.
+  ///
+  /// In ca, this message translates to:
+  /// **'Tria el teu banc'**
+  String get bankPickTitle;
+
+  /// No description provided for @bankPickCountry.
+  ///
+  /// In ca, this message translates to:
+  /// **'País'**
+  String get bankPickCountry;
+
+  /// No description provided for @bankPickSearch.
+  ///
+  /// In ca, this message translates to:
+  /// **'Cerca el banc'**
+  String get bankPickSearch;
+
+  /// No description provided for @bankPickEmpty.
+  ///
+  /// In ca, this message translates to:
+  /// **'Cap banc coincideix amb la cerca.'**
+  String get bankPickEmpty;
+
+  /// No description provided for @bankPickBeta.
+  ///
+  /// In ca, this message translates to:
+  /// **'beta'**
+  String get bankPickBeta;
+
+  /// No description provided for @bankNoLinkedAccounts.
+  ///
+  /// In ca, this message translates to:
+  /// **'Connexió feta, però el banc no ha retornat cap compte. Demana a l\'owner del grup que enllaci aquest compte al panell d\'Enable Banking (Link).'**
+  String get bankNoLinkedAccounts;
+
+  /// No description provided for @bankConnectionNeedsReconnect.
+  ///
+  /// In ca, this message translates to:
+  /// **'Aquesta connexió s\'ha de tornar a connectar (Configuració → Banc / Sincronització).'**
+  String get bankConnectionNeedsReconnect;
 }
 
 class _AppLocalizationsDelegate

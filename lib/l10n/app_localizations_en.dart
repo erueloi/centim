@@ -810,4 +810,196 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get bankNotEnabledForGroup =>
       'Bank connection is not available for your group yet.';
+
+  @override
+  String get bankNoAppTitle => 'Your group has no bank connection yet';
+
+  @override
+  String get bankNoAppForGroup =>
+      'Your group has not set up the bank connection yet.';
+
+  @override
+  String get bankNoAppMember =>
+      'Ask the group owner to set up the bank connection.';
+
+  @override
+  String get bankWizardIntro =>
+      'Each group uses its own Enable Banking application. As the owner, you set it up in three steps.';
+
+  @override
+  String get bankWizardStep1Title => 'Create the application in Enable Banking';
+
+  @override
+  String get bankWizardStep1Body =>
+      'In the Enable Banking control panel (Control panel → API applications), register a Production application. Choose to generate the private key in the browser and keep the .pem file somewhere safe. Use these values:';
+
+  @override
+  String get bankWizardRedirectUrl => 'Redirect URL';
+
+  @override
+  String get bankWizardPrivacyUrl => 'Privacy URL';
+
+  @override
+  String get bankWizardTermsUrl => 'Terms URL';
+
+  @override
+  String get bankWizardDescription => 'Description';
+
+  @override
+  String get bankWizardDescriptionValue =>
+      'Cèntim: household finances. Reads the family\'s accounts to import their transactions.';
+
+  @override
+  String get bankWizardOpenPanel => 'Open Enable Banking';
+
+  @override
+  String get bankWizardStep2Title => 'Link the accounts';
+
+  @override
+  String get bankWizardStep2Body =>
+      'In your application in the panel, use \"Link accounts\": choose the country, the bank and the \"personal\" type, and sign in to your bank. For the other members\' accounts, you start the Link and each member signs in to their bank and accepts.';
+
+  @override
+  String get bankWizardStep3Title => 'Paste the id and the key';
+
+  @override
+  String get bankWizardNext => 'Continue';
+
+  @override
+  String get bankWizardBack => 'Back';
+
+  @override
+  String get bankAppIdLabel => 'Application id';
+
+  @override
+  String get bankPemLabel => 'Private key (.pem)';
+
+  @override
+  String get bankPemUpload => 'Upload the .pem file';
+
+  @override
+  String bankPemLoaded(Object fileName) {
+    return 'File loaded: $fileName';
+  }
+
+  @override
+  String get bankCheckAndSave => 'Check and save';
+
+  @override
+  String get bankCredentialsHint =>
+      'The key is checked with Enable Banking and stored encrypted. Nobody, not even you, will be able to see it again from Cèntim.';
+
+  @override
+  String get bankSaved => 'Group application saved.';
+
+  @override
+  String bankSavedReconnect(Object count) {
+    return 'Application saved. Connections that must be reconnected: $count.';
+  }
+
+  @override
+  String get bankCopy => 'Copy';
+
+  @override
+  String get bankCopied => 'Copied.';
+
+  @override
+  String get bankRestrictedNotice =>
+      'Only the accounts linked in the group\'s Enable Banking panel can be read.';
+
+  @override
+  String get bankHelpLink => 'How to set up the bank connection';
+
+  @override
+  String get bankAppStatusTitle => 'Group\'s Enable Banking application';
+
+  @override
+  String bankAppStatusLine(Object appId, Object date, Object env) {
+    return '$appId · $env · validated on $date';
+  }
+
+  @override
+  String get bankEnvProduction => 'Production';
+
+  @override
+  String get bankEnvSandbox => 'Sandbox';
+
+  @override
+  String get bankChangeCredentials => 'Change credentials';
+
+  @override
+  String get bankDeleteCredentials => 'Delete';
+
+  @override
+  String get bankDeleteConfirmTitle => 'Delete the group application?';
+
+  @override
+  String get bankDeleteConfirmBody =>
+      'All members\' bank connections will be closed and will have to be reconnected once you set up a new application.';
+
+  @override
+  String get bankDeleted => 'Group application deleted.';
+
+  @override
+  String get bankLegacyNotice =>
+      'The group still uses the old shared application. Set up your own: with the same id and key, no bank needs to be reconnected.';
+
+  @override
+  String get bankSetupOwnApp => 'Set up the group application';
+
+  @override
+  String get bankAccessibleAccountsTitle => 'Accessible accounts';
+
+  @override
+  String get bankAccessibleAccountsBody =>
+      'Accounts already connected by group members. This is not the list in the Enable Banking panel: if one is missing, link it in the panel and connect it from Cèntim.';
+
+  @override
+  String get bankNoAccessibleAccounts => 'No account has been connected yet.';
+
+  @override
+  String get bankNeedsReconnect => 'Needs reconnecting';
+
+  @override
+  String get bankReasonAppChanged =>
+      'The group\'s Enable Banking application has changed.';
+
+  @override
+  String get bankReasonAppRemoved =>
+      'The group\'s Enable Banking application has been deleted.';
+
+  @override
+  String get bankReasonLeftGroup => 'It dates from before you left the group.';
+
+  @override
+  String get bankReconnect => 'Reconnect';
+
+  @override
+  String get bankAddConnection => 'Add a connection';
+
+  @override
+  String get bankNoConnections => 'You haven\'t connected any bank yet.';
+
+  @override
+  String get bankPickTitle => 'Choose your bank';
+
+  @override
+  String get bankPickCountry => 'Country';
+
+  @override
+  String get bankPickSearch => 'Search for your bank';
+
+  @override
+  String get bankPickEmpty => 'No bank matches your search.';
+
+  @override
+  String get bankPickBeta => 'beta';
+
+  @override
+  String get bankNoLinkedAccounts =>
+      'Connected, but the bank returned no accounts. Ask the group owner to link this account in the Enable Banking panel (Link).';
+
+  @override
+  String get bankConnectionNeedsReconnect =>
+      'This connection must be reconnected (Settings → Bank / Sync).';
 }

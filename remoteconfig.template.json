@@ -6,6 +6,13 @@
       },
       "description": "Model estable utilitzat pel Cèntim Coach. Permet canviar-lo sense publicar una versió nova de l'app.",
       "valueType": "STRING"
+    },
+    "help_site_base_url": {
+      "defaultValue": {
+        "value": "https://erueloi-portfolio.web.app"
+      },
+      "description": "URL base (https, sense camí) del portafoli on viu la guia de Cèntim. L'app hi afegeix /apps/centim/guia#<àncora> (àncores a lib/ajuda/ancores_ajuda.dart).",
+      "valueType": "STRING"
     }
   }
 }

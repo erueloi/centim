@@ -1,6 +1,8 @@
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../ajuda/ajuda_urls.dart';
+
 /// Configuració remota del Coach.
 ///
 /// El valor local garanteix que el Coach funcioni encara que Remote Config no
@@ -20,6 +22,8 @@ class AiCoachConfig {
     );
     await remoteConfig.setDefaults(const {
       modelParameter: defaultModel,
+      // No és del Coach, però Remote Config s'inicialitza aquí per a tota l'app.
+      AjudaConfig.baseUrlParameter: AjudaConfig.defaultBaseUrl,
     });
 
     try {

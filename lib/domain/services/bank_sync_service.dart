@@ -11,14 +11,122 @@ const String _kFunctionsRegion = 'europe-west1';
 /// actual no té accés a la connexió bancària.
 const String kBankNotEnabledReason = 'bank-not-enabled';
 
+/// Motius (`details.reason`) de les Functions bancàries de la fase 1.
+const String kNoBankAppReason = 'no-bank-app';
+const String kAppChangedReason = 'app-changed';
+const String kNotGroupOwnerReason = 'not-group-owner';
+
+/// Motiu (`details.reason`) d'un error de les Functions bancàries, si en té.
+String? bankErrorReason(Object error) {
+  if (error is! FirebaseFunctionsException) return null;
+  final details = error.details;
+  return details is Map ? details['reason'] as String? : null;
+}
+
 /// Cert si l'error és el bloqueig "la connexió bancària no està disponible per
 /// al teu grup". No n'hi ha prou amb `permission-denied`: les Functions també
 /// el fan servir per a altres casos (p. ex. un 401/403 d'Enable Banking).
 bool isBankNotEnabled(Object error) {
   if (error is! FirebaseFunctionsException) return false;
   if (error.code != 'permission-denied') return false;
-  final details = error.details;
-  return details is Map && details['reason'] == kBankNotEnabledReason;
+  return bankErrorReason(error) == kBankNotEnabledReason;
+}
+
+/// El grup no té aplicació d'Enable Banking (ni pròpia ni de transició).
+bool isNoBankApp(Object error) =>
+    isBankNotEnabled(error) || bankErrorReason(error) == kNoBankAppReason;
+
+/// Estat de l'aplicació d'Enable Banking del grup (mai inclou la clau).
+class BankSetup {
+  final bool configured;
+
+  /// 'group' (aplicació pròpia), 'legacy' (aplicació compartida antiga) o null.
+  final String? source;
+  final String? appIdShort;
+  final String? env;
+  final String? appName;
+  final DateTime? validatedAt;
+  final bool isOwner;
+
+  const BankSetup({
+    required this.configured,
+    required this.source,
+    required this.appIdShort,
+    required this.env,
+    required this.appName,
+    required this.validatedAt,
+    required this.isOwner,
+  });
+
+  bool get isLegacy => source == 'legacy';
+
+  factory BankSetup.fromMap(Map<String, dynamic> map) => BankSetup(
+        configured: map['configured'] as bool? ?? false,
+        source: map['source'] as String?,
+        appIdShort: map['appIdShort'] as String?,
+        env: map['env'] as String?,
+        appName: map['appName'] as String?,
+        validatedAt: DateTime.tryParse(map['validatedAt'] as String? ?? ''),
+        isOwner: map['isOwner'] as bool? ?? false,
+      );
+}
+
+/// Resultat de desar les credencials del grup.
+class BankAppSaveResult {
+  final String? appIdShort;
+  final String? env;
+  final int connectionsKept;
+  final int connectionsToReconnect;
+
+  const BankAppSaveResult({
+    required this.appIdShort,
+    required this.env,
+    required this.connectionsKept,
+    required this.connectionsToReconnect,
+  });
+}
+
+/// Un banc (ASPSP) del catàleg d'Enable Banking.
+class AspspOption {
+  final String name;
+  final String country;
+  final String? logo;
+  final bool beta;
+
+  const AspspOption({
+    required this.name,
+    required this.country,
+    this.logo,
+    this.beta = false,
+  });
+}
+
+/// Compte que ja llegeix l'aplicació del grup (connexió activa d'algun membre).
+class GroupBankAccount {
+  final String ibanMasked;
+  final String? name;
+  final String aspspName;
+  final String? memberName;
+
+  const GroupBankAccount({
+    required this.ibanMasked,
+    required this.name,
+    required this.aspspName,
+    required this.memberName,
+  });
+}
+
+/// Resultat de tancar l'autorització al banc.
+class BankFinalizeResult {
+  final int accountCount;
+  final bool noLinkedAccounts;
+  final String? aspspName;
+
+  const BankFinalizeResult({
+    required this.accountCount,
+    required this.noLinkedAccounts,
+    this.aspspName,
+  });
 }
 
 /// Resultat de startBankAuth: URL a què cal portar l'usuari per fer la SCA.
@@ -135,6 +243,12 @@ class BankConnectionInfo {
   final String? validUntil;
   final String status;
   final List<BankAccountInfo> accounts;
+  final String? aspspName;
+
+  /// Creada amb una altra aplicació, eliminada o de quan l'usuari va sortir
+  /// del grup: no es pot fer servir fins que es reconnecti.
+  final bool needsReconnect;
+  final String? reconnectReason;
 
   BankConnectionInfo({
     required this.connectionId,
@@ -142,6 +256,9 @@ class BankConnectionInfo {
     required this.validUntil,
     required this.status,
     required this.accounts,
+    this.aspspName,
+    this.needsReconnect = false,
+    this.reconnectReason,
   });
 }
 
@@ -151,15 +268,29 @@ class BankConnectionState {
   final List<BankConnectionInfo> connections;
   final List<BankAccountInfo> accounts;
 
+  /// Unió dels comptes de les connexions actives de tots els membres.
+  final List<GroupBankAccount> groupAccounts;
+
   BankConnectionState({
     required this.validUntil,
     required this.connections,
     required this.accounts,
+    this.groupAccounts = const [],
   });
 
   factory BankConnectionState.fromMap(Map<String, dynamic> data) {
     final rawConnections = (data['connections'] as List?) ?? const [];
-    if (rawConnections.isNotEmpty) {
+    final groupAccounts = ((data['groupAccounts'] as List?) ?? const [])
+        .map((raw) {
+      final map = Map<String, dynamic>.from(raw as Map);
+      return GroupBankAccount(
+        ibanMasked: map['ibanMasked'] as String? ?? '',
+        name: map['name'] as String?,
+        aspspName: map['aspspName'] as String? ?? '',
+        memberName: map['memberName'] as String?,
+      );
+    }).toList();
+    if (rawConnections.isNotEmpty || data.containsKey('groupAccounts')) {
       final connections = rawConnections.map((raw) {
         final map = Map<String, dynamic>.from(raw as Map);
         final connectionId = map['connectionId'] as String? ?? '';
@@ -177,6 +308,9 @@ class BankConnectionState {
           validUntil: map['validUntil'] as String?,
           status: map['status'] as String? ?? 'connected',
           accounts: accounts,
+          aspspName: map['aspspName'] as String?,
+          needsReconnect: map['needsReconnect'] as bool? ?? false,
+          reconnectReason: map['reconnectReason'] as String?,
         );
       }).toList();
       return BankConnectionState(
@@ -184,6 +318,7 @@ class BankConnectionState {
         connections: connections,
         accounts:
             connections.expand((connection) => connection.accounts).toList(),
+        groupAccounts: groupAccounts,
       );
     }
 
@@ -298,17 +433,69 @@ class BankSyncService {
   final FirebaseFunctions _functions =
       FirebaseFunctions.instanceFor(region: _kFunctionsRegion);
 
+  /// Estat de l'aplicació d'Enable Banking del grup.
+  Future<BankSetup> getSetup() async {
+    final res = await _functions.httpsCallable('getBankSetup').call();
+    return BankSetup.fromMap(Map<String, dynamic>.from(res.data as Map));
+  }
+
+  /// Només l'owner: valida (crida real a Enable Banking) i desa xifrades les
+  /// credencials del grup. La clau no torna mai al client.
+  Future<BankAppSaveResult> saveAppCredentials({
+    required String appId,
+    required String pem,
+  }) async {
+    final res = await _functions
+        .httpsCallable('saveBankAppCredentials')
+        .call({'appId': appId, 'pem': pem});
+    final data = Map<String, dynamic>.from(res.data as Map);
+    return BankAppSaveResult(
+      appIdShort: data['appIdShort'] as String?,
+      env: data['env'] as String?,
+      connectionsKept: data['connectionsKept'] as int? ?? 0,
+      connectionsToReconnect: data['connectionsToReconnect'] as int? ?? 0,
+    );
+  }
+
+  /// Només l'owner: elimina l'aplicació del grup.
+  Future<void> deleteAppCredentials() async {
+    await _functions.httpsCallable('deleteBankAppCredentials').call();
+  }
+
+  /// Bancs per a particulars d'un país (amb memòria cau al servidor).
+  Future<List<AspspOption>> listAspsps(String country) async {
+    final res = await _functions
+        .httpsCallable('listAspsps')
+        .call({'country': country});
+    final data = Map<String, dynamic>.from(res.data as Map);
+    return ((data['aspsps'] as List?) ?? const []).map((raw) {
+      final map = Map<String, dynamic>.from(raw as Map);
+      return AspspOption(
+        name: map['name'] as String? ?? '',
+        country: map['country'] as String? ?? country,
+        logo: map['logo'] as String?,
+        beta: map['beta'] as bool? ?? false,
+      );
+    }).toList();
+  }
+
   /// Inicia l'autorització AIS. Retorna la URL de SCA. `redirectUrl` permet
-  /// tornar a l'origen actual (web desplegada o localhost en dev).
+  /// tornar a l'origen actual (web desplegada o localhost en dev). Una
+  /// connexió nova necessita el banc ([aspspName] i [aspspCountry]); una
+  /// renovació, el [connectionId].
   Future<BankAuthStart> startAuth({
     String? redirectUrl,
     String? connectionId,
     bool newConnection = false,
+    String? aspspName,
+    String? aspspCountry,
   }) async {
     final payload = <String, dynamic>{
       if (redirectUrl != null) 'redirectUrl': redirectUrl,
       if (connectionId != null) 'connectionId': connectionId,
       if (newConnection) 'newConnection': true,
+      if (aspspName != null) 'aspspName': aspspName,
+      if (aspspCountry != null) 'aspspCountry': aspspCountry,
     };
     final res = await _functions
         .httpsCallable('startBankAuth')
@@ -323,14 +510,20 @@ class BankSyncService {
   }
 
   /// Tanca la sessió bescanviant el code de la SCA (i validant el state).
-  Future<void> finalizeSession({
+  Future<BankFinalizeResult> finalizeSession({
     required String code,
     required String state,
   }) async {
-    await _functions.httpsCallable('finalizeBankSession').call({
+    final res = await _functions.httpsCallable('finalizeBankSession').call({
       'code': code,
       'state': state,
     });
+    final data = Map<String, dynamic>.from((res.data as Map?) ?? const {});
+    return BankFinalizeResult(
+      accountCount: data['accountCount'] as int? ?? 0,
+      noLinkedAccounts: data['noLinkedAccounts'] as bool? ?? false,
+      aspspName: data['aspspName'] as String?,
+    );
   }
 
   /// Desa/actualitza la config de sync d'un compte (via Cloud Function, Admin SDK).

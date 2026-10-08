@@ -57,8 +57,12 @@ Future<void> runBankSyncFlow(BuildContext context, WidgetRef ref) async {
     if (context.mounted) Navigator.pop(context);
     if (context.mounted) {
       final String msg;
-      if (isBankNotEnabled(e)) {
-        msg = AppLocalizations.of(context)!.bankNotEnabledForGroup;
+      if (isNoBankApp(e)) {
+        msg = AppLocalizations.of(context)!.bankNoAppForGroup;
+      } else if (bankErrorReason(e) != null &&
+          (e.details as Map)['needsReauth'] == true) {
+        // Connexió d'una altra aplicació o de quan l'usuari era fora del grup.
+        msg = AppLocalizations.of(context)!.bankConnectionNeedsReconnect;
       } else if (e.code == 'resource-exhausted' ||
           e.code == 'failed-precondition') {
         // Límit de consultes PSD2 o consentiment caducat: el missatge del
@@ -171,9 +175,9 @@ class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _notEnabled = isBankNotEnabled(e);
+        _notEnabled = isNoBankApp(e);
         _error = _notEnabled
-            ? AppLocalizations.of(context)!.bankNotEnabledForGroup
+            ? AppLocalizations.of(context)!.bankNoAppForGroup
             : e.code == 'failed-precondition'
                 ? 'Cal connectar el banc primer (Configuració → Banc).'
                 : (e.message ?? 'Error carregant els comptes.');

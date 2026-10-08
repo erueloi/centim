@@ -13,7 +13,7 @@ final bankConnectionStateProvider =
   } on FirebaseFunctionsException catch (error) {
     // Sense connexió o grup sense accés al banc: no hi ha res a vigilar
     // (el banner de caducitat no ha de sortir).
-    if (error.code == 'failed-precondition' || isBankNotEnabled(error)) {
+    if (error.code == 'failed-precondition' || isNoBankApp(error)) {
       return null;
     }
     rethrow;

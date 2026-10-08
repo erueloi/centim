@@ -810,4 +810,197 @@ class AppLocalizationsCa extends AppLocalizations {
   @override
   String get bankNotEnabledForGroup =>
       'La connexió bancària encara no està disponible per al teu grup.';
+
+  @override
+  String get bankNoAppTitle => 'El grup encara no té connexió bancària';
+
+  @override
+  String get bankNoAppForGroup =>
+      'El teu grup encara no té configurada la connexió bancària.';
+
+  @override
+  String get bankNoAppMember =>
+      'Demana a l\'owner del grup que configuri la connexió bancària.';
+
+  @override
+  String get bankWizardIntro =>
+      'Cada grup fa servir la seva pròpia aplicació d\'Enable Banking. Com a owner, la configures en tres passos.';
+
+  @override
+  String get bankWizardStep1Title => 'Crea l\'aplicació a Enable Banking';
+
+  @override
+  String get bankWizardStep1Body =>
+      'Al panell d\'Enable Banking (Control panel → API applications), registra una aplicació de tipus Production. Tria generar la clau privada al navegador i desa el fitxer .pem en un lloc segur. Fes servir aquests valors:';
+
+  @override
+  String get bankWizardRedirectUrl => 'Redirect URL';
+
+  @override
+  String get bankWizardPrivacyUrl => 'URL de privacitat';
+
+  @override
+  String get bankWizardTermsUrl => 'URL de condicions';
+
+  @override
+  String get bankWizardDescription => 'Descripció';
+
+  @override
+  String get bankWizardDescriptionValue =>
+      'Cèntim: finances de la llar. Llegeix els comptes de la família per importar-ne els moviments.';
+
+  @override
+  String get bankWizardOpenPanel => 'Obre Enable Banking';
+
+  @override
+  String get bankWizardStep2Title => 'Enllaça els comptes';
+
+  @override
+  String get bankWizardStep2Body =>
+      'A la teva aplicació del panell, fes «Link accounts»: tria el país, el banc i el tipus «personal», i autentica\'t al teu banc. Per als comptes dels altres membres, fes tu el Link i deixa que cada membre s\'autentiqui al seu banc i ho accepti.';
+
+  @override
+  String get bankWizardStep3Title => 'Enganxa l\'id i la clau';
+
+  @override
+  String get bankWizardNext => 'Continua';
+
+  @override
+  String get bankWizardBack => 'Enrere';
+
+  @override
+  String get bankAppIdLabel => 'Id de l\'aplicació';
+
+  @override
+  String get bankPemLabel => 'Clau privada (.pem)';
+
+  @override
+  String get bankPemUpload => 'Puja el fitxer .pem';
+
+  @override
+  String bankPemLoaded(Object fileName) {
+    return 'Fitxer carregat: $fileName';
+  }
+
+  @override
+  String get bankCheckAndSave => 'Comprova i desa';
+
+  @override
+  String get bankCredentialsHint =>
+      'La clau es comprova amb Enable Banking i es desa xifrada. Ningú, ni tu, la podrà tornar a veure des de Cèntim.';
+
+  @override
+  String get bankSaved => 'Aplicació del grup desada.';
+
+  @override
+  String bankSavedReconnect(Object count) {
+    return 'Aplicació desada. Connexions que cal tornar a connectar: $count.';
+  }
+
+  @override
+  String get bankCopy => 'Copia';
+
+  @override
+  String get bankCopied => 'Copiat.';
+
+  @override
+  String get bankRestrictedNotice =>
+      'Només es poden llegir els comptes enllaçats al panell d\'Enable Banking del grup.';
+
+  @override
+  String get bankHelpLink => 'Com configurar la connexió bancària';
+
+  @override
+  String get bankAppStatusTitle => 'Aplicació d\'Enable Banking del grup';
+
+  @override
+  String bankAppStatusLine(Object appId, Object date, Object env) {
+    return '$appId · $env · validada el $date';
+  }
+
+  @override
+  String get bankEnvProduction => 'Producció';
+
+  @override
+  String get bankEnvSandbox => 'Sandbox';
+
+  @override
+  String get bankChangeCredentials => 'Canvia les credencials';
+
+  @override
+  String get bankDeleteCredentials => 'Elimina';
+
+  @override
+  String get bankDeleteConfirmTitle => 'Eliminar l\'aplicació del grup?';
+
+  @override
+  String get bankDeleteConfirmBody =>
+      'Es tancaran les connexions bancàries de tots els membres i caldrà tornar-les a connectar quan configuris una aplicació nova.';
+
+  @override
+  String get bankDeleted => 'Aplicació del grup eliminada.';
+
+  @override
+  String get bankLegacyNotice =>
+      'El grup encara fa servir l\'aplicació compartida antiga. Configura la vostra: amb el mateix id i la mateixa clau, no caldrà reconnectar cap banc.';
+
+  @override
+  String get bankSetupOwnApp => 'Configura l\'aplicació del grup';
+
+  @override
+  String get bankAccessibleAccountsTitle => 'Comptes accessibles';
+
+  @override
+  String get bankAccessibleAccountsBody =>
+      'Comptes ja connectats pels membres del grup. No és la llista del panell d\'Enable Banking: si en falta algun, cal enllaçar-lo al panell i connectar-lo des de Cèntim.';
+
+  @override
+  String get bankNoAccessibleAccounts =>
+      'Encara no hi ha cap compte connectat.';
+
+  @override
+  String get bankNeedsReconnect => 'Cal reconnectar';
+
+  @override
+  String get bankReasonAppChanged =>
+      'S\'ha canviat l\'aplicació d\'Enable Banking del grup.';
+
+  @override
+  String get bankReasonAppRemoved =>
+      'S\'ha eliminat l\'aplicació d\'Enable Banking del grup.';
+
+  @override
+  String get bankReasonLeftGroup => 'És d\'abans que sortissis del grup.';
+
+  @override
+  String get bankReconnect => 'Reconnecta';
+
+  @override
+  String get bankAddConnection => 'Afegeix una connexió';
+
+  @override
+  String get bankNoConnections => 'Encara no has connectat cap banc.';
+
+  @override
+  String get bankPickTitle => 'Tria el teu banc';
+
+  @override
+  String get bankPickCountry => 'País';
+
+  @override
+  String get bankPickSearch => 'Cerca el banc';
+
+  @override
+  String get bankPickEmpty => 'Cap banc coincideix amb la cerca.';
+
+  @override
+  String get bankPickBeta => 'beta';
+
+  @override
+  String get bankNoLinkedAccounts =>
+      'Connexió feta, però el banc no ha retornat cap compte. Demana a l\'owner del grup que enllaci aquest compte al panell d\'Enable Banking (Link).';
+
+  @override
+  String get bankConnectionNeedsReconnect =>
+      'Aquesta connexió s\'ha de tornar a connectar (Configuració → Banc / Sincronització).';
 }
