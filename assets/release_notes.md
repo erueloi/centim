@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.4.2
+Corregit: en tornar del banc l'app ja no es queda en blanc.
+Una reconnexió bancària sense acabar ja no amaga la connexió.
 ## v1.4.1
 Corregit: un intent de connexió bancària sense acabar ja no apareix per reconnectar.
 El codi d'autorització del banc ja no es queda a la barra d'adreces.
@@ -177,6 +180,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
