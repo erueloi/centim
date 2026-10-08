@@ -1,13 +1,25 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../domain/models/asset.dart';
 import '../../domain/models/financial_summary.dart';
+import '../../domain/models/savings_goal.dart';
 import '../../domain/services/ledger_service.dart';
+import 'asset_provider.dart';
 import 'transaction_notifier.dart';
 import 'debt_provider.dart';
-import 'group_providers.dart';
 import 'billing_cycle_provider.dart';
 import 'category_notifier.dart';
+import 'savings_goal_provider.dart';
 
 part 'financial_summary_provider.g.dart';
+
+/// Actiu del patrimoni: actius registrats + guardioles. Les guardioles són
+/// comptes reals de CaixaBank que no figuren entre els actius, així que
+/// sumar-les no compta res dues vegades. Sense res introduït, és 0.
+double totalAssetsOf(Iterable<Asset> assets, Iterable<SavingsGoal> goals) {
+  final registered = assets.fold(0.0, (sum, a) => sum + a.amount);
+  final saved = goals.fold(0.0, (sum, g) => sum + g.currentAmount);
+  return registered + saved;
+}
 
 @riverpod
 class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
@@ -15,7 +27,8 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
   Future<FinancialSummary> build() async {
     final transactions = await ref.watch(transactionNotifierProvider.future);
     final debts = await ref.watch(debtNotifierProvider.future);
-    final group = await ref.watch(currentGroupProvider.future);
+    final assets = await ref.watch(assetNotifierProvider.future);
+    final goals = await ref.watch(savingsGoalNotifierProvider.future);
     final categories = await ref.watch(categoryNotifierProvider.future);
     final cycle = ref.watch(activeCycleProvider);
 
@@ -35,8 +48,7 @@ class FinancialSummaryNotifier extends _$FinancialSummaryNotifier {
     final ledger = summarizeLedger(currentMonthTransactions, look);
 
     // 1. Patrimoni i deute
-    final totalAssets =
-        (group?.totalAssets ?? 0) > 0 ? group!.totalAssets : 100389.92;
+    final totalAssets = totalAssetsOf(assets, goals);
     final totalLiabilities =
         debts.fold(0.0, (sum, d) => sum + d.currentBalance);
     final totalNetWorth = totalAssets - totalLiabilities;

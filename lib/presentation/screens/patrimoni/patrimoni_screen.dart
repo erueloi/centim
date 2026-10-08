@@ -978,6 +978,9 @@ class _NetWorthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Amb més deute que actiu la ràtio és negativa; el donut no admet valors
+    // negatius, així que es mostra buit (0 % de patrimoni propi).
+    final equity = summary.equityRatio.clamp(0.0, 1.0);
     return Column(
       children: [
         Center(
@@ -995,14 +998,14 @@ class _NetWorthHeader extends StatelessWidget {
                     sections: [
                       PieChartSectionData(
                         color: AppTheme.copper,
-                        value: summary.equityRatio * 100,
+                        value: equity * 100,
                         title: '',
                         radius: 12,
                         showTitle: false,
                       ),
                       PieChartSectionData(
                         color: Colors.grey[200]!,
-                        value: (1 - summary.equityRatio) * 100,
+                        value: (1 - equity) * 100,
                         title: '',
                         radius: 12,
                         showTitle: false,
