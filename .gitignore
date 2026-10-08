@@ -44,12 +44,18 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Keystore
+# Keystore i claus privades (Enable Banking, etc.): mai al repo, sigui on sigui
 *.jks
+*.pem
+*.key
+*.p8
+*.p12
 
 # Firebase
 google-services.json
 firebase_options.dart
 
-# Environment Variables
+# Environment Variables (qualsevol .env local; només la plantilla es versiona)
 .env
+.env.*
+!.env.example

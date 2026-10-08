@@ -9,7 +9,10 @@ import {
 } from "./config.js";
 import { requireUid } from "./enableBanking.js";
 import { EbAccount, ibansOf, maskIban, accountKeyOf } from "./ebAccounts.js";
-import { listBankConnectionDocs } from "./bankConnections.js";
+import {
+  listBankConnectionDocs,
+  requireBankAccess,
+} from "./bankConnections.js";
 
 /**
  * Fase 2 — llista els comptes linked (per al selector "quins sincronitzar").
@@ -21,9 +24,10 @@ import { listBankConnectionDocs } from "./bankConnections.js";
  */
 export const listBankAccounts = onCall({ region: REGION }, async (request) => {
   const uid = requireUid(request);
+  const db = getFirestore();
+  await requireBankAccess(db, uid);
   const slug = aspspSlug(ASPSP_NAME.value());
 
-  const db = getFirestore();
   const { docs } = await listBankConnectionDocs(db, uid, slug);
   const connected = docs.filter(
     (doc) => !!(doc.get("sessionId") as string | undefined)

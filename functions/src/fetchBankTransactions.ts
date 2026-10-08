@@ -22,7 +22,10 @@ import {
   maskIban,
   accountKeyOf,
 } from "./ebAccounts.js";
-import { listBankConnectionDocs } from "./bankConnections.js";
+import {
+  listBankConnectionDocs,
+  requireBankAccess,
+} from "./bankConnections.js";
 
 // Finestra de dates per defecte i límits de paginació.
 const DEFAULT_LOOKBACK_DAYS = 90;
@@ -147,6 +150,9 @@ export const fetchBankTransactions = onCall(
   },
   async (request) => {
     const uid = requireUid(request);
+    const db = getFirestore();
+    // Abans de qualsevol crida a Enable Banking.
+    await requireBankAccess(db, uid);
 
     // Peticions per compte: [{ key, dateFrom? }]. Si no se'n passen, es baixen
     // tots els comptes amb la finestra per defecte (comportament legacy).
@@ -164,7 +170,6 @@ export const fetchBankTransactions = onCall(
     const creds = resolveEbCredentials();
     const slug = aspspSlug(ASPSP_NAME.value());
 
-    const db = getFirestore();
     const { docs } = await listBankConnectionDocs(db, uid, slug);
     const connected = docs.filter(
       (doc) => !!(doc.get("sessionId") as string | undefined)

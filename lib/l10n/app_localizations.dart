@@ -1585,6 +1585,12 @@ abstract class AppLocalizations {
   /// In ca, this message translates to:
   /// **'No s\'ha pogut completar l\'operació. Torna-ho a provar.'**
   String get authErrorGeneric;
+
+  /// No description provided for @bankNotEnabledForGroup.
+  ///
+  /// In ca, this message translates to:
+  /// **'La connexió bancària encara no està disponible per al teu grup.'**
+  String get bankNotEnabledForGroup;
 }
 
 class _AppLocalizationsDelegate

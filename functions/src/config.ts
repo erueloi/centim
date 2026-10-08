@@ -51,6 +51,17 @@ export const aspspSlug = (name: string): string =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+/**
+ * FASE 0 (temporal): grups que poden fer servir la connexió bancària, separats
+ * per comes. Mentre totes les Functions bancàries facin servir una única
+ * aplicació d'Enable Banking, només hi poden accedir els grups d'aquesta
+ * llista. Buit = cap grup (tancat per defecte). Desapareix quan cada grup
+ * tingui la seva pròpia aplicació (fase 1).
+ */
+export const BANK_ALLOWED_GROUP_IDS = defineString("BANK_ALLOWED_GROUP_IDS", {
+  default: "",
+});
+
 /** Tipus de PSU per a l'autorització AIS. */
 export const PSU_TYPE = "personal";
 

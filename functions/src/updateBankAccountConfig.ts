@@ -9,7 +9,10 @@ import {
 } from "./config.js";
 import { requireUid } from "./enableBanking.js";
 import { EbAccount, accountKeyOf } from "./ebAccounts.js";
-import { listBankConnectionDocs } from "./bankConnections.js";
+import {
+  listBankConnectionDocs,
+  requireBankAccess,
+} from "./bankConnections.js";
 
 /**
  * Fase 2 — desa la config de sync d'un compte (quins comptes es sincronitzen,
@@ -20,6 +23,8 @@ export const updateBankAccountConfig = onCall(
   { region: REGION },
   async (request) => {
     const uid = requireUid(request);
+    const db = getFirestore();
+    await requireBankAccess(db, uid);
     const accountKey = (request.data?.accountKey as string | undefined)?.trim();
     if (!accountKey) {
       throw new HttpsError("invalid-argument", "Falta accountKey.");
@@ -42,7 +47,6 @@ export const updateBankAccountConfig = onCall(
     }
 
     const slug = aspspSlug(ASPSP_NAME.value());
-    const db = getFirestore();
     const requestedConnectionId = (
       request.data?.connectionId as string | undefined
     )?.trim();

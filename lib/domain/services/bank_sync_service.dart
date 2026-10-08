@@ -7,6 +7,20 @@ part 'bank_sync_service.g.dart';
 /// Regió on estan desplegades les Cloud Functions (Enable Banking proxy).
 const String _kFunctionsRegion = 'europe-west1';
 
+/// Motiu (`details.reason`) que retornen les Functions bancàries quan el grup
+/// actual no té accés a la connexió bancària.
+const String kBankNotEnabledReason = 'bank-not-enabled';
+
+/// Cert si l'error és el bloqueig "la connexió bancària no està disponible per
+/// al teu grup". No n'hi ha prou amb `permission-denied`: les Functions també
+/// el fan servir per a altres casos (p. ex. un 401/403 d'Enable Banking).
+bool isBankNotEnabled(Object error) {
+  if (error is! FirebaseFunctionsException) return false;
+  if (error.code != 'permission-denied') return false;
+  final details = error.details;
+  return details is Map && details['reason'] == kBankNotEnabledReason;
+}
+
 /// Resultat de startBankAuth: URL a què cal portar l'usuari per fer la SCA.
 class BankAuthStart {
   final String authUrl;

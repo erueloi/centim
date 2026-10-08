@@ -22,7 +22,7 @@ import {
 } from "./enableBanking.js";
 import {
   assertValidConnectionId,
-  currentBankGroupId,
+  requireBankAccess,
 } from "./bankConnections.js";
 
 interface Aspsp {
@@ -61,6 +61,9 @@ export const startBankAuth = onCall(
   },
   async (request) => {
     const uid = requireUid(request);
+    const db = getFirestore();
+    // Abans de qualsevol crida a Enable Banking.
+    const groupId = await requireBankAccess(db, uid);
 
     const targetName = ASPSP_NAME.value();
     const targetCountry = ASPSP_COUNTRY.value();
@@ -128,8 +131,6 @@ export const startBankAuth = onCall(
 
     // 4. State anti-CSRF d'un sol ús, desat abans d'iniciar la SCA.
     const state = randomUUID();
-    const db = getFirestore();
-    const groupId = await currentBankGroupId(db, uid);
     const docRef = db.doc(bankConnectionDoc(uid, connectionId));
     const existing = await docRef.get();
     if (existing.exists) {

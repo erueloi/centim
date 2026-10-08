@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:centim/l10n/app_localizations.dart';
 import '../widgets/main_scaffold.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/setup_group_screen.dart';
@@ -167,7 +168,13 @@ class _BankCallbackHandlerState extends ConsumerState<_BankCallbackHandler> {
     } catch (e) {
       if (!mounted) return;
       messenger.showSnackBar(
-        SnackBar(content: Text('No s\'ha pogut connectar el banc: $e')),
+        SnackBar(
+          content: Text(
+            isBankNotEnabled(e)
+                ? AppLocalizations.of(context)!.bankNotEnabledForGroup
+                : 'No s\'ha pogut connectar el banc: $e',
+          ),
+        ),
       );
     }
   }

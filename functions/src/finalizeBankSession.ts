@@ -15,6 +15,7 @@ import {
   enableBankingFetch,
   requireUid,
 } from "./enableBanking.js";
+import { requireBankAccess } from "./bankConnections.js";
 
 interface SessionResponse {
   session_id: string;
@@ -39,6 +40,9 @@ export const finalizeBankSession = onCall(
   },
   async (request) => {
     const uid = requireUid(request);
+    const db = getFirestore();
+    // Abans de qualsevol crida a Enable Banking (abans no es comprovava el grup).
+    await requireBankAccess(db, uid);
 
     const code = (request.data?.code ?? "") as string;
     const state = (request.data?.state ?? "") as string;
@@ -50,7 +54,6 @@ export const finalizeBankSession = onCall(
     }
 
     const slug = aspspSlug(ASPSP_NAME.value());
-    const db = getFirestore();
     const pending = await db
       .collection(bankConnectionsCollection(uid))
       .where("pendingState", "==", state)

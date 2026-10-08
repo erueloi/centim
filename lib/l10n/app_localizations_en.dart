@@ -806,4 +806,8 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get authErrorGeneric =>
       'The operation could not be completed. Please try again.';
+
+  @override
+  String get bankNotEnabledForGroup =>
+      'Bank connection is not available for your group yet.';
 }

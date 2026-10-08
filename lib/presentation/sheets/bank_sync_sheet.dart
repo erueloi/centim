@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:intl/intl.dart';
+import 'package:centim/l10n/app_localizations.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../domain/models/asset.dart';
@@ -56,7 +57,10 @@ Future<void> runBankSyncFlow(BuildContext context, WidgetRef ref) async {
     if (context.mounted) Navigator.pop(context);
     if (context.mounted) {
       final String msg;
-      if (e.code == 'resource-exhausted' || e.code == 'failed-precondition') {
+      if (isBankNotEnabled(e)) {
+        msg = AppLocalizations.of(context)!.bankNotEnabledForGroup;
+      } else if (e.code == 'resource-exhausted' ||
+          e.code == 'failed-precondition') {
         // Límit de consultes PSD2 o consentiment caducat: el missatge del
         // servidor ja explica què ha de fer l'usuari.
         msg = e.message ?? 'El banc ha limitat les peticions.';
@@ -136,6 +140,7 @@ class BankSyncSheet extends ConsumerStatefulWidget {
 
 class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
   bool _loading = true;
+  bool _notEnabled = false;
   String _error = '';
   List<BankAccountInfo> _accounts = [];
   String? _selectedKey;
@@ -166,9 +171,12 @@ class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _error = e.code == 'failed-precondition'
-            ? 'Cal connectar el banc primer (Configuració → Banc).'
-            : (e.message ?? 'Error carregant els comptes.');
+        _notEnabled = isBankNotEnabled(e);
+        _error = _notEnabled
+            ? AppLocalizations.of(context)!.bankNotEnabledForGroup
+            : e.code == 'failed-precondition'
+                ? 'Cal connectar el banc primer (Configuració → Banc).'
+                : (e.message ?? 'Error carregant els comptes.');
       });
     } catch (e) {
       if (!mounted) return;
@@ -257,11 +265,18 @@ class _BankSyncSheetState extends ConsumerState<BankSyncSheet> {
   }
 
   Widget _buildError(BuildContext context) => Column(children: [
-        const Icon(Icons.error_outline, color: Colors.red, size: 36),
+        Icon(
+          _notEnabled ? Icons.lock_clock_outlined : Icons.error_outline,
+          color: _notEnabled ? Colors.grey : Colors.red,
+          size: 36,
+        ),
         const SizedBox(height: 12),
         Text(_error, textAlign: TextAlign.center),
-        const SizedBox(height: 16),
-        FilledButton(onPressed: _load, child: const Text('Reintenta')),
+        // Reintentar no serveix de res si el grup no hi té accés.
+        if (!_notEnabled) ...[
+          const SizedBox(height: 16),
+          FilledButton(onPressed: _load, child: const Text('Reintenta')),
+        ],
       ]);
 
   Widget _buildNoAccounts(BuildContext context) => const Padding(

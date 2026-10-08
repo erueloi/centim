@@ -806,4 +806,8 @@ class AppLocalizationsCa extends AppLocalizations {
   @override
   String get authErrorGeneric =>
       'No s\'ha pogut completar l\'operació. Torna-ho a provar.';
+
+  @override
+  String get bankNotEnabledForGroup =>
+      'La connexió bancària encara no està disponible per al teu grup.';
 }

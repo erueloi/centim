@@ -252,5 +252,6 @@
   "authErrorInvalidEmail": "El correu electrònic no és vàlid.",
   "authErrorTooManyRequests": "Massa intents seguits. Espera una estona i torna-ho a provar.",
   "authErrorNetwork": "No hi ha connexió. Revisa la xarxa i torna-ho a provar.",
-  "authErrorGeneric": "No s'ha pogut completar l'operació. Torna-ho a provar."
+  "authErrorGeneric": "No s'ha pogut completar l'operació. Torna-ho a provar.",
+  "bankNotEnabledForGroup": "La connexió bancària encara no està disponible per al teu grup."
 }

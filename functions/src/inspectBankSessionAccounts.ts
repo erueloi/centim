@@ -19,7 +19,10 @@ import {
   ibansOf,
   maskIban,
 } from "./ebAccounts.js";
-import { requireBankConnectionDoc } from "./bankConnections.js";
+import {
+  requireBankAccess,
+  requireBankConnectionDoc,
+} from "./bankConnections.js";
 
 /**
  * Diagnòstic manual i de només lectura: consulta en directe quins comptes veu
@@ -32,11 +35,14 @@ export const inspectBankSessionAccounts = onCall(
   },
   async (request) => {
     const uid = requireUid(request);
+    const db = getFirestore();
+    // Abans de qualsevol crida a Enable Banking.
+    await requireBankAccess(db, uid);
     const slug = aspspSlug(ASPSP_NAME.value());
     const connectionId =
       (request.data?.connectionId as string | undefined)?.trim() || slug;
     const snap = await requireBankConnectionDoc(
-      getFirestore(),
+      db,
       uid,
       connectionId,
       slug

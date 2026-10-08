@@ -11,7 +11,11 @@ final bankConnectionStateProvider =
   try {
     return await ref.watch(bankSyncServiceProvider).listAccounts();
   } on FirebaseFunctionsException catch (error) {
-    if (error.code == 'failed-precondition') return null;
+    // Sense connexió o grup sense accés al banc: no hi ha res a vigilar
+    // (el banner de caducitat no ha de sortir).
+    if (error.code == 'failed-precondition' || isBankNotEnabled(error)) {
+      return null;
+    }
     rethrow;
   }
 });

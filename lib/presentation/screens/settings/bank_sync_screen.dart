@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:intl/intl.dart';
+import 'package:centim/l10n/app_localizations.dart';
 import '../../../domain/services/bank_consent_service.dart';
 import '../../providers/bank_consent_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,7 +12,31 @@ import '../../../domain/models/asset.dart';
 import '../../../domain/services/bank_sync_service.dart';
 import '../../providers/asset_provider.dart';
 
-enum _ConnState { loading, connected, notConnected, error }
+enum _ConnState { loading, connected, notConnected, notEnabled, error }
+
+/// El grup actual no té accés a la connexió bancària: missatge informatiu,
+/// sense botons de reintentar ni de connectar (no depèn de l'usuari).
+class BankNotEnabledNotice extends StatelessWidget {
+  const BankNotEnabledNotice({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.lock_clock_outlined, size: 48, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(
+            AppLocalizations.of(context)!.bankNotEnabledForGroup,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16),
+          ),
+        ]),
+      ),
+    );
+  }
+}
 
 /// Configuració de la sincronització bancària (Enable Banking):
 /// estat de connexió + selector de quins comptes sincronitzar i com.
@@ -50,9 +75,11 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
     } on FirebaseFunctionsException catch (e) {
       if (!mounted) return;
       // failed-precondition (needsReauth) = encara no hi ha sessió.
-      setState(() => _state = e.code == 'failed-precondition'
-          ? _ConnState.notConnected
-          : _ConnState.error);
+      setState(() => _state = isBankNotEnabled(e)
+          ? _ConnState.notEnabled
+          : e.code == 'failed-precondition'
+              ? _ConnState.notConnected
+              : _ConnState.error);
       _error = e.message ?? 'Error';
     } catch (e) {
       if (!mounted) return;
@@ -132,6 +159,10 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
         webOnlyWindowName: '_self',
       );
     } catch (e) {
+      if (isBankNotEnabled(e)) {
+        if (mounted) setState(() => _state = _ConnState.notEnabled);
+        return;
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('No s\'ha pogut iniciar la connexió: $e')),
@@ -148,6 +179,7 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
         _ConnState.loading => const Center(child: CircularProgressIndicator()),
         _ConnState.error => _buildError(),
         _ConnState.notConnected => _buildNotConnected(),
+        _ConnState.notEnabled => const BankNotEnabledNotice(),
         _ConnState.connected => _buildConnected(),
       },
     );

@@ -58,6 +58,7 @@ jobs:
           ENABLEBANKING_ENV: ${{ vars.ENABLEBANKING_ENV }}
           ASPSP_NAME: ${{ vars.ASPSP_NAME }}
           ASPSP_COUNTRY: ${{ vars.ASPSP_COUNTRY }}
+          BANK_ALLOWED_GROUP_IDS: ${{ vars.BANK_ALLOWED_GROUP_IDS }}
         run: |
           # La clau .pem i l'APP_ID viuen a Secret Manager, no aquí. Aquests són
           # només paràmetres de configuració (quin entorn i quin banc).
@@ -68,12 +69,20 @@ jobs:
             echo "::error::Falten les Repository variables ENABLEBANKING_ENV i/o ASPSP_NAME (Settings → Secrets and variables → Actions → Variables)."
             exit 1
           fi
+          # Fase 0: grups que poden fer servir la connexió bancària. Sense la
+          # variable, les Functions la tancarien per a tothom (també per a
+          # nosaltres): millor aturar el deploy i avisar.
+          if [ -z "$BANK_ALLOWED_GROUP_IDS" ]; then
+            echo "::error::Falta la Repository variable BANK_ALLOWED_GROUP_IDS (ids de grup separats per comes)."
+            exit 1
+          fi
           {
             echo "ENABLEBANKING_ENV=$ENABLEBANKING_ENV"
             echo "ASPSP_NAME=$ASPSP_NAME"
             echo "ASPSP_COUNTRY=${ASPSP_COUNTRY:-ES}"
+            echo "BANK_ALLOWED_GROUP_IDS=$BANK_ALLOWED_GROUP_IDS"
           } > functions/.env
-          echo "functions/.env generat (env=$ENABLEBANKING_ENV, aspsp=$ASPSP_NAME)"
+          echo "functions/.env generat (env=$ENABLEBANKING_ENV, aspsp=$ASPSP_NAME, grups bancaris=$(echo "$BANK_ALLOWED_GROUP_IDS" | tr ',' '\n' | grep -c .))"
 
       - name: Install Cloud Functions dependencies
         run: npm ci
