@@ -1,5 +1,12 @@
 # Release Notes
 
+## v1.3.9
+Corregit l'error de permisos en registrar-se.
+Recuperar la contrasenya i botó per veure-la a l'inici de sessió.
+Missatges d'error d'inici de sessió més clars.
+Patrimoni: l'actiu ara és la suma real d'actius i guardioles.
+Nou botó per generar categories de despesa per defecte, i ingressos per defecte genèrics sense duplicats.
+La connexió bancària només està disponible per als grups habilitats.
 ## v1.3.8
 Administració del grup al Perfil: llista de membres, sortir del grup, i per al propietari treure membres, traspassar la propietat i generar un codi d'invitació nou.
 ## v1.3.7
@@ -163,6 +170,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
