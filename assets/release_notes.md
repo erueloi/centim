@@ -1,5 +1,9 @@
 # Release Notes
 
+## v1.4.0
+Connexió bancària pròpia de cada grup: l'owner configura l'aplicació d'Enable Banking amb un assistent.
+Multi banc: tria el teu banc en connectar.
+Comptes accessibles del grup.
 ## v1.3.9
 Corregit l'error de permisos en registrar-se.
 Recuperar la contrasenya i botó per veure-la a l'inici de sessió.
@@ -170,6 +174,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
