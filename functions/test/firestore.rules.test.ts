@@ -355,6 +355,42 @@ describe("atac 5b: crear grups amb dades falses", () => {
   });
 });
 
+describe("atac 6: credencials bancàries del grup i catàleg d'ASPSP", () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore() as unknown as Firestore;
+      await setDoc(doc(db, "bank_apps/gA"), {
+        appId: "11111111-2222-4333-8444-555555555555",
+        encryptedKey: { ciphertext: "x", iv: "y", authTag: "z", keyVersion: "v1" },
+      });
+      await setDoc(doc(db, "aspsp_cache/production_ES"), { aspsps: [] });
+    });
+  });
+
+  const anon = () => testEnv.unauthenticatedContext().firestore() as unknown as Firestore;
+  const who = [
+    ["l'owner del grup", alice],
+    ["un membre", bob],
+    ["algú d'un altre grup", mallory],
+    ["un usuari sense autenticar", anon],
+  ] as const;
+
+  for (const [label, db] of who) {
+    it(`${label} no pot llegir ni escriure bank_apps`, async () => {
+      await assertFails(getDoc(doc(db(), "bank_apps/gA")));
+      await assertFails(getDocs(collection(db(), "bank_apps")));
+      await assertFails(setDoc(doc(db(), "bank_apps/gA"), { appId: "fals" }));
+      await assertFails(deleteDoc(doc(db(), "bank_apps/gA")));
+      await assertFails(setDoc(doc(db(), "bank_apps/gNou"), { appId: "fals" }));
+    });
+
+    it(`${label} no pot llegir ni escriure aspsp_cache`, async () => {
+      await assertFails(getDoc(doc(db(), "aspsp_cache/production_ES")));
+      await assertFails(setDoc(doc(db(), "aspsp_cache/production_ES"), { aspsps: [] }));
+    });
+  }
+});
+
 // ---------------------------------------------------------------------------
 // FLUXOS LEGÍTIMS: tots han de FUNCIONAR
 // ---------------------------------------------------------------------------

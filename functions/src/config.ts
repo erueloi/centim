@@ -1,5 +1,8 @@
 import { defineSecret, defineString } from "firebase-functions/params";
 
+/** URL base de l'API d'Enable Banking (sandbox i producció comparteixen host). */
+export const EB_API_BASE_URL = "https://api.enablebanking.com";
+
 /** Regió europea (RGPD + latència). Totes les Functions es despleguen aquí. */
 export const REGION = "europe-west1";
 
@@ -41,6 +44,8 @@ export function resolveRedirectUrl(requested?: string): string {
  *  - Producció: default "CaixaBank".
  * Es fixa via functions/.env (ASPSP_NAME=Mock ASPSP) o params de desplegament.
  */
+// OBSOLETS des del multi banc (cada connexió desa el seu banc). Es retiren a
+// la neteja de la transició, juntament amb el workflow que els escriu.
 export const ASPSP_NAME = defineString("ASPSP_NAME", { default: "CaixaBank" });
 export const ASPSP_COUNTRY = defineString("ASPSP_COUNTRY", { default: "ES" });
 
@@ -61,6 +66,21 @@ export const aspspSlug = (name: string): string =>
 export const BANK_ALLOWED_GROUP_IDS = defineString("BANK_ALLOWED_GROUP_IDS", {
   default: "",
 });
+
+/**
+ * Keyring de claus mestres AES-256 amb què es xifren en repòs les claus
+ * privades d'Enable Banking de cada grup (vegeu bankAppCrypto.ts).
+ * Format: {"current":"v1","keys":{"v1":"<32 bytes en base64>"}}.
+ */
+export const BANK_APP_MASTER_KEYRING = defineSecret("BANK_APP_MASTER_KEYRING");
+
+/** Callback de producció que l'aplicació de cada grup ha de tenir registrat. */
+export const PRODUCTION_CALLBACK_URL = REDIRECT_URL;
+
+/** Documents (només Admin SDK): credencials xifrades i catàleg d'ASPSP. */
+export const bankAppDoc = (groupId: string) => `bank_apps/${groupId}`;
+export const aspspCacheDoc = (env: string, country: string) =>
+  `aspsp_cache/${env}_${country}`;
 
 /** Tipus de PSU per a l'autorització AIS. */
 export const PSU_TYPE = "personal";
@@ -113,6 +133,12 @@ export const ALL_EB_SECRETS = [
   ENABLEBANKING_APP_ID_PROD,
   ENABLEBANKING_PEM_PROD,
 ];
+
+/**
+ * Secrets de les Functions bancàries: el keyring de les aplicacions de cada
+ * grup i, mentre duri la transició, els de l'aplicació global.
+ */
+export const BANK_FUNCTION_SECRETS = [...ALL_EB_SECRETS, BANK_APP_MASTER_KEYRING];
 
 /** Base URL per entorn (avui idèntica; separada per si algun dia divergeix). */
 const EB_BASE_URL: Record<string, string> = {

@@ -51,7 +51,7 @@ export async function buildEnableBankingJwt(
 
 /** Opcions per a una crida a l'API d'Enable Banking. */
 interface EbRequestOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "DELETE";
   jwt: string;
   /** Base URL de l'entorn actiu (sandbox/producció). */
   baseUrl?: string;

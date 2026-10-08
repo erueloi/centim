@@ -2,17 +2,14 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
-import {
-  REGION,
-  ASPSP_NAME,
-  aspspSlug,
-} from "./config.js";
+import { REGION, BANK_FUNCTION_SECRETS } from "./config.js";
 import { requireUid } from "./enableBanking.js";
 import { EbAccount, accountKeyOf } from "./ebAccounts.js";
 import {
+  LEGACY_CONNECTION_ID,
   listBankConnectionDocs,
-  requireBankAccess,
 } from "./bankConnections.js";
+import { requireBankAccess } from "./bankApp.js";
 
 /**
  * Fase 2 — desa la config de sync d'un compte (quins comptes es sincronitzen,
@@ -20,7 +17,7 @@ import {
  * S'escriu via Admin SDK: l'app mai toca directament el doc de connexió.
  */
 export const updateBankAccountConfig = onCall(
-  { region: REGION },
+  { region: REGION, secrets: BANK_FUNCTION_SECRETS },
   async (request) => {
     const uid = requireUid(request);
     const db = getFirestore();
@@ -46,11 +43,10 @@ export const updateBankAccountConfig = onCall(
       throw new HttpsError("invalid-argument", "Cap camp de config a desar.");
     }
 
-    const slug = aspspSlug(ASPSP_NAME.value());
     const requestedConnectionId = (
       request.data?.connectionId as string | undefined
     )?.trim();
-    const { docs } = await listBankConnectionDocs(db, uid, slug);
+    const { docs } = await listBankConnectionDocs(db, uid, LEGACY_CONNECTION_ID);
     const candidates = requestedConnectionId
       ? docs.filter((doc) => doc.id === requestedConnectionId)
       : docs;

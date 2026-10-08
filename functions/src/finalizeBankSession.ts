@@ -4,18 +4,20 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 import {
   REGION,
-  ASPSP_NAME,
-  aspspSlug,
   bankConnectionsCollection,
-  ALL_EB_SECRETS,
-  resolveEbCredentials,
+  BANK_FUNCTION_SECRETS,
 } from "./config.js";
 import {
   buildEnableBankingJwt,
   enableBankingFetch,
   requireUid,
 } from "./enableBanking.js";
-import { requireBankAccess } from "./bankConnections.js";
+import {
+  APP_CHANGED,
+  credentialsFor,
+  requireBankAccess,
+  shortAppId,
+} from "./bankApp.js";
 
 interface SessionResponse {
   session_id: string;
@@ -25,24 +27,24 @@ interface SessionResponse {
 }
 
 /**
- * Fase 1 — tanca l'autorització AIS bescanviant el `code` de la SCA per una sessió.
+ * Tanca l'autorització AIS bescanviant el `code` de la SCA per una sessió.
  *
- * Passos:
- *  1. Valida que el `state` rebut coincideix amb el desat a startBankAuth (anti-CSRF)
- *     ABANS de cridar Enable Banking, i el descarta (un sol ús).
- *  2. POST /sessions amb el `code` → session_id + comptes autoritzats.
- *  3. Desa session_id + valid_until a users/{uid}/bank_connections/caixabank.
+ *  1. Valida que el `state` rebut coincideix amb el desat a startBankAuth
+ *     (anti-CSRF) ABANS de cridar Enable Banking, i el descarta (un sol ús).
+ *  2. Exigeix que l'aplicació del grup sigui la mateixa amb què es va iniciar.
+ *  3. POST /sessions amb el `code` → session_id + comptes autoritzats.
+ *  4. Desa la sessió i l'appId amb què s'ha creat.
  */
 export const finalizeBankSession = onCall(
   {
     region: REGION,
-    secrets: ALL_EB_SECRETS,
+    secrets: BANK_FUNCTION_SECRETS,
   },
   async (request) => {
     const uid = requireUid(request);
     const db = getFirestore();
-    // Abans de qualsevol crida a Enable Banking (abans no es comprovava el grup).
-    await requireBankAccess(db, uid);
+    // Abans de qualsevol crida a Enable Banking.
+    const access = await requireBankAccess(db, uid);
 
     const code = (request.data?.code ?? "") as string;
     const state = (request.data?.state ?? "") as string;
@@ -53,7 +55,6 @@ export const finalizeBankSession = onCall(
       );
     }
 
-    const slug = aspspSlug(ASPSP_NAME.value());
     const pending = await db
       .collection(bankConnectionsCollection(uid))
       .where("pendingState", "==", state)
@@ -74,12 +75,35 @@ export const finalizeBankSession = onCall(
     const snap = pending.docs[0];
     const docRef = snap.ref;
     const connectionId = snap.id;
+    if (snap.get("groupId") !== access.groupId) {
+      throw new HttpsError(
+        "permission-denied",
+        "Aquesta connexió bancària no pertany al grup actiu."
+      );
+    }
 
-    const creds = resolveEbCredentials();
+    // 2. L'aplicació no pot haver canviat enmig de la SCA.
+    const creds = credentialsFor(access);
+    const pendingAppId = snap.get("pendingAppId") as string | undefined;
+    if (pendingAppId && pendingAppId !== creds.appId) {
+      await docRef.set(
+        {
+          pendingState: FieldValue.delete(),
+          pendingValidUntil: FieldValue.delete(),
+          pendingAppId: FieldValue.delete(),
+        },
+        { merge: true }
+      );
+      throw new HttpsError(
+        "failed-precondition",
+        "L'aplicació bancària del grup ha canviat mentre connectaves. Torna-ho a provar.",
+        { needsReauth: true, reason: APP_CHANGED, connectionId }
+      );
+    }
+
+    // 3. Bescanviar el code per una sessió. El `code` es tracta com a
+    //    credencial: mai va a logs.
     const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
-
-    // 2. Bescanviar el code per una sessió. El `code` es tracta com a credencial:
-    //    mai va a logs.
     const session = await enableBankingFetch<SessionResponse>("/sessions", {
       method: "POST",
       jwt,
@@ -99,8 +123,9 @@ export const finalizeBankSession = onCall(
       (snap.get("pendingValidUntil") as string | undefined) ??
       null;
 
-    // 3. Persistir la sessió i descartar el state (un sol ús).
+    // 4. Persistir la sessió i descartar el state (un sol ús).
     const accounts = session.accounts ?? [];
+    const aspspName = (snap.get("aspspName") as string | undefined) ?? "Banc";
     const inferredLabel = accounts
       .map((account) =>
         typeof account === "object" && account != null && "name" in account
@@ -117,14 +142,18 @@ export const finalizeBankSession = onCall(
         connectionLabel:
           (snap.get("connectionLabel") as string | undefined) ??
           inferredLabel ??
-          `${ASPSP_NAME.value()} ${connectionId === slug ? "" : "2"}`.trim(),
+          aspspName,
         validUntil,
+        appId: creds.appId,
         env: creds.env,
         status: "connected",
         connectedAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         pendingState: FieldValue.delete(),
         pendingValidUntil: FieldValue.delete(),
+        pendingAppId: FieldValue.delete(),
+        reconnectReason: FieldValue.delete(),
+        inactiveReason: FieldValue.delete(),
       },
       { merge: true }
     );
@@ -132,15 +161,19 @@ export const finalizeBankSession = onCall(
     logger.info("Sessió bancària establerta", {
       uid,
       connectionId,
+      app: shortAppId(creds.appId),
       accountCount: accounts.length,
       validUntil,
     });
 
-    // No retornem session_id ni code al client.
+    // No retornem session_id ni code al client. Amb 0 comptes, l'app explica
+    // que cal que l'owner enllaci el compte al panell (mode restringit).
     return {
       status: "connected",
       connectionId,
       accountCount: accounts.length,
+      noLinkedAccounts: accounts.length === 0,
+      aspspName,
       validUntil,
     };
   }

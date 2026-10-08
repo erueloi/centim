@@ -2,13 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 import { getFirestore } from "firebase-admin/firestore";
 
-import {
-  REGION,
-  ASPSP_NAME,
-  aspspSlug,
-  ALL_EB_SECRETS,
-  resolveEbCredentials,
-} from "./config.js";
+import { REGION, BANK_FUNCTION_SECRETS } from "./config.js";
 import { buildEnableBankingJwt, requireUid } from "./enableBanking.js";
 import {
   EbAccount,
@@ -20,9 +14,15 @@ import {
   maskIban,
 } from "./ebAccounts.js";
 import {
-  requireBankAccess,
+  LEGACY_CONNECTION_ID,
   requireBankConnectionDoc,
 } from "./bankConnections.js";
+import {
+  connectionReconnectState,
+  credentialsFor,
+  legacyAppIdOrNull,
+  requireBankAccess,
+} from "./bankApp.js";
 
 /**
  * Diagnòstic manual i de només lectura: consulta en directe quins comptes veu
@@ -31,21 +31,21 @@ import {
 export const inspectBankSessionAccounts = onCall(
   {
     region: REGION,
-    secrets: ALL_EB_SECRETS,
+    secrets: BANK_FUNCTION_SECRETS,
   },
   async (request) => {
     const uid = requireUid(request);
     const db = getFirestore();
     // Abans de qualsevol crida a Enable Banking.
-    await requireBankAccess(db, uid);
-    const slug = aspspSlug(ASPSP_NAME.value());
+    const access = await requireBankAccess(db, uid);
     const connectionId =
-      (request.data?.connectionId as string | undefined)?.trim() || slug;
+      (request.data?.connectionId as string | undefined)?.trim() ||
+      LEGACY_CONNECTION_ID;
     const snap = await requireBankConnectionDoc(
       db,
       uid,
       connectionId,
-      slug
+      LEGACY_CONNECTION_ID
     );
     const sessionId = snap.get("sessionId") as string | undefined;
     if (!sessionId) {
@@ -56,7 +56,15 @@ export const inspectBankSessionAccounts = onCall(
       );
     }
 
-    const creds = resolveEbCredentials();
+    const creds = credentialsFor(access);
+    const reconnect = connectionReconnectState(snap.data(), creds.appId, legacyAppIdOrNull());
+    if (reconnect.needsReconnect) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Aquesta connexió bancària s'ha de tornar a connectar.",
+        { needsReauth: true, reason: reconnect.reason, connectionId }
+      );
+    }
     const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
     const session = await getAuthorizedSession(
       { jwt, baseUrl: creds.baseUrl },

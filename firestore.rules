@@ -56,6 +56,16 @@ service cloud.firestore {
       allow read: if isUser(userId);
     }
 
+    // CREDENCIALS D'ENABLE BANKING DE CADA GRUP (clau privada xifrada) i
+    // catàleg d'ASPSP en memòria cau: NOMÉS Cloud Functions (Admin SDK). Cap
+    // client, ni l'owner del grup, les pot llegir ni escriure.
+    match /bank_apps/{groupId} {
+      allow read, write: if false;
+    }
+    match /aspsp_cache/{cacheId} {
+      allow read, write: if false;
+    }
+
     // GROUPS: només els membres el veuen, i ningú en pot llistar. Unir-se a una
     // llar només es pot fer amb el codi, via la Cloud Function joinGroupWithCode
     // (Admin SDK); aquí no hi ha cap camí per afegir-se a memberIds.

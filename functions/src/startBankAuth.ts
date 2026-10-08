@@ -1,72 +1,75 @@
 import { randomUUID } from "node:crypto";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import {
+  DocumentSnapshot,
+  FieldValue,
+  getFirestore,
+} from "firebase-admin/firestore";
 
 import {
   REGION,
   resolveRedirectUrl,
-  ASPSP_COUNTRY,
-  ASPSP_NAME,
   aspspSlug,
   PSU_TYPE,
   REQUESTED_CONSENT_DAYS,
   bankConnectionDoc,
-  ALL_EB_SECRETS,
-  resolveEbCredentials,
+  BANK_FUNCTION_SECRETS,
 } from "./config.js";
 import {
   buildEnableBankingJwt,
   enableBankingFetch,
   requireUid,
 } from "./enableBanking.js";
+import { assertValidConnectionId } from "./bankConnections.js";
 import {
-  assertValidConnectionId,
+  credentialsFor,
+  findAspsp,
+  normalizeCountry,
   requireBankAccess,
-} from "./bankConnections.js";
-
-interface Aspsp {
-  name: string;
-  country: string;
-  /** Validesa màxima del consentiment en segons. */
-  maximum_consent_validity?: number;
-  auth_methods?: unknown[];
-  psu_types?: string[];
-  /** Capçaleres PSU que aquest banc exigeix (accés amb client present). */
-  required_psu_headers?: string[];
-}
-
-interface AspspsResponse {
-  aspsps: Aspsp[];
-}
+  shortAppId,
+} from "./bankApp.js";
 
 interface AuthResponse {
   /** URL a què l'app ha de redirigir l'usuari per fer la SCA. */
   url: string;
 }
 
+/** Marge sobre la validesa màxima de l'ASPSP (rellotge i latència). */
+const CONSENT_MARGIN_SECONDS = 60 * 60;
+
+/** Segons de consentiment a demanar: el màxim de l'ASPSP menys el marge. */
+export function consentSecondsFor(maximumSeconds: number): number {
+  return maximumSeconds > 2 * CONSENT_MARGIN_SECONDS
+    ? maximumSeconds - CONSENT_MARGIN_SECONDS
+    : Math.floor(maximumSeconds * 0.9);
+}
+
+/** Banc de les connexions anteriors al multi banc (no tenien aspspName). */
+const LEGACY_ASPSP = { name: "CaixaBank", country: "ES" };
+
 /**
- * Fase 1 — inicia l'autorització AIS amb CaixaBank via Enable Banking.
+ * Inicia l'autorització AIS amb l'aplicació d'Enable Banking DEL GRUP.
  *
- * Passos:
- *  1. Signa un JWT curt (RS256).
- *  2. GET /aspsps?country=ES → localitza CaixaBank i llegeix la seva validesa màxima.
- *  3. Genera un `state` anti-CSRF d'un sol ús i el desa a Firestore.
- *  4. POST /auth amb valid_until dinàmic → retorna la redirect_url de SCA.
+ *  - Connexió nova: `aspspName` + `aspspCountry` (el banc que tria l'usuari).
+ *  - Renovació/reconnexió: `connectionId`; el banc és el desat a la connexió.
+ *    Reconnectar és també com una connexió creada amb una aplicació anterior
+ *    passa a l'aplicació actual del grup.
+ *
+ * La validesa demanada és la màxima que admet l'ASPSP.
  */
 export const startBankAuth = onCall(
   {
     region: REGION,
-    secrets: ALL_EB_SECRETS,
+    secrets: BANK_FUNCTION_SECRETS,
   },
   async (request) => {
     const uid = requireUid(request);
     const db = getFirestore();
     // Abans de qualsevol crida a Enable Banking.
-    const groupId = await requireBankAccess(db, uid);
+    const access = await requireBankAccess(db, uid);
+    const groupId = access.groupId;
 
-    const targetName = ASPSP_NAME.value();
-    const targetCountry = ASPSP_COUNTRY.value();
     // Redirect dinàmic (web desplegada o localhost en dev), validat.
     let redirectUrl: string;
     try {
@@ -76,102 +79,89 @@ export const startBankAuth = onCall(
     } catch {
       throw new HttpsError("invalid-argument", "redirect_url no permès.");
     }
-    const creds = resolveEbCredentials();
 
-    const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
-
-    // 2. Localitzar el banc objectiu entre les ASPSP del país.
-    const aspspsResp = await enableBankingFetch<AspspsResponse>("/aspsps", {
-      method: "GET",
-      jwt,
-      baseUrl: creds.baseUrl,
-      query: { country: targetCountry },
-    });
-
-    const list = aspspsResp.aspsps ?? [];
-    const nameLc = targetName.toLowerCase();
-    const caixa =
-      list.find(
-        (a) => a.country === targetCountry && a.name.toLowerCase() === nameLc
-      ) ??
-      list.find(
-        (a) =>
-          a.country === targetCountry && a.name.toLowerCase().includes(nameLc)
-      );
-
-    if (!caixa) {
-      logger.error("Banc objectiu no trobat a /aspsps", {
-        country: targetCountry,
-        target: targetName,
-        count: list.length,
-      });
-      throw new HttpsError(
-        "not-found",
-        `${targetName} no està disponible ara mateix a Enable Banking.`
-      );
-    }
-
-    // Slug derivat del paràmetre (no del nom retornat) perquè finalizeBankSession
-    // pugui recalcular el mateix doc sense tornar a cridar /aspsps.
-    const slug = aspspSlug(targetName);
     const addConnection = request.data?.newConnection === true;
     const requestedConnectionId = (
       request.data?.connectionId as string | undefined
     )?.trim();
-    const connectionId = addConnection
-      ? `${slug}-${randomUUID()}`
-      : requestedConnectionId || slug;
-    assertValidConnectionId(connectionId);
 
-    // 3. valid_until dinàmic, capat a la validesa màxima real de CaixaBank.
-    const requestedSeconds = REQUESTED_CONSENT_DAYS * 24 * 60 * 60;
-    const maxSeconds = caixa.maximum_consent_validity ?? requestedSeconds;
-    const validSeconds = Math.min(requestedSeconds, maxSeconds);
-    const validUntil = new Date(Date.now() + validSeconds * 1000).toISOString();
-
-    // 4. State anti-CSRF d'un sol ús, desat abans d'iniciar la SCA.
-    const state = randomUUID();
-    const docRef = db.doc(bankConnectionDoc(uid, connectionId));
-    const existing = await docRef.get();
-    if (existing.exists) {
+    let connectionId: string;
+    let target: { name: string; country: string };
+    let existing: DocumentSnapshot | null = null;
+    if (addConnection) {
+      const name = (request.data?.aspspName as string | undefined)?.trim();
+      if (!name) {
+        throw new HttpsError("invalid-argument", "Tria el banc que vols connectar.");
+      }
+      target = { name, country: normalizeCountry(request.data?.aspspCountry ?? "ES") };
+      connectionId = `${aspspSlug(name)}-${randomUUID()}`;
+    } else {
+      if (!requestedConnectionId) {
+        throw new HttpsError("invalid-argument", "Falta la connexió a renovar.");
+      }
+      connectionId = requestedConnectionId;
+      assertValidConnectionId(connectionId);
+      existing = await db.doc(bankConnectionDoc(uid, connectionId)).get();
+      if (!existing.exists) {
+        throw new HttpsError("not-found", "Connexió bancària no trobada.");
+      }
       const existingGroupId = existing.get("groupId") as string | undefined;
-      const isLegacy = connectionId === slug && !existingGroupId;
-      if (existingGroupId !== groupId && !isLegacy) {
+      const isLegacyDoc = !existingGroupId && connectionId === aspspSlug(LEGACY_ASPSP.name);
+      if (existingGroupId !== groupId && !isLegacyDoc) {
         throw new HttpsError(
           "permission-denied",
           "Aquesta connexió bancària no pertany al grup actiu."
         );
       }
-    } else if (!addConnection && connectionId !== slug) {
-      throw new HttpsError("not-found", "Connexió bancària no trobada.");
+      target = {
+        name: (existing.get("aspspName") as string | undefined) ?? LEGACY_ASPSP.name,
+        country: (existing.get("aspspCountry") as string | undefined) ?? LEGACY_ASPSP.country,
+      };
     }
+    assertValidConnectionId(connectionId);
 
+    const creds = credentialsFor(access);
+    const aspsp = await findAspsp(db, creds, target.name, target.country);
+
+    // Validesa: la màxima que admet l'ASPSP (o 90 dies si no la publica),
+    // menys un marge. Demanar el màxim exacte dona 422 ("ASPSP does not
+    // support consent validity more than N seconds"): quan la petició arriba,
+    // ja l'hem passat per uns segons (verificat al sandbox).
+    const fallbackSeconds = REQUESTED_CONSENT_DAYS * 24 * 60 * 60;
+    const validSeconds = consentSecondsFor(aspsp.maximumConsentValidity ?? fallbackSeconds);
+    const validUntil = new Date(Date.now() + validSeconds * 1000).toISOString();
+
+    // State anti-CSRF d'un sol ús, desat abans d'iniciar la SCA.
+    const state = randomUUID();
+    const docRef = db.doc(bankConnectionDoc(uid, connectionId));
     await docRef.set(
       {
         connectionId,
         groupId,
-        aspspName: caixa.name,
-        aspspCountry: caixa.country,
+        aspspName: aspsp.name,
+        aspspCountry: aspsp.country,
         // Les desem per poder marcar les consultes com a "client present".
-        requiredPsuHeaders: caixa.required_psu_headers ?? [],
+        requiredPsuHeaders: aspsp.requiredPsuHeaders,
         pendingState: state,
         pendingValidUntil: validUntil,
-        status: "authorizing",
+        // finalize comprova que l'aplicació no hagi canviat enmig de la SCA.
+        pendingAppId: creds.appId,
+        status: existing?.get("sessionId") ? existing.get("status") ?? "connected" : "authorizing",
         updatedAt: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
 
-    // 5. Iniciar autorització.
     let auth: AuthResponse;
     try {
+      const jwt = await buildEnableBankingJwt(creds.appId, creds.pem);
       auth = await enableBankingFetch<AuthResponse>("/auth", {
         method: "POST",
         jwt,
         baseUrl: creds.baseUrl,
         body: {
           access: { valid_until: validUntil },
-          aspsp: { name: caixa.name, country: caixa.country },
+          aspsp: { name: aspsp.name, country: aspsp.country },
           state,
           redirect_url: redirectUrl,
           psu_type: PSU_TYPE,
@@ -181,14 +171,14 @@ export const startBankAuth = onCall(
       // Un intent nou que EB rebutja no és una connexió real: no deixem un
       // document provisional invisible. En una renovació, conservem la sessió
       // anterior i només retirem l'estat temporal.
-      if (addConnection && !existing.exists) {
+      if (addConnection) {
         await docRef.delete();
       } else {
         await docRef.set(
           {
             pendingState: FieldValue.delete(),
             pendingValidUntil: FieldValue.delete(),
-            status: existing.get("sessionId") ? "connected" : "error",
+            pendingAppId: FieldValue.delete(),
             updatedAt: FieldValue.serverTimestamp(),
           },
           { merge: true }
@@ -225,8 +215,11 @@ export const startBankAuth = onCall(
 
     logger.info("Autorització bancària iniciada", {
       uid,
+      groupId,
+      app: shortAppId(creds.appId),
+      source: creds.source,
       env: creds.env,
-      aspsp: caixa.name,
+      aspsp: aspsp.name,
       validUntil,
     });
 
@@ -234,10 +227,9 @@ export const startBankAuth = onCall(
     return {
       env: creds.env,
       authUrl: auth.url,
-      aspspName: caixa.name,
+      aspspName: aspsp.name,
       connectionId,
       validUntil,
-      authMethods: caixa.auth_methods ?? [],
     };
   }
 );

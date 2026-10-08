@@ -2,14 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
 import { getFirestore } from "firebase-admin/firestore";
 
-import {
-  REGION,
-  ASPSP_NAME,
-  ASPSP_COUNTRY,
-  aspspSlug,
-  ALL_EB_SECRETS,
-  resolveEbCredentials,
-} from "./config.js";
+import { REGION, BANK_FUNCTION_SECRETS } from "./config.js";
 import { buildPsuHeaders } from "./psuHeaders.js";
 import {
   buildEnableBankingJwt,
@@ -23,9 +16,16 @@ import {
   accountKeyOf,
 } from "./ebAccounts.js";
 import {
+  LEGACY_CONNECTION_ID,
   listBankConnectionDocs,
-  requireBankAccess,
 } from "./bankConnections.js";
+import {
+  connectionReconnectState,
+  credentialsFor,
+  getAspsps,
+  legacyAppIdOrNull,
+  requireBankAccess,
+} from "./bankApp.js";
 
 // Finestra de dates per defecte i límits de paginació.
 const DEFAULT_LOOKBACK_DAYS = 90;
@@ -146,13 +146,13 @@ function isoDate(d: Date): string {
 export const fetchBankTransactions = onCall(
   {
     region: REGION,
-    secrets: ALL_EB_SECRETS,
+    secrets: BANK_FUNCTION_SECRETS,
   },
   async (request) => {
     const uid = requireUid(request);
     const db = getFirestore();
     // Abans de qualsevol crida a Enable Banking.
-    await requireBankAccess(db, uid);
+    const access = await requireBankAccess(db, uid);
 
     // Peticions per compte: [{ key, dateFrom? }]. Si no se'n passen, es baixen
     // tots els comptes amb la finestra per defecte (comportament legacy).
@@ -167,10 +167,10 @@ export const fetchBankTransactions = onCall(
       isoDate(new Date(Date.now() - DEFAULT_LOOKBACK_DAYS * 86400 * 1000));
     const dateTo = request.data?.dateTo as string | undefined;
 
-    const creds = resolveEbCredentials();
-    const slug = aspspSlug(ASPSP_NAME.value());
+    const creds = credentialsFor(access);
+    const legacyAppId = legacyAppIdOrNull();
 
-    const { docs } = await listBankConnectionDocs(db, uid, slug);
+    const { docs } = await listBankConnectionDocs(db, uid, LEGACY_CONNECTION_ID);
     const connected = docs.filter(
       (doc) => !!(doc.get("sessionId") as string | undefined)
     );
@@ -187,7 +187,6 @@ export const fetchBankTransactions = onCall(
     let txTotal = 0;
     const usedConnections = new Set<string>();
     const sentPsuHeaders = new Set<string>();
-    let catalogPsuHeaders: string[] | undefined;
 
     for (const snap of connected) {
       const storedAccounts =
@@ -209,6 +208,17 @@ export const fetchBankTransactions = onCall(
         });
       if (selected.length === 0) continue;
 
+      // Una connexió creada amb una altra aplicació (o d'un membre que va
+      // sortir del grup) no es pot fer servir: cal reconnectar-la.
+      const reconnect = connectionReconnectState(snap.data(), creds.appId, legacyAppId);
+      if (reconnect.needsReconnect) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Aquesta connexió bancària s'ha de tornar a connectar.",
+          { needsReauth: true, reason: reconnect.reason, connectionId: snap.id }
+        );
+      }
+
       // La data només invalida la connexió propietària del compte seleccionat;
       // una altra sessió caducada no bloqueja la resta de comptes del grup.
       const validUntilStr = snap.get("validUntil") as string | undefined;
@@ -229,26 +239,16 @@ export const fetchBankTransactions = onCall(
         | string[]
         | undefined;
       if (requiredPsuHeaders === undefined) {
-        if (catalogPsuHeaders === undefined) {
-          try {
-            const catalog = await enableBankingFetch<{
-              aspsps?: { name: string; required_psu_headers?: string[] }[];
-            }>("/aspsps", {
-              method: "GET",
-              jwt,
-              baseUrl: creds.baseUrl,
-              query: { country: ASPSP_COUNTRY.value() },
-            });
-            const target = ASPSP_NAME.value().toLowerCase();
-            catalogPsuHeaders =
-              (catalog.aspsps ?? []).find(
-                (aspsp) => aspsp.name.toLowerCase() === target
-              )?.required_psu_headers ?? [];
-          } catch {
-            catalogPsuHeaders = [];
-          }
+        const aspspName = (snap.get("aspspName") as string | undefined) ?? "CaixaBank";
+        const aspspCountry = (snap.get("aspspCountry") as string | undefined) ?? "ES";
+        try {
+          const catalog = await getAspsps(db, creds, aspspCountry);
+          requiredPsuHeaders =
+            catalog.find((a) => a.name.toLowerCase() === aspspName.toLowerCase())
+              ?.requiredPsuHeaders ?? [];
+        } catch {
+          requiredPsuHeaders = [];
         }
-        requiredPsuHeaders = catalogPsuHeaders;
         await snap.ref.set({ requiredPsuHeaders }, { merge: true });
       }
       const psuHeaders = buildPsuHeaders(

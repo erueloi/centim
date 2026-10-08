@@ -1,56 +1,36 @@
 /**
- * FASE 0: només els grups de BANK_ALLOWED_GROUP_IDS poden fer servir la
- * connexió bancària. S'executa amb `npm run test:rules` (emulador de Firestore,
- * projecte fictici `demo-centim`): cap crida surt cap a Enable Banking.
+ * Control d'accés de les Functions bancàries. S'executa amb `npm run test:rules`
+ * (emulador de Firestore, projecte fictici `demo-centim`): cap crida surt cap a
+ * Enable Banking.
  *
  * Personatges:
- *  - alice:   membre del grup permès (gAllowed)
- *  - mallory: membre d'un grup no permès (gOther)
+ *  - alice:   membre d'un grup de la llista de transició (gAllowed, sense app pròpia)
+ *  - mallory: membre d'un grup sense aplicació pròpia ni a la llista (gOther)
  *  - eve:     apunta el seu currentGroupId a gAllowed sense ser-ne membre
  *  - nobody:  sense grup
  */
-import { getApps, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import type { CallableRequest } from "firebase-functions/v2/https";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  BANK_NOT_ENABLED,
-  parseAllowedGroupIds,
-  requireBankAccess,
-} from "../src/bankConnections.js";
+import { parseAllowedGroupIds } from "../src/bankConnections.js";
+import { NO_BANK_APP, requireBankAccess } from "../src/bankApp.js";
 import { startBankAuth } from "../src/startBankAuth.js";
 import { finalizeBankSession } from "../src/finalizeBankSession.js";
 import { fetchBankTransactions } from "../src/fetchBankTransactions.js";
 import { listBankAccounts } from "../src/listBankAccounts.js";
 import { inspectBankSessionAccounts } from "../src/inspectBankSessionAccounts.js";
 import { updateBankAccountConfig } from "../src/updateBankAccountConfig.js";
-
-const PROJECT_ID = "demo-centim";
-
-function db() {
-  if (getApps().length === 0) initializeApp({ projectId: PROJECT_ID });
-  return getFirestore();
-}
-
-/** Petició callable mínima, com la que construeix firebase-functions. */
-function callAs(uid: string, data: Record<string, unknown> = {}) {
-  return {
-    data,
-    auth: { uid, token: { uid } },
-    rawRequest: { headers: {}, ip: "127.0.0.1" },
-    acceptsStreaming: false,
-  } as unknown as CallableRequest;
-}
+import { listAspsps } from "../src/bankAppAdmin.js";
+import { adminDb as db, callAs, clearFirestore } from "./helpers.js";
 
 // Mateixes dades que enviaria l'app per a cada Function.
 const FUNCTIONS = [
-  ["startBankAuth", startBankAuth, {}],
+  ["startBankAuth", startBankAuth, { newConnection: true, aspspName: "BBVA" }],
   ["finalizeBankSession", finalizeBankSession, { code: "c", state: "s" }],
   ["fetchBankTransactions", fetchBankTransactions, {}],
   ["listBankAccounts", listBankAccounts, {}],
   ["inspectBankSessionAccounts", inspectBankSessionAccounts, { connectionId: "caixabank" }],
   ["updateBankAccountConfig", updateBankAccountConfig, { accountKey: "k", sync: true }],
+  ["listAspsps", listAspsps, { country: "ES" }],
 ] as const;
 
 let fetchSpy: ReturnType<typeof vi.spyOn>;
@@ -60,6 +40,7 @@ beforeAll(() => {
 });
 
 beforeEach(async () => {
+  await clearFirestore();
   fetchSpy = vi
     .spyOn(globalThis, "fetch")
     .mockRejectedValue(new Error("Cap test pot cridar Enable Banking"));
@@ -91,45 +72,52 @@ describe("parseAllowedGroupIds", () => {
 });
 
 describe("requireBankAccess", () => {
-  const allowed = new Set(["gAllowed"]);
-
-  it("un membre d'un grup permès hi té accés", async () => {
-    await expect(requireBankAccess(db(), "alice", allowed)).resolves.toBe("gAllowed");
-  });
-
-  it("un membre d'un grup no permès queda bloquejat amb el motiu propi", async () => {
-    await expect(requireBankAccess(db(), "mallory", allowed)).rejects.toMatchObject({
-      code: "permission-denied",
-      message: "La connexió bancària encara no està disponible per al teu grup.",
-      details: { reason: BANK_NOT_ENABLED },
+  it("un grup de la llista de transició fa servir l'aplicació global", async () => {
+    await expect(requireBankAccess(db(), "alice")).resolves.toMatchObject({
+      groupId: "gAllowed",
+      app: null,
+      legacy: true,
     });
   });
 
-  it("apuntar el currentGroupId a un grup permès sense ser-ne membre no serveix", async () => {
-    await expect(requireBankAccess(db(), "eve", allowed)).rejects.toMatchObject({
+  it("un grup sense aplicació pròpia ni a la llista queda bloquejat amb el motiu propi", async () => {
+    await expect(requireBankAccess(db(), "mallory")).rejects.toMatchObject({
+      code: "failed-precondition",
+      message: "El teu grup encara no té configurada la connexió bancària.",
+      details: { reason: NO_BANK_APP },
+    });
+  });
+
+  it("apuntar el currentGroupId a un grup amb accés sense ser-ne membre no serveix", async () => {
+    await expect(requireBankAccess(db(), "eve")).rejects.toMatchObject({
       code: "permission-denied",
     });
   });
 
   it("sense grup actiu no hi ha accés", async () => {
-    await expect(requireBankAccess(db(), "nobody", allowed)).rejects.toMatchObject({
+    await expect(requireBankAccess(db(), "nobody")).rejects.toMatchObject({
       code: "failed-precondition",
     });
   });
 
-  it("amb la llista buida es bloqueja tothom, també els membres", async () => {
-    await expect(requireBankAccess(db(), "alice", new Set())).rejects.toMatchObject({
-      details: { reason: BANK_NOT_ENABLED },
-    });
+  it("amb la llista buida, un grup sense app pròpia queda bloquejat", async () => {
+    process.env.BANK_ALLOWED_GROUP_IDS = "";
+    try {
+      await expect(requireBankAccess(db(), "alice")).rejects.toMatchObject({
+        details: { reason: NO_BANK_APP },
+      });
+    } finally {
+      process.env.BANK_ALLOWED_GROUP_IDS = "gAllowed";
+    }
   });
 });
 
-describe("les 6 Functions bancàries", () => {
+describe("les Functions bancàries", () => {
   for (const [name, fn, data] of FUNCTIONS) {
-    it(`${name}: un grup no permès queda bloquejat sense cridar Enable Banking`, async () => {
+    it(`${name}: un grup sense aplicació queda bloquejat sense cridar Enable Banking`, async () => {
       await expect(fn.run(callAs("mallory", data))).rejects.toMatchObject({
-        code: "permission-denied",
-        details: { reason: BANK_NOT_ENABLED },
+        code: "failed-precondition",
+        details: { reason: NO_BANK_APP },
       });
       expect(fetchSpy).not.toHaveBeenCalled();
     });
@@ -142,16 +130,15 @@ describe("les 6 Functions bancàries", () => {
     });
   }
 
-  it("un membre d'un grup permès passa el control (listBankAccounts arriba a les connexions)", async () => {
-    // Sense cap connexió desada: l'error ja és el de "connecta el banc", no el de bloqueig.
-    await expect(listBankAccounts.run(callAs("alice"))).rejects.toMatchObject({
-      code: "failed-precondition",
-      message: "No hi ha cap sessió bancària. Connecta el banc primer.",
+  it("un grup amb accés passa el control (listBankAccounts, sense connexions)", async () => {
+    await expect(listBankAccounts.run(callAs("alice"))).resolves.toMatchObject({
+      connections: [],
+      groupAccounts: [],
     });
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
-  it("un membre d'un grup permès passa el control (updateBankAccountConfig valida les dades)", async () => {
+  it("un grup amb accés passa el control (updateBankAccountConfig valida les dades)", async () => {
     await expect(updateBankAccountConfig.run(callAs("alice", {}))).rejects.toMatchObject({
       code: "invalid-argument",
     });

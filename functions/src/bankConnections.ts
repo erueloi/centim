@@ -5,12 +5,15 @@ import {
 } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
 
-import { BANK_ALLOWED_GROUP_IDS, bankConnectionsCollection } from "./config.js";
+import { bankConnectionsCollection } from "./config.js";
 
-/** Motiu a `details.reason` perquè l'app distingeixi aquest bloqueig. */
-export const BANK_NOT_ENABLED = "bank-not-enabled";
+/** Id del document de connexió anterior al multi connexió (sense groupId). */
+export const LEGACY_CONNECTION_ID = "caixabank";
 
-/** Interpreta la llista d'ids separats per comes (ignora espais i buits). */
+/**
+ * TRANSICIÓ (fase 0): interpreta BANK_ALLOWED_GROUP_IDS, ids separats per
+ * comes (ignora espais i buits). El control d'accés és a bankApp.ts.
+ */
 export function parseAllowedGroupIds(raw: string | undefined): Set<string> {
   return new Set(
     (raw ?? "")
@@ -18,32 +21,6 @@ export function parseAllowedGroupIds(raw: string | undefined): Set<string> {
       .map((id) => id.trim())
       .filter(Boolean)
   );
-}
-
-/**
- * Porta d'entrada de TOTES les Functions bancàries: s'ha de cridar abans de
- * qualsevol crida a Enable Banking o lectura de connexions.
- *
- * Exigeix que l'usuari sigui de debò membre del seu grup actiu (vegeu
- * [currentBankGroupId]) i que aquest grup sigui a BANK_ALLOWED_GROUP_IDS.
- * Retorna el groupId verificat.
- */
-export async function requireBankAccess(
-  db: Firestore,
-  uid: string,
-  allowedGroupIds: Set<string> = parseAllowedGroupIds(
-    BANK_ALLOWED_GROUP_IDS.value()
-  )
-): Promise<string> {
-  const groupId = await currentBankGroupId(db, uid);
-  if (!allowedGroupIds.has(groupId)) {
-    throw new HttpsError(
-      "permission-denied",
-      "La connexió bancària encara no està disponible per al teu grup.",
-      { reason: BANK_NOT_ENABLED }
-    );
-  }
-  return groupId;
 }
 
 export interface UserBankConnections {
