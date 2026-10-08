@@ -46,13 +46,59 @@ class AuthWrapper extends ConsumerWidget {
           },
           loading: () =>
               const Scaffold(body: Center(child: CircularProgressIndicator())),
-          error: (e, s) =>
-              Scaffold(body: Center(child: Text('Error loading profile: $e'))),
+          error: (e, s) => _ProfileErrorScreen(error: e),
         );
       },
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, s) => Scaffold(body: Center(child: Text('Error: $e'))),
+    );
+  }
+}
+
+/// No s'ha pogut carregar el perfil ni després dels reintents: deixa
+/// tornar-ho a provar o canviar de compte, en lloc d'encallar l'app.
+class _ProfileErrorScreen extends ConsumerWidget {
+  final Object error;
+  const _ProfileErrorScreen({required this.error});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text(
+                'No s\'ha pogut carregar el teu perfil.',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '$error',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () => ref.invalidate(userProfileProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Tornar-ho a provar'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => ref.read(authRepositoryProvider).signOut(),
+                child: const Text('Tancar sessió'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

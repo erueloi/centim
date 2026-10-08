@@ -1,7 +1,34 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/providers/repository_providers.dart';
 import 'package:centim/l10n/app_localizations.dart';
+
+/// Missatge comprensible per als errors de Firebase Auth (en lloc del
+/// "[firebase_auth/...]" cru).
+String authErrorMessage(AppLocalizations l10n, Object error) {
+  if (error is! FirebaseAuthException) return l10n.authErrorGeneric;
+  switch (error.code) {
+    case 'invalid-credential':
+    case 'invalid-login-credentials':
+    case 'wrong-password':
+    case 'user-not-found':
+      return l10n.authErrorInvalidCredentials;
+    case 'email-already-in-use':
+      return l10n.authErrorEmailInUse;
+    case 'weak-password':
+      return l10n.authErrorWeakPassword;
+    case 'invalid-email':
+    case 'missing-email':
+      return l10n.authErrorInvalidEmail;
+    case 'too-many-requests':
+      return l10n.authErrorTooManyRequests;
+    case 'network-request-failed':
+      return l10n.authErrorNetwork;
+    default:
+      return l10n.authErrorGeneric;
+  }
+}
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +42,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _isRegistering = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   Future<void> _submit() async {
@@ -34,13 +62,110 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await auth.signInWithEmailAndPassword(email, password);
       }
     } catch (e) {
+      debugPrint('Error d\'autenticació: $e');
       if (mounted) {
-        setState(() => _errorMessage = e.toString());
+        final l10n = AppLocalizations.of(context)!;
+        setState(() => _errorMessage = authErrorMessage(l10n, e));
       }
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _showResetPasswordDialog() async {
+    final l10n = AppLocalizations.of(context)!;
+    final messenger = ScaffoldMessenger.of(context);
+    final auth = ref.read(authRepositoryProvider);
+    final emailController =
+        TextEditingController(text: _emailController.text.trim());
+
+    final sent = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        var sending = false;
+        String? error;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            Future<void> send() async {
+              setDialogState(() {
+                sending = true;
+                error = null;
+              });
+              try {
+                await auth.sendPasswordResetEmail(emailController.text.trim());
+                if (ctx.mounted) Navigator.pop(ctx, true);
+              } on FirebaseAuthException catch (e) {
+                // No revelem si el compte existeix: es tracta com un enviament.
+                if (e.code == 'user-not-found') {
+                  if (ctx.mounted) Navigator.pop(ctx, true);
+                  return;
+                }
+                setDialogState(() {
+                  sending = false;
+                  error = authErrorMessage(l10n, e);
+                });
+              } catch (e) {
+                setDialogState(() {
+                  sending = false;
+                  error = authErrorMessage(l10n, e);
+                });
+              }
+            }
+
+            return AlertDialog(
+              title: Text(l10n.resetPasswordTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.resetPasswordBody),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailController,
+                    autofocus: true,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: l10n.emailLabel,
+                      prefixIcon: const Icon(Icons.email_outlined),
+                      errorText: error,
+                      errorMaxLines: 3,
+                    ),
+                    onSubmitted: (_) => sending ? null : send(),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: sending ? null : () => Navigator.pop(ctx, false),
+                  child: Text(l10n.cancelButton),
+                ),
+                TextButton(
+                  onPressed: sending ? null : send,
+                  child: sending
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.resetPasswordSendButton),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    emailController.dispose();
+
+    if (sent == true) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(l10n.resetPasswordSent),
+          duration: const Duration(seconds: 6),
+        ),
+      );
     }
   }
 
@@ -131,10 +256,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         decoration: InputDecoration(
                           labelText: l10n.passwordLabel,
                           prefixIcon: const Icon(Icons.lock_outline),
+                          suffixIcon: IconButton(
+                            tooltip: _obscurePassword
+                                ? l10n.showPassword
+                                : l10n.hidePassword,
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
+                            ),
+                          ),
                         ),
-                        obscureText: true,
+                        obscureText: _obscurePassword,
+                        onSubmitted: (_) => _isLoading ? null : _submit(),
                       ),
-                      const SizedBox(height: 32),
+                      if (!_isRegistering)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed:
+                                _isLoading ? null : _showResetPasswordDialog,
+                            child: Text(
+                              l10n.forgotPasswordButton,
+                              style: TextStyle(color: Colors.grey.shade600),
+                            ),
+                          ),
+                        ),
+                      SizedBox(height: _isRegistering ? 32 : 16),
                       if (_isLoading)
                         const CircularProgressIndicator()
                       else

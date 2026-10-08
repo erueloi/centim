@@ -6,9 +6,13 @@ part of 'auth_providers.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$userProfileHash() => r'fa0809552c1fa26c7dbcd4426a1093c8a6d0ff84';
+String _$userProfileHash() => r'9faba67f914dd43b661ed8f49bec39a59f648a6d';
 
-/// See also [userProfile].
+/// Perfil de l'usuari autenticat. Depèn de l'estat d'Auth perquè, en canviar
+/// d'usuari (tancar sessió i registrar-ne un altre), no es quedi escoltant
+/// el perfil ni l'error de l'usuari anterior.
+///
+/// Copied from [userProfile].
 @ProviderFor(userProfile)
 final userProfileProvider = AutoDisposeStreamProvider<UserProfile?>.internal(
   userProfile,

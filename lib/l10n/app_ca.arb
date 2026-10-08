@@ -238,5 +238,19 @@
   "annualPerMonth": "€/mes",
   "annualPerYear": "€/any",
   "annualRealBadge": "Real ({count}m): {amount}",
-  "annualProjectedBadge": "Projecció ({count}m): {amount}"
+  "annualProjectedBadge": "Projecció ({count}m): {amount}",
+  "showPassword": "Mostra la contrasenya",
+  "hidePassword": "Amaga la contrasenya",
+  "forgotPasswordButton": "Has oblidat la contrasenya?",
+  "resetPasswordTitle": "Restableix la contrasenya",
+  "resetPasswordBody": "Introdueix el teu correu i t'enviarem un enllaç per triar una contrasenya nova.",
+  "resetPasswordSendButton": "Envia l'enllaç",
+  "resetPasswordSent": "Si hi ha un compte amb aquest correu, rebràs un enllaç per restablir la contrasenya. Revisa també la carpeta de correu brossa.",
+  "authErrorInvalidCredentials": "El correu o la contrasenya no són correctes.",
+  "authErrorEmailInUse": "Ja hi ha un compte amb aquest correu. Inicia la sessió o recupera la contrasenya.",
+  "authErrorWeakPassword": "La contrasenya ha de tenir almenys 6 caràcters.",
+  "authErrorInvalidEmail": "El correu electrònic no és vàlid.",
+  "authErrorTooManyRequests": "Massa intents seguits. Espera una estona i torna-ho a provar.",
+  "authErrorNetwork": "No hi ha connexió. Revisa la xarxa i torna-ho a provar.",
+  "authErrorGeneric": "No s'ha pogut completar l'operació. Torna-ho a provar."
 }

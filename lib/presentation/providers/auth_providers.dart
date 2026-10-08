@@ -6,10 +6,17 @@ import '../../domain/models/user_profile.dart';
 
 part 'auth_providers.g.dart';
 
+/// Perfil de l'usuari autenticat. Depèn de l'estat d'Auth perquè, en canviar
+/// d'usuari (tancar sessió i registrar-ne un altre), no es quedi escoltant
+/// el perfil ni l'error de l'usuari anterior.
 @riverpod
-Stream<UserProfile?> userProfile(Ref ref) {
-  final authRepo = ref.watch(authRepositoryProvider);
-  return authRepo.getUserProfileStream();
+Stream<UserProfile?> userProfile(Ref ref) async* {
+  final user = await ref.watch(authStateChangesProvider.future);
+  if (user == null) {
+    yield null;
+    return;
+  }
+  yield* ref.watch(authRepositoryProvider).watchUserProfile(user.uid);
 }
 
 @riverpod

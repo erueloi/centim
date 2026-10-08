@@ -756,4 +756,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String annualProjectedBadge(Object amount, Object count) {
     return 'Projected (${count}m): $amount';
   }
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get forgotPasswordButton => 'Forgot your password?';
+
+  @override
+  String get resetPasswordTitle => 'Reset password';
+
+  @override
+  String get resetPasswordBody =>
+      'Enter your email and we\'ll send you a link to choose a new password.';
+
+  @override
+  String get resetPasswordSendButton => 'Send link';
+
+  @override
+  String get resetPasswordSent =>
+      'If an account exists for this email, you\'ll receive a link to reset your password. Check your spam folder too.';
+
+  @override
+  String get authErrorInvalidCredentials =>
+      'The email or password is incorrect.';
+
+  @override
+  String get authErrorEmailInUse =>
+      'An account with this email already exists. Sign in or reset your password.';
+
+  @override
+  String get authErrorWeakPassword =>
+      'The password must be at least 6 characters long.';
+
+  @override
+  String get authErrorInvalidEmail => 'The email address is not valid.';
+
+  @override
+  String get authErrorTooManyRequests =>
+      'Too many attempts. Wait a while and try again.';
+
+  @override
+  String get authErrorNetwork =>
+      'No connection. Check your network and try again.';
+
+  @override
+  String get authErrorGeneric =>
+      'The operation could not be completed. Please try again.';
 }

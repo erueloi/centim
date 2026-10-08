@@ -756,4 +756,54 @@ class AppLocalizationsCa extends AppLocalizations {
   String annualProjectedBadge(Object amount, Object count) {
     return 'Projecció (${count}m): $amount';
   }
+
+  @override
+  String get showPassword => 'Mostra la contrasenya';
+
+  @override
+  String get hidePassword => 'Amaga la contrasenya';
+
+  @override
+  String get forgotPasswordButton => 'Has oblidat la contrasenya?';
+
+  @override
+  String get resetPasswordTitle => 'Restableix la contrasenya';
+
+  @override
+  String get resetPasswordBody =>
+      'Introdueix el teu correu i t\'enviarem un enllaç per triar una contrasenya nova.';
+
+  @override
+  String get resetPasswordSendButton => 'Envia l\'enllaç';
+
+  @override
+  String get resetPasswordSent =>
+      'Si hi ha un compte amb aquest correu, rebràs un enllaç per restablir la contrasenya. Revisa també la carpeta de correu brossa.';
+
+  @override
+  String get authErrorInvalidCredentials =>
+      'El correu o la contrasenya no són correctes.';
+
+  @override
+  String get authErrorEmailInUse =>
+      'Ja hi ha un compte amb aquest correu. Inicia la sessió o recupera la contrasenya.';
+
+  @override
+  String get authErrorWeakPassword =>
+      'La contrasenya ha de tenir almenys 6 caràcters.';
+
+  @override
+  String get authErrorInvalidEmail => 'El correu electrònic no és vàlid.';
+
+  @override
+  String get authErrorTooManyRequests =>
+      'Massa intents seguits. Espera una estona i torna-ho a provar.';
+
+  @override
+  String get authErrorNetwork =>
+      'No hi ha connexió. Revisa la xarxa i torna-ho a provar.';
+
+  @override
+  String get authErrorGeneric =>
+      'No s\'ha pogut completar l\'operació. Torna-ho a provar.';
 }

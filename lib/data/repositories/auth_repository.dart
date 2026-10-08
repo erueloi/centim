@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/utils/retry_on_permission_denied.dart';
 import '../../domain/models/user_profile.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
@@ -81,14 +82,23 @@ class AuthRepository {
     }
   }
 
-  Stream<UserProfile?> getUserProfileStream() {
-    final user = _auth.currentUser;
-    if (user == null) return Stream.value(null);
+  /// Perfil en viu de [uid]. Reintenta si la primera escolta arriba a
+  /// Firestore abans que el token del nou usuari (vegeu
+  /// [retryOnPermissionDenied]).
+  Stream<UserProfile?> watchUserProfile(String uid) {
+    final userDoc = _firestore.collection('users').doc(uid);
+    return retryOnPermissionDenied(
+      () => userDoc.snapshots().map((doc) {
+        if (!doc.exists) return null;
+        return UserProfile.fromJson(doc.data()!);
+      }),
+    ).distinct();
+  }
 
-    return _firestore.collection('users').doc(user.uid).snapshots().map((doc) {
-      if (!doc.exists) return null;
-      return UserProfile.fromJson(doc.data()!);
-    }).distinct();
+  /// Envia el correu de Firebase per restablir la contrasenya.
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _auth.setLanguageCode('ca');
+    await _auth.sendPasswordResetEmail(email: email);
   }
 
   Future<void> updateCurrentGroupId(String groupId) async {

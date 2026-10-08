@@ -238,5 +238,19 @@
   "annualPerMonth": "€/mo",
   "annualPerYear": "€/yr",
   "annualRealBadge": "Real ({count}m): {amount}",
-  "annualProjectedBadge": "Projected ({count}m): {amount}"
+  "annualProjectedBadge": "Projected ({count}m): {amount}",
+  "showPassword": "Show password",
+  "hidePassword": "Hide password",
+  "forgotPasswordButton": "Forgot your password?",
+  "resetPasswordTitle": "Reset password",
+  "resetPasswordBody": "Enter your email and we'll send you a link to choose a new password.",
+  "resetPasswordSendButton": "Send link",
+  "resetPasswordSent": "If an account exists for this email, you'll receive a link to reset your password. Check your spam folder too.",
+  "authErrorInvalidCredentials": "The email or password is incorrect.",
+  "authErrorEmailInUse": "An account with this email already exists. Sign in or reset your password.",
+  "authErrorWeakPassword": "The password must be at least 6 characters long.",
+  "authErrorInvalidEmail": "The email address is not valid.",
+  "authErrorTooManyRequests": "Too many attempts. Wait a while and try again.",
+  "authErrorNetwork": "No connection. Check your network and try again.",
+  "authErrorGeneric": "The operation could not be completed. Please try again."
 }

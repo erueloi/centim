@@ -1501,6 +1501,90 @@ abstract class AppLocalizations {
   /// In ca, this message translates to:
   /// **'Projecció ({count}m): {amount}'**
   String annualProjectedBadge(Object amount, Object count);
+
+  /// No description provided for @showPassword.
+  ///
+  /// In ca, this message translates to:
+  /// **'Mostra la contrasenya'**
+  String get showPassword;
+
+  /// No description provided for @hidePassword.
+  ///
+  /// In ca, this message translates to:
+  /// **'Amaga la contrasenya'**
+  String get hidePassword;
+
+  /// No description provided for @forgotPasswordButton.
+  ///
+  /// In ca, this message translates to:
+  /// **'Has oblidat la contrasenya?'**
+  String get forgotPasswordButton;
+
+  /// No description provided for @resetPasswordTitle.
+  ///
+  /// In ca, this message translates to:
+  /// **'Restableix la contrasenya'**
+  String get resetPasswordTitle;
+
+  /// No description provided for @resetPasswordBody.
+  ///
+  /// In ca, this message translates to:
+  /// **'Introdueix el teu correu i t\'enviarem un enllaç per triar una contrasenya nova.'**
+  String get resetPasswordBody;
+
+  /// No description provided for @resetPasswordSendButton.
+  ///
+  /// In ca, this message translates to:
+  /// **'Envia l\'enllaç'**
+  String get resetPasswordSendButton;
+
+  /// No description provided for @resetPasswordSent.
+  ///
+  /// In ca, this message translates to:
+  /// **'Si hi ha un compte amb aquest correu, rebràs un enllaç per restablir la contrasenya. Revisa també la carpeta de correu brossa.'**
+  String get resetPasswordSent;
+
+  /// No description provided for @authErrorInvalidCredentials.
+  ///
+  /// In ca, this message translates to:
+  /// **'El correu o la contrasenya no són correctes.'**
+  String get authErrorInvalidCredentials;
+
+  /// No description provided for @authErrorEmailInUse.
+  ///
+  /// In ca, this message translates to:
+  /// **'Ja hi ha un compte amb aquest correu. Inicia la sessió o recupera la contrasenya.'**
+  String get authErrorEmailInUse;
+
+  /// No description provided for @authErrorWeakPassword.
+  ///
+  /// In ca, this message translates to:
+  /// **'La contrasenya ha de tenir almenys 6 caràcters.'**
+  String get authErrorWeakPassword;
+
+  /// No description provided for @authErrorInvalidEmail.
+  ///
+  /// In ca, this message translates to:
+  /// **'El correu electrònic no és vàlid.'**
+  String get authErrorInvalidEmail;
+
+  /// No description provided for @authErrorTooManyRequests.
+  ///
+  /// In ca, this message translates to:
+  /// **'Massa intents seguits. Espera una estona i torna-ho a provar.'**
+  String get authErrorTooManyRequests;
+
+  /// No description provided for @authErrorNetwork.
+  ///
+  /// In ca, this message translates to:
+  /// **'No hi ha connexió. Revisa la xarxa i torna-ho a provar.'**
+  String get authErrorNetwork;
+
+  /// No description provided for @authErrorGeneric.
+  ///
+  /// In ca, this message translates to:
+  /// **'No s\'ha pogut completar l\'operació. Torna-ho a provar.'**
+  String get authErrorGeneric;
 }
 
 class _AppLocalizationsDelegate
