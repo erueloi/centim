@@ -9,6 +9,7 @@ import 'package:centim/l10n/app_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import 'core/firebase/app_check_bootstrap.dart';
+import 'core/web/browser_url.dart';
 import 'firebase_options.dart';
 import 'domain/services/bank_callback.dart';
 import 'domain/services/ai_coach_config.dart';
@@ -19,8 +20,13 @@ void main() async {
   await initializeAppCheck();
   await AiCoachConfig.initialize();
 
-  // Captura el retorn de l'SCA bancària (web: /bank-callback?code&state).
-  BankCallback.captureFromUri(Uri.base);
+  // Captura el retorn de l'SCA bancària (web: /bank-callback?code&state) i
+  // treu el codi de la barra d'adreces: és d'un sol ús i no s'ha de tornar a
+  // processar en recarregar ni quedar a l'historial.
+  final startUri = Uri.base;
+  if (BankCallback.captureFromUri(startUri)) {
+    replaceBrowserUrl(BankCallback.cleanUrlFor(startUri));
+  }
 
   runApp(const ProviderScope(child: MyApp()));
 }

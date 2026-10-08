@@ -141,6 +141,13 @@ void main() {
               aspspName: 'CaixaBank',
               memberName: 'Eloi',
             ),
+            // Compte de prova sense IBAN (com els de Mock ASPSP).
+            GroupBankAccount(
+              ibanMasked: '',
+              name: 'Akseli Hämäläinen',
+              aspspName: 'Mock ASPSP',
+              memberName: 'proba@centim.eloi',
+            ),
           ],
         ),
       ),
@@ -159,6 +166,7 @@ void main() {
     await tester.scrollUntilVisible(find.text('Comptes accessibles'), 200);
     expect(find.textContaining('No és la llista del panell'), findsOneWidget);
     expect(find.text('ES****1717 · CaixaBank · Eloi'), findsOneWidget);
+    expect(find.text('Mock ASPSP · proba@centim.eloi'), findsOneWidget);
   });
 
   testWidgets('l\'owner veu Canvia les credencials i Elimina', (tester) async {

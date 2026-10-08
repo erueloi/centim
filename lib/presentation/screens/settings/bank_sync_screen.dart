@@ -504,11 +504,13 @@ class _BankSyncScreenState extends ConsumerState<BankSyncScreen> {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.account_balance_outlined),
               title: Text(account.name ?? account.ibanMasked),
+              // Alguns comptes (p. ex. els de prova) no tenen IBAN: sense
+              // separadors buits.
               subtitle: Text([
                 account.ibanMasked,
                 account.aspspName,
-                if (account.memberName != null) account.memberName!,
-              ].join(' · ')),
+                account.memberName ?? '',
+              ].where((part) => part.isNotEmpty).join(' · ')),
             ),
       ],
     );
