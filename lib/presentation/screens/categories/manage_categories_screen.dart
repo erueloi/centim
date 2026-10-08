@@ -59,7 +59,9 @@ class _ManageCategoriesScreenState
               if (value == 'import') {
                 _showImportDialog(context, ref);
               } else if (value == 'seed_income') {
-                _seedIncomeCategories(context, ref);
+                _seedDefaultCategories(context, ref, TransactionType.income);
+              } else if (value == 'seed_expense') {
+                _seedDefaultCategories(context, ref, TransactionType.expense);
               }
             },
             itemBuilder: (context) => [
@@ -74,12 +76,22 @@ class _ManageCategoriesScreenState
                 ),
               ),
               const PopupMenuItem(
+                value: 'seed_expense',
+                child: Row(
+                  children: [
+                    Icon(Icons.auto_awesome),
+                    SizedBox(width: 8),
+                    Text('Generar despeses per defecte'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
                 value: 'seed_income',
                 child: Row(
                   children: [
                     Icon(Icons.auto_awesome),
                     SizedBox(width: 8),
-                    Text('Generar Ingressos Defecte'),
+                    Text('Generar ingressos per defecte'),
                   ],
                 ),
               ),
@@ -981,7 +993,12 @@ class _CategoryTile extends ConsumerWidget {
   }
 }
 
-Future<void> _seedIncomeCategories(BuildContext context, WidgetRef ref) async {
+Future<void> _seedDefaultCategories(
+  BuildContext context,
+  WidgetRef ref,
+  TransactionType type,
+) async {
+  final isIncome = type == TransactionType.income;
   try {
     final groupId = await ref.read(currentGroupIdProvider.future);
     if (groupId == null) throw Exception('No group selected');
@@ -992,16 +1009,27 @@ Future<void> _seedIncomeCategories(BuildContext context, WidgetRef ref) async {
       ).showSnackBar(const SnackBar(content: Text('Generant categories...')));
     }
 
+    final existing = await ref.read(categoryNotifierProvider.future);
     final repository = CategoryRepository();
     final seeder = CategorySeederService(repository);
-    final count = await seeder.seedIncomeCategories(groupId);
+    final result = await seeder.seedDefaults(
+      groupId,
+      defaults:
+          isIncome ? defaultIncomeCategories() : defaultExpenseCategories(),
+      existing: existing,
+    );
 
     ref.invalidate(categoryNotifierProvider);
 
     if (context.mounted) {
+      final kind = isIncome ? 'd\'ingrés' : 'de despesa';
+      final message = result.added == 0
+          ? 'Ja tens totes les categories $kind per defecte.'
+          : '${result.added} categories $kind afegides'
+              '${result.skipped > 0 ? ' (${result.skipped} ja existien)' : ''}.';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$count categories d\'ingrés afegides!'),
+          content: Text(message),
           backgroundColor: AppTheme.copper,
         ),
       );

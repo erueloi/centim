@@ -134,104 +134,145 @@ class CategorySeederService {
     return '📂'; // Default
   }
 
-  /// Seeds default income categories
-  Future<int> seedIncomeCategories(String groupId) async {
-    final incomeCategories = [
-      Category(
-        id: const Uuid().v4(),
-        name: 'Nòmina',
-        icon: '💰',
-        type: TransactionType.income,
-        subcategories: [
-          SubCategory(
-            id: const Uuid().v4(),
-            name: 'Eloi',
-            monthlyBudget: 0,
-            isFixed: true,
-          ),
-          SubCategory(
-            id: const Uuid().v4(),
-            name: 'Jose',
-            monthlyBudget: 0,
-            isFixed: true,
-          ),
-        ],
-      ),
-      Category(
-        id: const Uuid().v4(),
-        name: 'Rendiments',
-        icon: '📈',
-        type: TransactionType.income,
-        subcategories: [
-          SubCategory(
-            id: const Uuid().v4(),
-            name: 'Interessos',
-            monthlyBudget: 0,
-            isFixed: false,
-          ),
-          SubCategory(
-            id: const Uuid().v4(),
-            name: 'Dividends',
-            monthlyBudget: 0,
-            isFixed: false,
-          ),
-        ],
-      ),
-      Category(
-        id: const Uuid().v4(),
-        name: 'Regals/Extres',
-        icon: '🎁',
-        type: TransactionType.income,
-        subcategories: [
-          SubCategory(
-            id: const Uuid().v4(),
-            name: 'Aniversaris',
-            monthlyBudget: 0,
-            isFixed: false,
-          ),
-          SubCategory(
-            id: const Uuid().v4(),
-            name: 'Vendes 2a mà',
-            monthlyBudget: 0,
-            isFixed: false,
-          ),
-        ],
-      ),
-      Category(
-        id: const Uuid().v4(),
-        name: 'Lloguers/Immobles',
-        icon: '🏠',
-        type: TransactionType.income,
-        subcategories: [], // No subcategories specified
-      ),
-      Category(
-        id: const Uuid().v4(),
-        name: 'Devolucions',
-        icon: '↩️',
-        type: TransactionType.income,
-        subcategories: [
-          SubCategory(
-            id: const Uuid().v4(),
-            name: 'Hisenda',
-            monthlyBudget: 0,
-            isFixed: false,
-          ),
-          SubCategory(
-            id: const Uuid().v4(),
-            name: 'Retorns compres',
-            monthlyBudget: 0,
-            isFixed: false,
-          ),
-        ],
-      ),
-    ];
-
-    int count = 0;
-    for (final category in incomeCategories) {
-      await _repository.addCategory(groupId, category);
-      count++;
+  /// Crea les categories per defecte que encara no existeixen al grup.
+  ///
+  /// Se salten les que ja hi ha amb el mateix nom i tipus (vegeu
+  /// [categoriesToSeed]), així que es pot prémer el botó més d'un cop sense
+  /// duplicar res. Es desen amb un `order` consecutiu per mantenir l'ordre.
+  Future<({int added, int skipped})> seedDefaults(
+    String groupId, {
+    required List<Category> defaults,
+    required List<Category> existing,
+  }) async {
+    final toAdd = categoriesToSeed(defaults, existing);
+    final baseOrder = DateTime.now().millisecondsSinceEpoch;
+    for (var i = 0; i < toAdd.length; i++) {
+      await _repository.addCategory(
+        groupId,
+        toAdd[i].copyWith(order: baseOrder + i),
+      );
     }
-
-    return count;
+    return (added: toAdd.length, skipped: defaults.length - toAdd.length);
   }
+}
+
+/// Les categories de [defaults] que no existeixen encara a [existing] amb el
+/// mateix nom (sense distingir majúscules ni accents) i tipus. Les arxivades
+/// també compten com a existents: no es tornen a crear.
+List<Category> categoriesToSeed(
+  List<Category> defaults,
+  List<Category> existing,
+) {
+  final taken = {for (final c in existing) (c.type, _nameKey(c.name))};
+  return defaults
+      .where((c) => !taken.contains((c.type, _nameKey(c.name))))
+      .toList();
+}
+
+String _nameKey(String name) {
+  const accents = {
+    'à': 'a', 'á': 'a', 'è': 'e', 'é': 'e', 'í': 'i', 'ï': 'i', //
+    'ò': 'o', 'ó': 'o', 'ú': 'u', 'ü': 'u', 'ç': 'c', 'ñ': 'n',
+  };
+  final lower = name.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  return lower.split('').map((ch) => accents[ch] ?? ch).join();
+}
+
+SubCategory _sub(String name, {bool fixed = false}) => SubCategory(
+      id: const Uuid().v4(),
+      name: name,
+      monthlyBudget: 0,
+      isFixed: fixed,
+    );
+
+Category _category(
+  String name,
+  String icon,
+  TransactionType type,
+  List<SubCategory> subcategories,
+) =>
+    Category(
+      id: const Uuid().v4(),
+      name: name,
+      icon: icon,
+      type: type,
+      subcategories: subcategories,
+    );
+
+/// Ingressos per defecte, genèrics: cada llar hi afegeix les seves
+/// subcategories (p. ex. una nòmina per persona).
+///
+/// "Nòmina" no s'ha de reanomenar: l'informe anual detecta les nòmines pel
+/// nom de la categoria.
+List<Category> defaultIncomeCategories() {
+  const t = TransactionType.income;
+  return [
+    _category('Nòmina', '💰', t, [_sub('Nòmina', fixed: true)]),
+    _category('Rendiments', '📈', t, [_sub('Interessos'), _sub('Dividends')]),
+    _category(
+        'Regals/Extres', '🎁', t, [_sub('Aniversaris'), _sub('Vendes 2a mà')]),
+    _category('Lloguers/Immobles', '🏠', t, []),
+    _category(
+        'Devolucions', '↩️', t, [_sub('Hisenda'), _sub('Retorns compres')]),
+  ];
+}
+
+/// Despeses per defecte: categories transversals de qualsevol llar.
+List<Category> defaultExpenseCategories() {
+  const t = TransactionType.expense;
+  return [
+    _category('Habitatge', '🏠', t, [
+      _sub('Lloguer o hipoteca', fixed: true),
+      _sub('Comunitat', fixed: true),
+      _sub('Assegurança de la llar', fixed: true),
+      _sub('Manteniment'),
+    ]),
+    _category('Subministraments', '💡', t, [
+      _sub('Llum'),
+      _sub('Aigua'),
+      _sub('Gas'),
+      _sub('Internet i mòbil', fixed: true),
+    ]),
+    _category('Alimentació', '🛒', t, [
+      _sub('Supermercat'),
+      _sub('Mercat i fleca'),
+    ]),
+    _category('Transport', '🚗', t, [
+      _sub('Combustible'),
+      _sub('Transport públic'),
+      _sub('Assegurança del vehicle', fixed: true),
+      _sub('Manteniment del vehicle'),
+      _sub('Aparcament i peatges'),
+    ]),
+    _category('Salut', '💊', t, [
+      _sub('Farmàcia'),
+      _sub('Metges i dentista'),
+      _sub('Assegurança mèdica', fixed: true),
+    ]),
+    _category('Oci', '🍺', t, [
+      _sub('Restaurants'),
+      _sub('Viatges'),
+      _sub('Activitats i cultura'),
+    ]),
+    _category('Roba i cura personal', '👕', t, [
+      _sub('Roba i calçat'),
+      _sub('Perruqueria i cosmètica'),
+    ]),
+    _category('Educació', '🎓', t, [
+      _sub('Escola i formació'),
+      _sub('Llibres i material'),
+    ]),
+    _category('Subscripcions', '🌐', t, [
+      _sub('Plataformes digitals', fixed: true),
+      _sub('Gimnàs', fixed: true),
+    ]),
+    _category('Impostos i comissions', '🏦', t, [
+      _sub('Impostos (IBI, etc.)'),
+      _sub('Comissions bancàries'),
+    ]),
+    _category('Altres', '🎁', t, [
+      _sub('Regals'),
+      _sub('Imprevistos'),
+    ]),
+  ];
 }
