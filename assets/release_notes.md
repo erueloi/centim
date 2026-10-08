@@ -1,5 +1,8 @@
 # Release Notes
 
+## v1.4.1
+Corregit: un intent de connexió bancària sense acabar ja no apareix per reconnectar.
+El codi d'autorització del banc ja no es queda a la barra d'adreces.
 ## v1.4.0
 Connexió bancària pròpia de cada grup: l'owner configura l'aplicació d'Enable Banking amb un assistent.
 Multi banc: tria el teu banc en connectar.
@@ -174,6 +177,7 @@ Pressupost: Millores amb les categories i els mesos fiscals.
 Configuració automàtica amb GitHub Actions!
 ## v1.0.1
 Primer desplegament de l'aplicació.
+
 
 
 
